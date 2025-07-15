@@ -4,17 +4,17 @@
 
 global:
   awsRegion: us-gov-west-1
-  appName: node-example
+  appName: advana-marketplace-monolith
   baseDomain: app.advana.cdao.us
   registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
-  vaultPrefix: aws/csn/dev/node-example
+  vaultPrefix: aws/csn/dev/advana-marketplace-monolith
 
 ###############################################################################
 ## Default Values                                                            ##
 ###############################################################################
 
 image:
-  repository: tenant/images/node-example
+  repository: tenant/images/advana-marketplace-monolith
   pullPolicy: IfNotPresent
 
 serviceAccount:
@@ -359,7 +359,7 @@ secret:
           TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
           TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
 
-          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://node-example.app.advana.cdao.us'
+          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://advana-marketplace-monolith.app.advana.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
           REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
 

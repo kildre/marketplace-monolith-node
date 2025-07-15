@@ -7,14 +7,14 @@ global:
   appName: '{{ $.Release.Name }}'
   baseDomain: app.advana.cdao.us
   registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
-  vaultPrefix: aws/csn/dev/node-example
+  vaultPrefix: aws/csn/dev/advana-marketplace-monolith
 
 ###############################################################################
 ## Environment Specific Public Values                                        ##
 ###############################################################################
 
 image:
-  repository: tenant/images/node-example
+  repository: tenant/images/advana-marketplace-monolith
   pullPolicy: IfNotPresent
   # tag: ""
 
@@ -56,7 +56,7 @@ postgresql:
     postgresPassword: "password"
     password: "password"
     username: "postgres"
-    database: "node-example-db"
+    database: "advana-marketplace-monolith-db"
   primary:
     persistence:
       enabled: false
@@ -86,7 +86,7 @@ secret:
       "public-env-db-postgresql":
         data:
           PG_HOST: "review-bitnami-pg"
-          PG_DATABASE: "node-example-db"
+          PG_DATABASE: "advana-marketplace-monolith-db"
       "public-env-db-redis":
         data:
           REDIS_URL: "redis://{{ $.Release.Name }}-redis-master.{{ $.Release.Namespace }}.svc.cluster.local"
