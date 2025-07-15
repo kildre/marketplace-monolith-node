@@ -1,0 +1,24 @@
+apiVersion: v2
+name: node-example
+description: Template helm chart for a basic webapp
+type: application
+version: 2.2.0
+appVersion: 2.2.0
+dependencies:
+  - name: advana-library
+    version: 2.0.4
+    repository: oci://231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/tenant
+    tags:
+      - library
+  - name: postgresql
+    version: 15.5.38
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+    tags:
+      - database
+  - name: redis
+    version: 20.13.4
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+    tags:
+      - database

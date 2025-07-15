@@ -1,0 +1,2 @@
+{{ include "common.env.configmap" $ }}
+{{ include "common.volume.configmap" $ }}

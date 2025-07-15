@@ -1,0 +1,146 @@
+###############################################################################
+## Global Values                                                             ##
+###############################################################################
+
+global:
+  awsRegion: us-gov-west-1
+  appName: '{{ $.Release.Name }}'
+  baseDomain: app.advana.cdao.us
+  registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
+  vaultPrefix: aws/csn/dev/node-example
+
+###############################################################################
+## Environment Specific Public Values                                        ##
+###############################################################################
+
+image:
+  repository: tenant/images/node-example
+  pullPolicy: IfNotPresent
+  # tag: ""
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::231134345536:role/advana/k8s/s3.wildcard
+
+ingress:
+  gateways:  # set to use gateways instead of ingress
+    - istio-system/public
+
+deployment:
+  web:
+    replicaCount: 1 # unused if autoscaling is enabled
+    podAnnotations:
+      iam.amazonaws.com/role: arn:aws:iam::231134345536:role/advana/k8s/s3.wildcard
+    container:
+      web:
+        resources: # only set values in environment-specific overrides
+          limits:
+            cpu: 4
+            memory: 2Gi
+          requests:
+            cpu: 2
+            memory: 500Mi
+
+# dependency values
+postgresql:
+  fullnameOverride: "review-bitnami-pg"
+  enabled: true
+  volumePermission:
+    enabled: true
+  tls:
+    enabled: true
+    certificatesSecret: "bitnami-postgres-tls"
+    certFilename: "server.crt"
+    certKeyFilename: "server.key"
+  auth:
+    postgresPassword: "password"
+    password: "password"
+    username: "postgres"
+    database: "node-example-db"
+  primary:
+    persistence:
+      enabled: false
+  readReplicas:
+    persistence:
+      enabled: false
+redis:
+  enabled: true
+  #  architecture: standalone
+  master:
+    persistence:
+      enabled: false
+  replica:
+    persistence:
+      enabled: false
+  auth:
+    enabled: false
+  sentinel:
+    enabled: false
+  metrics:
+    enabled: false
+
+# public values that are stored as a secret object for convenience, remove if using values from vault
+secret:
+  env:
+    secret:
+      "public-env-db-postgresql":
+        data:
+          PG_HOST: "review-bitnami-pg"
+          PG_DATABASE: "node-example-db"
+      "public-env-db-redis":
+        data:
+          REDIS_URL: "redis://{{ $.Release.Name }}-redis-master.{{ $.Release.Namespace }}.svc.cluster.local"
+      "public-env-platform-ui":
+        data:
+          REACT_APP_NODE_ENV: "nipr" # nipr, sipr or jwics
+          REACT_APP_CLASSIFICATION_BANNER: "DEV"
+          REACT_APP_CLASSIFICATION_BANNER_COLOR: "GREEN"
+          REACT_APP_CLASSIFICATION_BANNER_TEXT_COLOR: "WHITE"
+      "public-env-sso":
+        data:
+          DISABLE_SSO: "true"
+          SAML_REALM: "local-uot-test"
+      "public-env-web":
+        data:
+          APPROVED_API_CALLERS: "https://sso.{{ $.Values.global.baseDomain }} https://{{ $.Values.ingress.domain }} http://localhost:8080 http://localhost:3000"
+  volume:
+    secret:
+      "secret-volume-ca-bundle-crt":
+        data:
+          "ca-bundle.crt": |
+            -----BEGIN CERTIFICATE-----
+            MIIFwzCCA6ugAwIBAgIUc8IDAleJOHvU16OWw8MMNZe5HcwwDQYJKoZIhvcNAQEL
+            BQAwcTELMAkGA1UEBhMCVVMxETAPBgNVBAgMCFZpcmdpbmlhMQ8wDQYDVQQHDAZN
+            Y2xlYW4xIjAgBgNVBAoMGUJvb3ogQWxsZW4gSGFtaWx0b24sIEluYy4xGjAYBgNV
+            BAMMEXJldmlldy1iaXRuYW1pLXBnMB4XDTI1MDUyODE4MDExM1oXDTM1MDUyNjE4
+            MDExM1owcTELMAkGA1UEBhMCVVMxETAPBgNVBAgMCFZpcmdpbmlhMQ8wDQYDVQQH
+            DAZNY2xlYW4xIjAgBgNVBAoMGUJvb3ogQWxsZW4gSGFtaWx0b24sIEluYy4xGjAY
+            BgNVBAMMEXJldmlldy1iaXRuYW1pLXBnMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A
+            MIICCgKCAgEAsqTCc03PP83qB853wT/UuJdhxPfQuN62l56YJ5wkTfWeczE30dq2
+            JvTyBU/OfhFTD/K+fxhSND13xk+0piQjWy8deWQS50N6EE7ozaFRfNxZVn3Ggws1
+            QO9MyVxZ+zomaNJTBl4UBc0P3bCuIemAoRsBqn+soljSQgTf4ZjyvqE+HhJshAW8
+            ctRUIAHvIpO7UlX7JZWkcZNZUv8nBn8aAnVuj2UMbM/vNGjt4fut7h5DNa+660q2
+            KnxvLs6zbavaSOw2Uj+Fvce4nXHWIYbqlc1uYHqtF6vt3tkwJPIRk/Obx/gns7Dw
+            vtMVN2oVwxgo24gmaiya1GF4y8cXVvR+XD0W13J+8QszRqnqttnLih4FAnf4iRBv
+            /iQGzH9t2oNnyzk/Z9W/05+euaadyy6dGzWDEGgJE9Hxz+w9dy2Id2IAYBDlHH0i
+            P36wpjTQJy7noHpJhutIbIpFeMgarnMKxap0seTw1GQN5cNJOb6s5d1dJ4+6SqAp
+            Fa/MrWDjqfjmlpSS0N5/4V04pdKq4DPa3QkGapsheuFRlhnO4iVnlLK3ARR6TVO3
+            agtoLTMY+Qqz6frswiaI3FJT3wa9XPTx2PdOOH2r53LxNY3j0abQ4fvbKpvEX6CX
+            s4suDKQFX2apDAereqeSgDEJxURCOq0acnW2/QJNTGUUzflwVF/VKrsCAwEAAaNT
+            MFEwHQYDVR0OBBYEFGk7gvxqZ5YsTcXEnfSlPOuULW14MB8GA1UdIwQYMBaAFGk7
+            gvxqZ5YsTcXEnfSlPOuULW14MA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL
+            BQADggIBAFnAQkS/mEydG/jgwL8p08SGhrDkKHHW1tl/hKS9lWu09+Gs+7gcP9vs
+            qIub4YmRigp55zQIjc+U6yys4WMDxMKGske8cPFp8Aa388q/JiBfvIK9Ql/3ql0o
+            +upXkrn17tbOdwh09MSqRCx58UbsGtLC90Lg1oSyU9K+QbR/RT37RJFVzg5VNSZj
+            n9ghe+d/9wHAxRmvmFYpZME5Nf+iGygU4k+hmHe+dbL/7mprD03T2Xula8aYNy5Q
+            6K0S7iy3r2PjmjBjGudRFJhWpkcoDMEQxmEMMMVorD402iVE+q/csRjGQfsXGdU/
+            C370PrWkyEGj3RP6ZI4irr81JZhO3PpcxjwUL3I1m3GyY4/GePKKHSVSzEcRLDJX
+            vtt4l12e+u1xdVU2g5hLs1MnjsxJTDg+6aHyDO2+Py55vZQ/kcxIT3IHjpM/W3Pe
+            4UXkmWBg1U6Yra2EQ7/BYzOnaIXAY8Ko7SxGMh28RVRiLnygN4kSzrJQQSYzbs+3
+            78g7gIm67fcw5p3wghMQXXuDMjWD6s66XPCJiTPxN+it3iW5n/ZBYgOhTNmQaVZW
+            3ltNzbW6nP+AsqINnd8L6fs+QYb5pIqj4idPJB7VMeFKC4c2uCeeypXoOlRMRrXD
+            J7NfwCxZISmfOD16vzpHkyibSjlns3lxc770zWbPVCt/8lNiapel
+            -----END CERTIFICATE-----
+
+
+

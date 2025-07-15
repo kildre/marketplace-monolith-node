@@ -1,0 +1,424 @@
+###############################################################################
+## Global Values                                                             ##
+###############################################################################
+
+global:
+  awsRegion: us-gov-west-1
+  appName: node-example
+  baseDomain: app.advana.cdao.us
+  registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
+  vaultPrefix: aws/csn/dev/node-example
+
+###############################################################################
+## Default Values                                                            ##
+###############################################################################
+
+image:
+  repository: tenant/images/node-example
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  name: '{{ $.Release.Name }}'
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: aws-role-arn
+
+ingress:
+  enabled: true
+  tls: true
+  domain: '{{ $.Values.global.appName }}.{{ $.Values.global.baseDomain }}'
+  hosts:
+    '{{ $.Values.ingress.domain }}':
+      paths:
+        - path: /
+          pathType: Prefix
+          deploymentName: web
+          serviceType: ClusterIP
+          serviceName: http
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+podSecurityContext:
+  # the node:node user defined in the chainguard base images is 65532:65532
+  # https://edu.chainguard.dev/chainguard/chainguard-images/reference/node-fips/
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+
+job:
+  'sequelize-migrate-{{ $.Release.Revision }}':
+    enabled: false
+    restartPolicy: 'Never'
+    ttlSecondsAfterFinished: 100
+    initContainer:
+      postgresql-app-ready:
+        &postgresql-app-ready-init-container # postgres-ready script installed by @advana/sequelize module
+        args:
+          - node_modules/.bin/postgres-ready
+        envFrom:
+          - secretRef:
+              name: public-env-db-postgresql
+          - secretRef:
+              name: secret-env-db-postgresql
+          - secretRef:
+              name: public-env-web
+    container:
+      migration-job:
+        args:
+          - node_modules/.bin/sequelize
+          - db:migrate
+        envFrom:
+          - secretRef:
+              name: public-env-db-postgresql
+          - secretRef:
+              name: secret-env-db-postgresql
+          - secretRef:
+              name: public-env-web
+
+  'sequelize-undo-migration-{{ $.Release.Revision }}':
+    enabled: false
+    restartPolicy: 'Never'
+    ttlSecondsAfterFinished: 100
+    initContainer:
+      postgresql-app-ready: *postgresql-app-ready-init-container
+    container:
+      migration-job:
+        args:
+          - node_modules/.bin/sequelize
+          - db:migrate:undo:all
+          - --to
+          - $(APP_MIGRATION_FILE)
+        envFrom:
+          - secretRef:
+              name: public-env-db-postgresql
+          - secretRef:
+              name: secret-env-db-postgresql
+          - secretRef:
+              name: public-env-web
+
+deployment:
+  web:
+    replicaCount: 2 # unused if autoscaling is enabled
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 80
+      # targetMemoryUtilizationPercentage: 80
+    podDisruptionBudget:
+      minAvailable: 1
+      # maxUnavailable: "50%"
+    podAnnotations:
+      iam.amazonaws.com/role: aws-role-arn
+    serviceAccountName: '{{ $.Release.Name }}'
+    # initContainer:
+      # 01-postgresql-advana-ready:
+      #   # postgres-ready script installed by @advana/sequelize module
+      #   args:
+      #     - node_modules/.bin/postgres-ready
+      #     - --host
+      #     - $(PG_HOST)
+      #     - --port
+      #     - $(PG_PORT)
+      #     - --database
+      #     - $(PG_UM_DB)
+      #     - --user
+      #     - $(PG_USER)
+      #     - --password
+      #     - $(PG_PASSWORD)
+      #   envFrom:
+      #     - secretRef:
+      #         name: public-env-db-postgresql
+      #     - secretRef:
+      #         name: secret-env-db-postgresql
+      #     - secretRef:
+      #         name: public-env-web
+
+      # 02-postgresql-app-ready: *postgresql-app-ready-init-container
+
+      # 03-postgresql-app-migration-ready:
+      #   # migration-ready script installed by @advana/sequelize module
+      #   args:
+      #     - node_modules/.bin/migration-ready
+      #   envFrom:
+      #     - secretRef:
+      #         name: public-env-db-postgresql
+      #     - secretRef:
+      #         name: secret-env-db-postgresql
+      #     - secretRef:
+      #         name: public-env-web
+
+      # 04-redis-ready:
+      #   # redis-ready script installed by @advana/redis-client module
+      #   args:
+      #     - node_modules/.bin/redis-ready
+      #   envFrom:
+      #     - secretRef:
+      #         name: public-env-db-redis
+      #     - secretRef:
+      #         name: secret-env-db-redis
+      #     - secretRef:
+      #         name: public-env-web
+
+    container:
+      web:
+        args:
+          - index.js
+        envFrom:
+          - secretRef:
+              name: public-env-db-postgresql
+          - secretRef:
+              name: public-env-db-redis
+          - secretRef:
+              name: public-env-platform-ui
+          - secretRef:
+              name: public-env-sso
+          - secretRef:
+              name: public-env-web
+          - secretRef:
+              name: secret-env-db-postgresql
+          - secretRef:
+              name: secret-env-db-redis
+          - secretRef:
+              name: secret-env-sso
+          - secretRef:
+              name: secret-env-web
+        startupProbe: # checks if container is reachable accounting for startup delays
+          httpGet:
+            scheme: HTTP
+            path: /
+            port: http
+          initialDelaySeconds: 0
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe: # checks if container is reachable
+          httpGet:
+            scheme: HTTP
+            path: /
+            port: http
+          initialDelaySeconds: 0
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe: # checks if container is ready to receive traffic
+          httpGet:
+            scheme: HTTP
+            path: /
+            port: http
+          initialDelaySeconds: 0
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        resources: # only set values in environment-specific overrides
+          limits:
+            cpu: 0
+            memory: 0Mi
+          requests:
+            cpu: 0
+            memory: 0Mi
+        securityContext:
+          readOnlyRootFilesystem: false
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    service:
+      ClusterIP:
+        ports:
+          http:
+            protocol: TCP
+            port: 80 # k8s service port
+            targetPort: 8080 # internal container port
+
+env:
+  secret:
+    'public-env-db-postgresql':
+      secretName: public-env-db-postgresql
+    'public-env-db-redis':
+      secretName: public-env-db-redis
+    'public-env-platform-ui':
+      secretName: public-env-platform-ui
+    'public-env-sso':
+      secretName: public-env-sso
+    'public-env-web':
+      secretName: public-env-web
+    'secret-env-db-postgresql':
+      secretName: secret-env-db-postgresql
+    'secret-env-db-redis':
+      secretName: secret-env-db-redis
+    'secret-env-sso':
+      secretName: secret-env-sso
+    'secret-env-web':
+      secretName: secret-env-web
+
+volume:
+  emptyDir:
+    'node-logs':
+      config:
+        sizeLimit: 1Gi
+      volumeMount:
+        mountPath: '/home/node/.npm/_logs/'
+        readOnly: false
+  secret:
+    'tls.crt':
+      secretName: '{{ (index $.Values.secret.ingress.tls "{{ $.Values.ingress.domain }}").secretName | default $.Values.ingress.domain }}' # reference existing secret
+      config:
+        defaultMode: 444
+        optional: false
+      volumeMount:
+        mountPath: '/etc/pki/tls/certs/tls.crt'
+        subPath: 'tls.crt' # only mounts a single file if defined
+        readOnly: true
+    'tls.key':
+      secretName: '{{ (index $.Values.secret.ingress.tls "{{ $.Values.ingress.domain }}").secretName | default $.Values.ingress.domain }}' # reference existing secret
+      config:
+        defaultMode: 400
+        optional: false
+      volumeMount:
+        mountPath: '/etc/pki/tls/private/tls.key'
+        subPath: 'tls.key' # only mounts a single file if defined
+        readOnly: true
+    'secret-volume-ca-bundle-crt':
+      secretName: secret-volume-ca-bundle-crt # reference existing secret if data is not defined
+      config:
+        defaultMode: 444
+        optional: true
+      volumeMount:
+        mountPath: '/etc/ssl/certs/ca-bundle.crt'
+        subPath: 'ca-bundle.crt' # only mounts a single file if defined
+        readOnly: true
+
+# public values that are stored as a secret object for convenience, remove if using values from vault
+secret:
+  env:
+    secret:
+      'public-env-db-postgresql':
+        data:
+          PG_HOST: '{{ $.Release.Name }}-postgresql'
+          PG_PORT: '5432'
+          PG_UM_DB: 'user-management-db'
+
+          PG_APP_HOST: '{{ $.Release.Name }}-postgresql'
+          PG_APP_PORT: '5432'
+          PG_APP_DB: 'application-data-db'
+
+          # postgres dump file for backup/restore
+          PG_APP_DUMP_FILE: ''
+          # define which migration file to revert to
+          APP_MIGRATION_FILE: ''
+
+      'public-env-db-redis':
+        data:
+          REDIS_URL: 'redis://{{ $.Release.Name }}-redis-master'
+
+      'public-env-platform-ui':
+        data:
+          REACT_APP_NODE_ENV: 'nipr' # nipr, sipr or jwics
+          REACT_APP_ENCLAVE: 'advana' # advana or jupiter
+          REACT_APP_FAVICON_URL: 'favicon.ico'
+          REACT_APP_CLASSIFICATION_BANNER: 'UNDEFINED CLASSIFICATION'
+          REACT_APP_CLASSIFICATION_BANNER_COLOR: 'BLACK'
+          REACT_APP_CLASSIFICATION_BANNER_TEXT_COLOR: 'WHITE'
+          REACT_APP_COOKIE_DOMAIN: '.{{ $.Values.global.baseDomain }}'
+
+          REACT_APP_LOGIN_ROUTE: 'https://{{ $.Values.ingress.domain }}/login'
+          REACT_APP_CMS_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
+          REACT_APP_USER_TOKEN_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api/auth/token'
+
+          REACT_APP_BANNERS_ENDPOINT: 'https://admin.{{ $.Values.global.baseDomain }}/api/banners'
+          REACT_APP_MEGA_MENU_ENDPOINT: 'https://admin.{{ $.Values.global.baseDomain }}/api/menu/links'
+          REACT_APP_MEGA_MENU_BASE_DOMAIN: 'https://{{ $.Values.global.baseDomain }}'
+          REACT_APP_MEGA_MENU_HEADER_SORT_ORDER: 'Domains,Tools,Communities,Help,About'
+          REACT_APP_MEGA_MENU_HIGHLIGHT_COLOR: '#56B1AC'
+
+      'public-env-sso':
+        data:
+          DISABLE_SSO: 'false'
+          SAML_REALM: 'local-example-realm'
+          SAML_ISSUER: 'https://{{ $.Values.ingress.domain }}'
+          SAML_CALLBACK_URL: 'https://{{ $.Values.ingress.domain }}/login/callback'
+          SAML_ENTRYPOINT: 'https://sso.{{ $.Values.global.baseDomain }}/auth/realms/{{ (index $.Values.secret.env.secret "public-env-sso").data.SAML_REALM }}/protocol/saml'
+          COOKIE_DOMAIN: '{{ $.Values.global.baseDomain }}'
+
+      'public-env-web':
+        data:
+          VERSION: '{{ $.Chart.AppVersion }}'
+          EXPRESS_PORT: '8080'
+          SECURE_SESSION: 'true'
+          NODE_ENV: 'production'
+          TLS_CERT_CA_FILEPATH: '/etc/ssl/certs/ca-bundle.crt'
+          TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
+          TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
+
+          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://node-example.app.advana.cdao.us'
+          REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
+          REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
+
+  volume:
+    secret:
+      'secret-volume-ca-bundle-crt':
+        data:
+          'ca-bundle.crt': |
+            -----BEGIN CERTIFICATE-----
+            ca-bundle-pem
+            -----END CERTIFICATE-----
+
+###############################################################################
+## Dependency Values                                                         ##
+###############################################################################
+
+postgresql:
+  enabled: false
+  auth:
+    database: 'application-data-db'
+  tls:
+    certificatesSecret: 'existing-tls-secret'
+  primary:
+    resources:
+      limits:
+        memory: 0Mi
+        cpu: 0m
+      requests:
+        memory: 0Mi
+        cpu: 0m
+  readReplicas:
+    replicaCount: 1
+    resources:
+      limits:
+        memory: 0Mi
+        cpu: 0m
+      requests:
+        memory: 0Mi
+        cpu: 0m
+
+redis:
+  enabled: false
+  master:
+    count: 1
+    resources:
+      limits:
+        memory: 0Mi
+        cpu: 0m
+      requests:
+        memory: 0Mi
+        cpu: 0m
+  replica:
+    replicaCount: 1
+    resources:
+      limits:
+        memory: 0Mi
+        cpu: 0m
+      requests:
+        memory: 0Mi
+        cpu: 0m
+  tls:
+    existingSecret: 'existing-tls-secret'

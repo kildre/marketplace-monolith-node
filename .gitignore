@@ -1,0 +1,17 @@
+.next
+.vscode
+artifacts
+node_modules
+
+.DS_Store
+.env
+*.tsbuildinfo
+
+# *.js
+*.jsx
+!cypress.config.js
+!cypress/**/*.js
+!next.config.js
+!src/api/db/config/database.js
+!src/api/db/migrations/*.js
+secrets

@@ -1,0 +1,59 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+*.*rc text
+*.*ignore text
+
+dockerfile text
+.editorconfig text
+.env* text
+.gitattributes text
+.helmignore text
+.npmrc text eol=lf
+.pino-prettyrc text eol=lf linguist-language=JSON-with-Comments
+package.json text eol=lf
+package-lock.json text eol=lf -diff
+tsconfig.json linguist-language=JSON-with-Comments
+
+*.cjs text
+*.css text diff=css
+*.csv text eol=crlf
+*.htm text diff=html
+*.html text diff=html
+*.js text
+*.json text
+*.jsx text
+*.md text diff=markdown
+*.ts text
+*.tsx text
+*.txt text
+*.yaml text
+*.yml text
+
+# Graphics
+*.ai binary
+*.bmp binary
+*.eps binary
+*.gif binary
+*.gifv binary
+*.ico binary
+*.jng binary
+*.jp2 binary
+*.jpg binary
+*.jpeg binary
+*.jpx binary
+*.jxr binary
+*.pdf binary
+*.png binary
+*.psb binary
+*.psd binary
+# SVG treated as an asset (text) by default.
+# *.svg text
+# If you want to treat it as binary,
+# use the following line instead.
+*.svg binary
+*.svgz binary
+*.tif binary
+*.tiff binary
+*.wbmp binary
+*.webp binary

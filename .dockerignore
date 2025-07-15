@@ -1,0 +1,16 @@
+*.md
+
+# ignore all . files and dirs, except .husky and .npmrc
+# these are needed for building, but should be removed after the build stage
+.*
+!.husky
+!.npmrc
+# .sequelizerc is needed at runtime
+!.sequelizerc
+
+chart
+cypress*
+Dockerfile
+knip*
+nodemon*
+node_modules
