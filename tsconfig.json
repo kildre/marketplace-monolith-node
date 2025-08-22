@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"allowJs": true,
+		"allowJs": false,
 		"allowSyntheticDefaultImports": true,
 		"baseUrl": ".",
 		"declaration": false,
@@ -12,7 +12,8 @@
 		"lib": ["dom", "dom.iterable", "esnext"],
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
-		"noEmit": false,
+		"noEmit": true,
+		"allowImportingTsExtensions": true,
 		"noImplicitAny": false,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
