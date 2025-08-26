@@ -3,6 +3,7 @@ import 'dotenv/config';
 import redisClient from '@advana/redis-client';
 import configureApp from './config/appConfig';
 import { runPgQuery, runPgQueryWithVars } from './service/pgService';
+import { lbUpdate } from './service/liquibaseService';
 
 const run = (): void => {
     const app = express();
@@ -25,6 +26,7 @@ const run = (): void => {
 
     connectPg();
     connectRedis();
+    lbUpdate();
 };
 
 export default run;
