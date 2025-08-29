@@ -1,12 +1,6 @@
 include:
   - project: promotion/tekton-promotion-gitlab
     file: routes/dragon-full.yml
-    rules:
-      # Only include the review route/deployment config when:
-      # 1. It's an MR pipeline
-      # 2. It's a manual pipeline run where REVIEW_DEPLOYMENT = true
-      - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      - if: $CI_PIPELINE_SOURCE == "web" && $REVIEW_DEPLOYMENT == 'true'
 
 variables:
   HELM_CHART_DIR: "./chart"
