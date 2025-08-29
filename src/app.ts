@@ -4,8 +4,10 @@ import redisClient from '@advana/redis-client';
 import configureApp from './config/appConfig';
 import { runPgQuery, runPgQueryWithVars } from './service/pgService';
 import { lbUpdate } from './service/liquibaseService';
+import log from './service/loggingService';
 
 const run = (): void => {
+    log.info('starting Advana Marketplace Monolith ...');
     const app = express();
 
     configureApp(app);
