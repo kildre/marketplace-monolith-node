@@ -16,9 +16,3 @@ dependencies:
     condition: postgresql.enabled
     tags:
       - database
-  - name: redis
-    version: 20.13.4
-    repository: https://charts.bitnami.com/bitnami
-    condition: redis.enabled
-    tags:
-      - database
