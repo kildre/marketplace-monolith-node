@@ -7,8 +7,3 @@ variables:
   DOCKERFILE_PATH: "./Dockerfile"
   UPSTREAM_PROJECT_DIR: "."
   HELM_RELEASE_NAME: "advana-marketplace-monolith-node"
-  KANIKO_EXTRA_ARGS: >-
-    --build-arg=BASE_IMAGE=231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:22
-    --build-arg=APP_UID=65532
-    --build-arg=APP_GID=65532
-    --build-arg=APPLICATION_VERSION="$(echo -n $(sed -n 's/appVersion: "\(.*\)"/\1/p' "chart/Chart.yaml") && echo -n ".${CI_COMMIT_SHA}" | cut -c1-9)"
