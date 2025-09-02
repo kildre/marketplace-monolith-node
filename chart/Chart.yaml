@@ -2,7 +2,7 @@ apiVersion: v2
 name: advana-marketplace-monolith
 description: Template helm chart for a basic webapp
 type: application
-version: 2.2.0_100000
+version: 2.2.0.100000
 appVersion: 2.2.0
 dependencies:
   - name: advana-library
