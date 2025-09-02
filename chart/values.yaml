@@ -1,20 +1,20 @@
 ###############################################################################
 ## Global Values                                                             ##
 ###############################################################################
-namespace: advana-marketplace-monolith
+namespace: advana-marketplace-monolith-node
 global:
   awsRegion: us-gov-west-1
-  appName: advana-marketplace-monolith
+  appName: advana-marketplace-monolith-node
   baseDomain: app.advana.cdao.us
   registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
-  vaultPrefix: aws/csn/dev/advana-marketplace-monolith
+  vaultPrefix: aws/csn/dev/advana-marketplace-monolith-node
 
 ###############################################################################
 ## Default Values                                                            ##
 ###############################################################################
 
 image:
-  repository: tenant/images/advana-marketplace-monolith
+  repository: tenant/images/advana-marketplace-monolith-node
   pullPolicy: Always
 
 serviceAccount:
