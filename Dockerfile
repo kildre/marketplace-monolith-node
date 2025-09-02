@@ -43,7 +43,7 @@ FROM $BASE_IMAGE AS runtime
 
     # expose port for HTTP only: should match the helm chart's targetPort value
     # in deployment.web.service.ClusterIP.ports
-    EXPOSE 8080
+    EXPOSE 8081
 
     # start the app as a basic node.js app
     CMD [ "index.js" ]
