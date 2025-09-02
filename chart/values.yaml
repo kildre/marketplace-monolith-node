@@ -1,7 +1,7 @@
 ###############################################################################
 ## Global Values                                                             ##
 ###############################################################################
-
+namespace: advana-marketplace-monolith
 global:
   awsRegion: us-gov-west-1
   appName: advana-marketplace-monolith
