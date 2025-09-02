@@ -6,7 +6,7 @@ version: 2.2.0
 appVersion: 2.2.0
 dependencies:
   - name: advana-library
-    version: 2.0.3
+    version: 2.0.4
     repository: oci://231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/tenant
     tags:
       - library
