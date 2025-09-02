@@ -4,8 +4,6 @@ include:
 
 variables:
   HELM_CHART_DIR: "./chart"
-  HELM_UPGRADE_EXTRA_ARGS: >-
-    --set image.tag=${CI_COMMIT_SHA}
   DOCKERFILE_PATH: "./Dockerfile"
   UPSTREAM_PROJECT_DIR: "."
   KANIKO_EXTRA_ARGS: >-
