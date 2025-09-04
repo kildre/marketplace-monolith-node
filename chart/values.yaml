@@ -273,7 +273,7 @@ volume:
       secretName: '{{ (index $.Values.secret.ingress.tls "{{ $.Values.ingress.domain }}").secretName | default $.Values.ingress.domain }}' # reference existing secret
       config:
         defaultMode: 444
-        optional: false
+        optional: true
       volumeMount:
         mountPath: '/etc/pki/tls/certs/tls.crt'
         subPath: 'tls.crt' # only mounts a single file if defined
@@ -282,7 +282,7 @@ volume:
       secretName: '{{ (index $.Values.secret.ingress.tls "{{ $.Values.ingress.domain }}").secretName | default $.Values.ingress.domain }}' # reference existing secret
       config:
         defaultMode: 400
-        optional: false
+        optional: true
       volumeMount:
         mountPath: '/etc/pki/tls/private/tls.key'
         subPath: 'tls.key' # only mounts a single file if defined
