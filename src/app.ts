@@ -1,7 +1,6 @@
 import express from 'express';
 import 'dotenv/config';
 import configureApp from './config/appConfig';
-import { runPgQuery, runPgQueryWithVars } from './service/pgService';
 import log from './service/loggingService';
 import redisClient from '@advana/redis-client';
 import { assertDatabaseConnectionOk, closeDatabase } from './service/sequelize';
@@ -12,7 +11,7 @@ async function connectRedis() {
   const client = await redisClient();
   await client.set('key', 'Hello world from Redis!');
   const v = await client.get('key');
-  log.info({ redisEcho: v });
+  log.info(JSON.stringify({ redisEcho: v }));
   return client;
 }
 
@@ -47,7 +46,8 @@ async function shutdown(code = 0) {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-process.on('uncaughtException', (err) => {
-  log.error('Uncaught Exception:', err && err.stack ? err.stack : err);
+process.on('uncaughtException', (err: unknown) => {
+  const msg = err instanceof Error ? err.stack ?? err.message : String(err);
+  log.error(`Uncaught Exception: ${msg}`);
   shutdown(1);
 });

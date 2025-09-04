@@ -1,4 +1,4 @@
-import { Application } from "express";
+import { Application,  Request, Response } from "express";
 import morgan, { StreamOptions } from "morgan";
 import { isProd } from "src/service/expressProfileService";
 import log from "src/service/loggingService";
@@ -19,7 +19,8 @@ const configureMorgan = (app: Application) => {
         write: (msg: string) => log.http(msg.trim()),
     };
 
-    const skip = (req: any, res: any) => false;
+    //const skip = (req: any, res: any) => false;
+    const skip: morgan.Options<Request, Response>['skip'] = (_req, _res) => false;
 
     app.use(
         morgan(
