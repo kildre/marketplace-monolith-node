@@ -352,12 +352,12 @@ secret:
       'public-env-web':
         data:
           VERSION: '{{ $.Chart.AppVersion }}'
-          EXPRESS_PORT: '8080'
+          EXPRESS_PORT: '8081'
           SECURE_SESSION: 'true'
           NODE_ENV: 'production'
-          TLS_CERT_CA_FILEPATH: '/etc/ssl/certs/ca-bundle.crt'
-          TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
-          TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
+          #TLS_CERT_CA_FILEPATH: '/etc/ssl/certs/ca-bundle.crt'
+          #TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
+          #TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
 
           APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://advana-marketplace-monolith.app.advana.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
