@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:22"
+ARG BASE_IMAGE="231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:latest"
 
 # build stage should use -dev image to RUN commands
 # https://edu.chainguard.dev/chainguard/chainguard-images/overview/#why-minimal-container-images
@@ -30,11 +30,6 @@ FROM "${BASE_IMAGE}-dev" AS build
 FROM $BASE_IMAGE AS runtime
 
     # run the app as node
-    USER node
-
-    # Update busybox to fix security vulnerabilities
-    USER root
-    RUN apk update && apk upgrade busybox
     USER node
 
     # make sure we're running in production mode
