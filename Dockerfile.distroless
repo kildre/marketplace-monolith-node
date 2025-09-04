@@ -7,11 +7,6 @@ FROM "${BASE_IMAGE}-dev" AS build
     # build the app as node
     USER node
 
-    # Update busybox to fix security vulnerabilities
-    USER root
-    RUN apk update && apk upgrade busybox
-    USER node
-
     # copy the entire repo dir minus .dockerignore rules
     WORKDIR /app
     COPY --chown=node:node . .
@@ -35,6 +30,11 @@ FROM "${BASE_IMAGE}-dev" AS build
 FROM $BASE_IMAGE AS runtime
 
     # run the app as node
+    USER node
+
+    # Update busybox to fix security vulnerabilities
+    USER root
+    RUN apk update && apk upgrade busybox
     USER node
 
     # make sure we're running in production mode
