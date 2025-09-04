@@ -5,7 +5,7 @@ include:
 
 variables:
   HELM_CHART_DIR: "./chart"
-  DOCKERFILE_PATH: "./Dockerfile"
+  DOCKERFILE_PATH: "./Dockerfile.distroless"
   UPSTREAM_PROJECT_DIR: "."
   HELM_RELEASE_NAME: "advana-marketplace-monolith-node"
   DEPLOY_DEV: "true" # default dev account, 5536, mtt-dev
