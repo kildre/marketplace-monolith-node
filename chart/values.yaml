@@ -1,21 +1,21 @@
 ###############################################################################
 ## Global Values                                                             ##
 ###############################################################################
-
+namespace: advana-marketplace-monolith-node
 global:
   awsRegion: us-gov-west-1
-  appName: advana-marketplace-monolith
+  appName: advana-marketplace-monolith-node
   baseDomain: app.advana.cdao.us
   registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
-  vaultPrefix: aws/csn/dev/advana-marketplace-monolith
+  vaultPrefix: aws/csn/dev/advana-marketplace-monolith-node
 
 ###############################################################################
 ## Default Values                                                            ##
 ###############################################################################
 
 image:
-  repository: tenant/images/advana-marketplace-monolith
-  pullPolicy: IfNotPresent
+  repository: tenant/images/advana-marketplace-monolith-node
+  pullPolicy: Always
 
 serviceAccount:
   name: '{{ $.Release.Name }}'
@@ -25,7 +25,7 @@ serviceAccount:
 
 ingress:
   enabled: true
-  tls: true
+  tls: false
   domain: '{{ $.Values.global.appName }}.{{ $.Values.global.baseDomain }}'
   hosts:
     '{{ $.Values.ingress.domain }}':
@@ -237,7 +237,7 @@ deployment:
           http:
             protocol: TCP
             port: 80 # k8s service port
-            targetPort: 8080 # internal container port
+            targetPort: 8081 # internal container port
 
 env:
   secret:
@@ -399,26 +399,3 @@ postgresql:
       requests:
         memory: 0Mi
         cpu: 0m
-
-redis:
-  enabled: false
-  master:
-    count: 1
-    resources:
-      limits:
-        memory: 0Mi
-        cpu: 0m
-      requests:
-        memory: 0Mi
-        cpu: 0m
-  replica:
-    replicaCount: 1
-    resources:
-      limits:
-        memory: 0Mi
-        cpu: 0m
-      requests:
-        memory: 0Mi
-        cpu: 0m
-  tls:
-    existingSecret: 'existing-tls-secret'

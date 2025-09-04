@@ -1,52 +1,14 @@
 include:
   - project: promotion/tekton-promotion-gitlab
     file: routes/dragon-full.yml
-  - project: promotion/tekton-promotion-gitlab
-    file: routes/review.yml
-    rules:
-      # Only include the review route/deployment config when:
-      # 1. It's an MR pipeline
-      # 2. It's a manual pipeline run where REVIEW_DEPLOYMENT = true
-      - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      - if: $CI_PIPELINE_SOURCE == "web" && $REVIEW_DEPLOYMENT == 'true'
-
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "web" && $REVIEW_DEPLOYMENT == 'true'
-      variables:
-        HELM_RELEASE_NAME_SUFFIX: "${CI_COMMIT_REF_SLUG}-review"
-        NAMESPACE_SUFFIX: "${CI_COMMIT_REF_SLUG}-review"
-    - if: $CI_PIPELINE_SOURCE == "web"
-      # If it's an MR add these variables
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      variables:
-        # UPSTREAM_COMMIT_BRANCH will be empty on MR pipelines since CI_COMMIT_BRANCH is not set on MR pipelines. 
-        # Set to CI_MERGE_REQUEST_SOURCE_BRANCH_NAME instead.
-        UPSTREAM_COMMIT_BRANCH: "${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}"
-        HELM_RELEASE_NAME_SUFFIX: "${CI_MERGE_REQUEST_IID}-review"
-        NAMESPACE_SUFFIX: "${CI_MERGE_REQUEST_IID}-review"
-      # Don't run branch pipelines if there's an open merge request
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
-      when: never
-      # Run branch pipelines
-    - if: $CI_COMMIT_BRANCH
-      # Run pipelines on tag push
-    - if: $CI_COMMIT_TAG
+    # file: routes/terraform-only.yml
 
 variables:
-  REVIEW_DEPLOYMENT:
-    description: "Flag to trigger review deployment in manual pipeline runs."
-    value: "false"
-    options:
-      - "true"
-      - "false"
   HELM_CHART_DIR: "./chart"
-  HELM_UPGRADE_EXTRA_ARGS: >-
-    --set image.tag=${CI_COMMIT_SHA}
   DOCKERFILE_PATH: "./Dockerfile"
   UPSTREAM_PROJECT_DIR: "."
-  KANIKO_EXTRA_ARGS: >-
-    --build-arg=BASE_IMAGE=231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:22
-    --build-arg=APP_UID=65532
-    --build-arg=APP_GID=65532
-    --build-arg=APPLICATION_VERSION="$(echo -n $(sed -n 's/appVersion: "\(.*\)"/\1/p' "chart/Chart.yaml") && echo -n ".${CI_COMMIT_SHA}" | cut -c1-9)"
+  HELM_RELEASE_NAME: "advana-marketplace-monolith-node"
+  DEPLOY_DEV: "true" # default dev account, 5536, mtt-dev
+  #DEPLOY_TEST: "false" # lovely bee
+  #TF_VARS_FILE: "dev.terraform.tfvars"
+  AUTO_APPLY: "true" # default to auto apply

@@ -1,5 +1,5 @@
 apiVersion: v2
-name: advana-marketplace-monolith
+name: advana-marketplace-monolith-node
 description: Template helm chart for a basic webapp
 type: application
 version: 2.2.0
@@ -14,11 +14,5 @@ dependencies:
     version: 15.5.38
     repository: https://charts.bitnami.com/bitnami
     condition: postgresql.enabled
-    tags:
-      - database
-  - name: redis
-    version: 20.13.4
-    repository: https://charts.bitnami.com/bitnami
-    condition: redis.enabled
     tags:
       - database
