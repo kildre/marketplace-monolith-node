@@ -9,6 +9,6 @@ variables:
   UPSTREAM_PROJECT_DIR: "."
   HELM_RELEASE_NAME: "advana-marketplace-monolith-node"
   DEPLOY_DEV: "true" # default dev account, 5536, mtt-dev
-  DEPLOY_TEST: "false" # lovely bee
-  TF_VARS_FILE: "dev.terraform.tfvars"
+  #DEPLOY_TEST: "false" # lovely bee
+  #TF_VARS_FILE: "dev.terraform.tfvars"
   AUTO_APPLY: "true" # default to auto apply
