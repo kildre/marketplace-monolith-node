@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:latest"
+ARG BASE_IMAGE="231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:22"
 
 # build stage should use -dev image to RUN commands
 # https://edu.chainguard.dev/chainguard/chainguard-images/overview/#why-minimal-container-images
