@@ -58,8 +58,7 @@ module "marketplace_db" {
 
   allocated_storage = 20
 
-  storage_type = "gp2"
-  iops         = null
+  storage_type = "gp3"
 
   deletion_protection = true
   apply_immediately   = true
