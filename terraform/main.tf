@@ -56,7 +56,7 @@ module "marketplace_db" {
   instance_class = "db.m5.large"
   instance_count = 1
 
-  allocated_storage = 40
+  allocated_storage = 100
 
   storage_type = "gp3"
   iops         = 3000
