@@ -45,6 +45,7 @@ module "marketplace_db" {
 
   engine_version = "16.8"
 
+  master_username = "marketplace_admin"
   master_password = random_password.master_password.result
 
   vpc_id  = data.aws_vpc.tenant.id
