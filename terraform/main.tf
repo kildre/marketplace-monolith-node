@@ -39,7 +39,7 @@ resource "random_password" "master_password" {
 
 module "marketplace_db" {
 
-  source = "git::https://code.cdao.us/platform/rds-postgres/aws"
+  source = "git::https://code.cdao.us/platform/shared-iac/terraform-aws-rds-postgres"
 
   name = "marketplace-postgres"
 
