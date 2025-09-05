@@ -24,7 +24,7 @@ serviceAccount:
 
 ingress:
   gateways:  # set to use gateways instead of ingress
-    - istio-system/public
+    - istio-gateway/public
 
 deployment:
   web:
