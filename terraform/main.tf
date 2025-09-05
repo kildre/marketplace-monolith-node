@@ -37,12 +37,12 @@ resource "random_password" "master_password" {
   special = false
 }
 
-module "screen_db" {
+module "marketplace_db" {
 
   source  = "code.cdao.us/platform/rds-postgres/aws"
   version = "0.1.23"
 
-  name = "screen-next-postgres"
+  name = "marketplace-postgres"
 
   engine_version = "16.8"
 
@@ -65,14 +65,14 @@ module "screen_db" {
   apply_immediately   = true
 }
 
-output "screen_db_intance_address" {
-  value = module.screen_db.instance_address
+output "marketplace_db_intance_address" {
+  value = module.marketplace_db.instance_address
 }
 
-output "screen_db_master_username" {
-  value = module.screen_db.instance_username
+output "marketplace_db_master_username" {
+  value = module.marketplace_db.instance_username
 }
 
-output "screen_db_master_password" {
-  value = module.screen_db.instance_password
+output "marketplace_db_master_password" {
+  value = module.marketplace_db.instance_password
 }
