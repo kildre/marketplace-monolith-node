@@ -1,0 +1,30 @@
+#ARG BASE_IMAGE=node:20-slim
+#FROM ${BASE_IMAGE} AS build
+ARG BASE_IMAGE="231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:24"
+
+# build stage should use -dev image to RUN commands
+# https://edu.chainguard.dev/chainguard/chainguard-images/overview/#why-minimal-container-images
+FROM "${BASE_IMAGE}-dev" AS build
+
+ENV NODE_ENV=development
+USER node
+WORKDIR /app
+
+COPY --chown=node:node package*.json ./
+RUN npm ci --prefer-offline
+COPY --chown=node:node . .
+RUN npm run build && npm prune --omit=dev
+# Debug if needed:
+# RUN echo "=== BUILD ARTIFACTS ===" && ls -R dist
+
+FROM ${BASE_IMAGE} AS runtime
+ENV NODE_ENV=production
+USER node
+WORKDIR /app
+
+COPY --chown=node:node --from=build /app/package*.json ./
+COPY --chown=node:node --from=build /app/node_modules ./node_modules
+COPY --chown=node:node --from=build /app/dist ./dist
+
+EXPOSE 8082
+CMD ["node", "dist/index.js"]

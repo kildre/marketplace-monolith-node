@@ -1,4 +1,4 @@
-import run from './src/app.ts' ;
+import run from './src/app' ;
 
 console.log('ENTRY', { pid: process.pid, ts: new Date().toISOString() });
 
