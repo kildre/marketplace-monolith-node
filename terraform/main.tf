@@ -39,8 +39,7 @@ resource "random_password" "master_password" {
 
 module "marketplace_db" {
 
-  source  = "code.cdao.us/platform/rds-postgres/aws"
-  version = "0.1.23"
+  source  = "git::https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/group/terraform-modules.git//path/to/module?ref=v1.0.0"
 
   name = "marketplace-postgres"
 
