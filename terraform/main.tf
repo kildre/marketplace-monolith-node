@@ -74,4 +74,5 @@ output "marketplace_db_master_username" {
 
 output "marketplace_db_master_password" {
   value = module.marketplace_db.instance_password
+  sensitive = true
 }

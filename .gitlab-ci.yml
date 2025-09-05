@@ -11,4 +11,4 @@ variables:
   DEPLOY_DEV: "true" # default dev account, 5536, mtt-dev
   DEPLOY_TEST: "false" # lovely bee
   TF_VARS_FILE: "configs/il2-sartorial.tfvars"
-  AUTO_APPLY: "true" # default to auto apply
+  AUTO_APPLY: "false" # default to auto apply
