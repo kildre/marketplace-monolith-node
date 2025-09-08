@@ -1,5 +1,5 @@
 import { Application } from "express";
-import rootRoutes from '../routes/rootRoutes';
+import rootRoutes from '../web/routes/rootRoutes';
 
 const configureRoutes = (app: Application) => {
     app.use('', rootRoutes);
