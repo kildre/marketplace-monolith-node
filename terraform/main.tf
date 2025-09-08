@@ -53,7 +53,7 @@ module "marketplace_db" {
 
   ingress_cidr_blocks = local.subnet_cidr_blocks
 
-  instance_class = "db.t3.micro"
+  instance_class = "db.m5.large"
   instance_count = 1
 
   allocated_storage = 100
