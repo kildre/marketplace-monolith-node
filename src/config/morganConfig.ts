@@ -1,7 +1,7 @@
 import { Application,  Request, Response } from "express";
 import morgan, { StreamOptions } from "morgan";
-import { isProd } from "src/service/expressProfileService";
-import log from "src/service/loggingService";
+import { isProd } from "../service/expressProfileService";
+import log from "../service/loggingService";
 
 
 const getMorganFormat = () => {

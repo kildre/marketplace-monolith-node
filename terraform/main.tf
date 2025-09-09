@@ -37,15 +37,15 @@ resource "random_password" "master_password" {
   special = false
 }
 
-module "screen_db" {
+module "marketplace_db" {
 
-  source  = "code.cdao.us/platform/rds-postgres/aws"
-  version = "0.1.23"
+  source = "git::https://code.cdao.us/platform/shared-iac/terraform-aws-rds-postgres"
 
-  name = "screen-next-postgres"
+  name = "marketplace-postgres"
 
   engine_version = "16.8"
 
+  master_username = "marketplace_admin"
   master_password = random_password.master_password.result
 
   vpc_id  = data.aws_vpc.tenant.id
@@ -56,23 +56,23 @@ module "screen_db" {
   instance_class = "db.m5.large"
   instance_count = 1
 
-  allocated_storage = 40
+  allocated_storage = 100
 
   storage_type = "gp3"
-  iops         = 3000
 
   deletion_protection = true
   apply_immediately   = true
 }
 
-output "screen_db_intance_address" {
-  value = module.screen_db.instance_address
+output "marketplace_db_intance_address" {
+  value = module.marketplace_db.instance_address
 }
 
-output "screen_db_master_username" {
-  value = module.screen_db.instance_username
+output "marketplace_db_master_username" {
+  value = module.marketplace_db.instance_username
 }
 
-output "screen_db_master_password" {
-  value = module.screen_db.instance_password
+output "marketplace_db_master_password" {
+  value = module.marketplace_db.instance_password
+  sensitive = true
 }

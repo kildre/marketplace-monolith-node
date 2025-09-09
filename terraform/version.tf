@@ -13,7 +13,7 @@ provider "aws" {
   region = "us-gov-west-1"
   default_tags {
     tags = {
-      "Repo"        = "tf_screen-next"
+      "Repo"        = "advana-marketplace-monolith-node"
       "Provisioner" = "Terraform"
     }
   }

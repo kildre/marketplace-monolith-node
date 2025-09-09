@@ -29,7 +29,7 @@ const configureApp = async (app: Application) => {
 
   // graceful shutdown
   const shutdown = async () => {
-    const { sequelize } = await import('./sequelizeConfig.ts');
+    const { sequelize } = await import('./sequelizeConfig');
     await sequelize.close();
     process.exit(0);
   };

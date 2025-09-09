@@ -5,6 +5,18 @@ networks:
     driver: bridge
 
 services:
+  app:
+    container_name: advana-marketplace-monolith-node
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    restart: always
+    environment:
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8082:8082"
+    networks:
+      - app-network
   postgres:
     container_name: postgres
     image: postgres
