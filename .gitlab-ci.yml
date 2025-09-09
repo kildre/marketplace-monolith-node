@@ -1,7 +1,7 @@
 include:
   - project: promotion/tekton-promotion-gitlab
-    # file: routes/dragon-full.yml
-    file: routes/terraform-only.yml
+    file: routes/dragon-full.yml
+    # file: routes/terraform-only.yml
 
 variables:
   HELM_CHART_DIR: "./chart"
