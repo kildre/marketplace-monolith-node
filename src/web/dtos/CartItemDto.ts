@@ -1,9 +1,8 @@
-import autogen, { Builder, Getter, Value, Data, AllArgsConstructor, Setter } from "@bollo-aggrey/ts-autogen";
-import { IsInt, IsNotEmpty, IsString } from "class-validator";
+import autogen, { Builder, Getter, Value } from "@bollo-aggrey/ts-autogen";
+import { IsInt, IsNotEmpty, IsString, validateOrReject } from "class-validator";
 
 @Value()
 @Builder()
-//@AllArgsConstructor()
 class RawCartItemDto {
 
     @IsString()
@@ -18,4 +17,23 @@ class RawCartItemDto {
 }
 
 const CartItemDto = autogen(RawCartItemDto);
+
+const originalBuilderMethod = CartItemDto.builder;
+
+CartItemDto.builder = () => {
+    console.log('custom builder ...');
+    const builder = originalBuilderMethod();
+
+    const originalBuildMethod = builder.build;
+
+    builder.build = async () => {
+        const dto = originalBuildMethod();
+        console.log('validating ...');
+        await validateOrReject(dto);
+        return dto;
+    }
+
+    return builder;
+}
+
 export default CartItemDto;

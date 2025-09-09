@@ -8,10 +8,9 @@ import configureSwagger from './swaggerConfig';
 import configureMorgan from './morganConfig';
 
 import { initDb } from '../models'; // ⬅️ add
+import { appHost, appPort } from 'src/config/services/middlewareConfigService';
 
 const configureApp = async (app: Application) => {
-  const port = Number(process.env.PORT) || 8082;
-
   configureMorgan(app);
   app.use(express.static(path.join(__dirname, 'public')));
 
@@ -23,8 +22,8 @@ const configureApp = async (app: Application) => {
   configureActuator(app);
   configureSwagger(app);
 
-  app.listen(port, () => {
-    console.log(`App listening at http://localhost:${port}`);
+  app.listen(appPort, appHost, () => {
+    console.log(`App listening at http://${appHost}:${appPort}`);
   });
 
   // graceful shutdown

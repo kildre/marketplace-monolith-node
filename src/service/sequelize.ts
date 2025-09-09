@@ -1,17 +1,18 @@
 import { Sequelize } from 'sequelize';
+import { rdbmsDatabase, rdbmsDriver, rdbmsHost, rdbmsPassword, rdbmsPort, rdbmsUser } from 'src/config/services/rdbmsConfigService';
 
 // Use require because config/config.js is CommonJS
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 
 
 export const sequelize = new Sequelize(
-  process.env.PG_DATABASE || 'marketplace_db',
-  process.env.PG_USER || 'postgres',
-  process.env.PG_PASSWORD || 'postgres',
+  rdbmsDatabase,
+  rdbmsUser,
+  rdbmsPassword,
   {
-    host: process.env.PG_HOST || 'localhost',
-    port: Number(process.env.PG_PORT) || 5432,
-    dialect: (process.env.DB_DIALECT as any) || 'postgres',
+    host: rdbmsHost,
+    port: rdbmsPort,
+    dialect: rdbmsDriver as any,
     logging: false,
   }
 );

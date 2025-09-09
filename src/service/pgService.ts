@@ -1,5 +1,6 @@
 import { Client } from 'pg';
 import { getCert } from "./securityService";
+import { rdbmsDatabase, rdbmsHost, rdbmsPassword, rdbmsPort, rdbmsUser } from 'src/config/services/rdbmsConfigService';
 
 
 const getPgClient = () => {
@@ -17,11 +18,11 @@ const getPgClient = () => {
     }
 
     return new Client({
-            user: process.env.PG_USER,
-            password: process.env.PG_PASSWORD,
-            host: process.env.PG_HOST,
-            port: process.env.PG_PORT,
-            database: process.env.PG_DATABASE,
+            user: rdbmsUser,
+            password: rdbmsPassword,
+            host: rdbmsHost,
+            port: rdbmsPort,
+            database: rdbmsDatabase,
             ...sslConfig,
         });
 };

@@ -1,6 +1,6 @@
 import { Application,  Request, Response } from "express";
 import morgan, { StreamOptions } from "morgan";
-import { isProd } from "src/service/expressProfileService";
+import { isProd } from "src/config/services/expressProfileService";
 import log from "src/service/loggingService";
 
 
