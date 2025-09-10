@@ -1,5 +1,4 @@
-import { ValidationError } from "class-validator";
-import { buildValidated } from "src/service/validatorService";
+import ConstraintError from "src/domain/errors/ConstraintError";
 import CartItemDto from "src/web/dtos/CartItemDto";
 
 describe('CartItemDto', () => {
@@ -8,10 +7,10 @@ describe('CartItemDto', () => {
         const expectedName = "expectedName";
         const expectedQuantity = 2;
 
-        const dto = await buildValidated<typeof CartItemDto>( CartItemDto.builder().name(expectedName).quantity(expectedQuantity));
+        const dto = new CartItemDto({name: expectedName, quantity: expectedQuantity});
 
-        expect(dto.getName()).toEqual(expectedName);
-        expect(dto.getQuantity()).toEqual(expectedQuantity);
+        expect(dto.name).toEqual(expectedName);
+        expect(dto.quantity).toEqual(expectedQuantity);
 
     });
 
@@ -21,12 +20,17 @@ describe('CartItemDto', () => {
         const expectedQuantity = 2;
 
         try {
-            await buildValidated<typeof CartItemDto>(CartItemDto.builder().name(expectedName).quantity(expectedQuantity));
+            new CartItemDto({name: expectedName, quantity: expectedQuantity});
             fail('Expected Validation error was not thrown.');
         } catch (e: any) {
-            expect(e).toHaveLength(1);
-            expect(Object.keys(e[0].constraints)).toHaveLength(1);
-            expect(e[0].constraints.isNotEmpty).toBe('name should not be empty');
+
+            expect(e instanceof ConstraintError).toBe(true);
+
+            const cause = e.cause;
+
+            expect(cause).toHaveLength(1);
+            expect(Object.keys(cause[0].constraints)).toHaveLength(1);
+            expect(cause[0].constraints.isNotEmpty).toBe('name should not be empty');
         }
 
     });

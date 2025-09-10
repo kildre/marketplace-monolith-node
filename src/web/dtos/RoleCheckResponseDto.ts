@@ -1,31 +1,30 @@
-import { IsInt, IsNotEmpty, IsString, validateSync } from "class-validator";
+import autogen, { Builder, Getter, Value } from "@bollo-aggrey/ts-autogen";
+import { IsString, validateSync } from "class-validator";
 import ConstraintError from "src/domain/errors/ConstraintError";
 
 
 interface PropsI {
-    name: string;
-    quantity: number;
+    hasRole?: Boolean | null;
+    errMsg?: string;
 }
 
 class Props {
 
-    @IsString()
-    @IsNotEmpty()
-    name!: string;
+    hasRole: Boolean | null = null;
 
-    @IsInt()
-    quantity!: number;
+    @IsString()
+    errMsg: string = '';
 
     constructor(data: PropsI) {
         Object.assign(this, data);
     }
 }
 
-export default class CartItemDto {
+export default class RoleCheckResponseDto {
 
-    public name!: string;
-    public quantity!: number;
-
+    public hasRole!: Boolean | null;
+    public errMsg!: string;
+    
     constructor(data: PropsI) {
         const props = new Props(data)
         const errors = validateSync(new Props(data));
@@ -35,8 +34,8 @@ export default class CartItemDto {
         }
 
         // Since this is the final object, it is critical that only the desired props are set
-        this.name = props.name;
-        this.quantity = props.quantity;
+        this.hasRole = props.hasRole;
+        this.errMsg = props.errMsg;
     }
 
 }

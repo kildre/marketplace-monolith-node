@@ -1,33 +1,27 @@
-import { IsInt, IsNotEmpty, IsString, validateSync } from "class-validator";
+import { IsNotEmpty, IsString, validateSync } from "class-validator";
 import ConstraintError from "src/domain/errors/ConstraintError";
 
-
 interface PropsI {
-    name: string;
-    quantity: number;
+    userEmail: string;
 }
 
 class Props {
 
     @IsString()
     @IsNotEmpty()
-    name!: string;
-
-    @IsInt()
-    quantity!: number;
+    userEmail!: string;
 
     constructor(data: PropsI) {
         Object.assign(this, data);
     }
 }
 
-export default class CartItemDto {
-
-    public name!: string;
-    public quantity!: number;
+export default class RoleCheckRequestDto {
+    
+    public userEmail!: string;
 
     constructor(data: PropsI) {
-        const props = new Props(data)
+        const props = new Props(data);
         const errors = validateSync(new Props(data));
 
         if (errors.length > 0) {
@@ -35,8 +29,7 @@ export default class CartItemDto {
         }
 
         // Since this is the final object, it is critical that only the desired props are set
-        this.name = props.name;
-        this.quantity = props.quantity;
+        this.userEmail = props.userEmail;
     }
 
 }
