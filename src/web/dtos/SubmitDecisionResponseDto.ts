@@ -1,36 +1,35 @@
+// Converted from Java: SubmitDecisionResponseDto.java
 import { IsString, validateSync } from "class-validator";
 import ConstraintError from "src/domain/errors/ConstraintError";
 
 interface PropsI {
-  hasRole?: Boolean | null;
-  errMsg?: string;
+  decisionNumber: string;
+  errMsg: string;
 }
 
 class Props {
-  hasRole: Boolean | null = null;
+  @IsString()
+  decisionNumber!: string;
 
   @IsString()
-  errMsg: string = "";
+  errMsg!: string;
 
   constructor(data: PropsI) {
     Object.assign(this, data);
   }
 }
 
-export default class RoleCheckResponseDto {
-  public readonly hasRole!: Boolean | null;
+export default class SubmitDecisionResponseDto {
+  public readonly decisionNumber!: string;
   public readonly errMsg!: string;
 
   constructor(data: PropsI) {
     const props = new Props(data);
     const errors = validateSync(props);
-
     if (errors.length > 0) {
       throw new ConstraintError(errors);
     }
-
-    // Since this is the final object, it is critical that only the desired props are set
-    this.hasRole = props.hasRole;
+    this.decisionNumber = props.decisionNumber;
     this.errMsg = props.errMsg;
   }
 }
