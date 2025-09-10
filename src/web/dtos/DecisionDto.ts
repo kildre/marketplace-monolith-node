@@ -1,4 +1,10 @@
-import { IsInt, IsNotEmpty, IsString, validateSync } from "class-validator";
+import {
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  IsDate,
+  validateSync,
+} from "class-validator";
 import ConstraintError from "src/domain/errors/ConstraintError";
 
 interface PropsI {
@@ -26,11 +32,11 @@ class Props {
   @IsNotEmpty()
   comments!: string;
 
-  @IsString()
+  @IsDate()
   @IsNotEmpty()
   createdAt!: Date;
 
-  @IsString()
+  @IsDate()
   @IsNotEmpty()
   updatedAt!: Date;
 
