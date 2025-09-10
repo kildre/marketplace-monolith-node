@@ -1,0 +1,33 @@
+import "reflect-metadata";
+import ConstraintError from "src/domain/errors/ConstraintError";
+import SubmitRequestRequestDto from "src/web/dtos/SubmitRequestRequestDto";
+
+describe("SubmitRequestRequestDto", () => {
+  const validData = {
+    requestNumber: "REQ-1",
+    requestorEmail: "user@example.com",
+    designation: "Manager",
+    agency: "AgencyA",
+    organization: "OrgA",
+    otherOrganization: "OtherOrg",
+    pointOfContact: "POC",
+    email: "email@example.com",
+    phoneNumber: "1234567890",
+    estimatedRom: "1000",
+    requestedToolName: "ToolA",
+    description: "desc",
+    cartItems: [],
+  };
+
+  test("should create a valid SubmitRequestRequestDto", () => {
+    const dto = new SubmitRequestRequestDto(validData);
+    expect(dto.requestNumber).toBe(validData.requestNumber);
+    expect(dto.requestorEmail).toBe(validData.requestorEmail);
+    expect(dto.cartItems).toEqual([]);
+  });
+
+  test("should throw ConstraintError for non-string requestNumber", () => {
+    const data = { ...validData, requestNumber: 123 as any };
+    expect(() => new SubmitRequestRequestDto(data)).toThrow(ConstraintError);
+  });
+});
