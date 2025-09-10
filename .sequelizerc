@@ -1,8 +1,12 @@
+require('ts-node').register({
+  transpileOnly: true,
+  compilerOptions: { module: 'commonjs', moduleResolution: 'node' }
+});
 const path = require('path');
 
 module.exports = {
-  'config': path.resolve('config', 'config.js'),
-  'models-path': path.resolve('models'),
-  'seeders-path': path.resolve('seeders'),
-  'migrations-path': path.resolve('migrations')
+  'config': path.resolve('', 'src/config/sequelizeCLIConfig.cjs'),
+  'models-path': path.resolve('src/rdbms/entities'),
+  'seeders-path': path.resolve('src/rdbms/seeders'),
+  'migrations-path': path.resolve('src/rdbms/migrations')
 };

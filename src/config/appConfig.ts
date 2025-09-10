@@ -7,10 +7,12 @@ import configureRoutes from './routesConfig';
 import configureSwagger from './swaggerConfig';
 import configureMorgan from './morganConfig';
 
-import { initDb } from '../models'; // ⬅️ add
+import { initDb } from '../rdbms/entities'; // ⬅️ add
 import { appHost, appPort } from './services/middlewareConfigService';
 
 const configureApp = async (app: Application) => {
+  const port = Number(process.env.PORT) || 8082;
+
   configureMorgan(app);
   app.use(express.static(path.join(__dirname, 'public')));
 
@@ -28,7 +30,7 @@ const configureApp = async (app: Application) => {
 
   // graceful shutdown
   const shutdown = async () => {
-    const { sequelize } = await import('./sequelizeConfig.ts');
+    const { sequelize } = await import('../rdbms/entities');
     await sequelize.close();
     process.exit(0);
   };

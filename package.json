@@ -4,16 +4,17 @@
     "main": "index.js",
     "scripts": {
         "build": "tsc -p tsconfig.build.json",
-        "start": "node dist/index.js",
+        "start": "tsx index.js",
         "db:migrate": "sequelize db:migrate",
         "db:migrate:undo": "sequelize db:migrate:undo",
         "db:seed": "sequelize db:seed:all",
         "db:seed:undo": "sequelize db:seed:undo:all",
-        "test": "jest --testPathPatterns=\"src/test/.*\\.test\\.(ts|tsx)$\"",
+        "test": "jest --testPathPatterns=\"src/test/int/.*\\.test\\.(ts|tsx)$\"",
         "unitTest": "jest --testPathPatterns=\"src/test/unit/.*\\.test\\.(ts|tsx)$\""
     },
     "dependencies": {
         "@advana/redis-client": "4.4.0",
+        "@bollo-aggrey/ts-autogen": "^1.0.3",
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.2",
         "dotenv": "^16.4.7",
