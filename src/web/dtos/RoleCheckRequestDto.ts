@@ -18,7 +18,7 @@ class Props {
 
 export default class RoleCheckRequestDto {
     
-    public userEmail!: string;
+    public readonly userEmail!: string;
 
     constructor(data: PropsI) {
         const props = new Props(data);

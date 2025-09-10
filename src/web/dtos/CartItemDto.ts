@@ -23,8 +23,8 @@ class Props {
 
 export default class CartItemDto {
 
-    public name!: string;
-    public quantity!: number;
+    public readonly name!: string;
+    public readonly quantity!: number;
 
     constructor(data: PropsI) {
         const props = new Props(data)

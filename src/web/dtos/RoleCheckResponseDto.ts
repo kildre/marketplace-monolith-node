@@ -22,8 +22,8 @@ class Props {
 
 export default class RoleCheckResponseDto {
 
-    public hasRole!: Boolean | null;
-    public errMsg!: string;
+    public readonly hasRole!: Boolean | null;
+    public readonly errMsg!: string;
     
     constructor(data: PropsI) {
         const props = new Props(data)
