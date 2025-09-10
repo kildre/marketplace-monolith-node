@@ -3,8 +3,8 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "build": "tsc --build",
-        "start": "tsx index.js",
+        "build": "tsc -p tsconfig.build.json",
+        "start": "node dist/index.js",
         "db:migrate": "sequelize db:migrate",
         "db:migrate:undo": "sequelize db:migrate:undo",
         "db:seed": "sequelize db:seed:all",

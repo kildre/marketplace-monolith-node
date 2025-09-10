@@ -1,5 +1,5 @@
 import path from 'path';
-import log from 'src/service/loggingService';
+import log from '../../service/loggingService';
 
 export const renderIndex = (_req, res) => {
     log.info('Rendering index ...');
