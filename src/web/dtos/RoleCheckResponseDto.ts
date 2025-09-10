@@ -1,4 +1,3 @@
-import autogen, { Builder, Getter, Value } from "@bollo-aggrey/ts-autogen";
 import { IsString, validateSync } from "class-validator";
 import ConstraintError from "src/domain/errors/ConstraintError";
 

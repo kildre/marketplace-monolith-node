@@ -8,7 +8,7 @@ import configureSwagger from './swaggerConfig';
 import configureMorgan from './morganConfig';
 
 import { initDb } from '../models'; // ⬅️ add
-import { appHost, appPort } from 'src/config/services/middlewareConfigService';
+import { appHost, appPort } from './services/middlewareConfigService';
 
 const configureApp = async (app: Application) => {
   configureMorgan(app);
