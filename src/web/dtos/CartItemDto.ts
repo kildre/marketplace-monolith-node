@@ -28,7 +28,7 @@ export default class CartItemDto {
 
     constructor(data: PropsI) {
         const props = new Props(data)
-        const errors = validateSync(new Props(data));
+        const errors = validateSync(props);
 
         if (errors.length > 0) {
             throw new ConstraintError(errors);
