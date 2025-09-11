@@ -35,4 +35,48 @@ export class MarketplaceUserDAO extends BaseDAO<MarketplaceUser> {
     // @ts-ignore
     await user.$remove('roles', role, { transaction: tx });
   }
-}
+
+ async existsByEmailAndRoleId(
+    email: string,
+    roleId: number,
+    tx?: Transaction
+  ): Promise<boolean> {
+    const count = await MarketplaceUser.count({
+      where: { email },
+      include: [
+        {
+          model: Role,
+          as: 'roles',
+          where: { id: roleId },
+          through: { attributes: [] },
+          required: true,
+        },
+      ],
+      transaction: tx,
+    });
+    return count > 0;
+  }
+
+  // If you prefer a role code/slug instead of numeric id:
+  async existsByEmailAndRoleCode(
+    email: string,
+    roleCode: string,
+    tx?: Transaction
+  ): Promise<boolean> {
+    const count = await MarketplaceUser.count({
+      where: { email },
+      include: [
+        {
+          model: Role,
+          as: 'roles',
+          where: { code: roleCode },
+          through: { attributes: [] },
+          required: true,
+        },
+      ],
+      transaction: tx,
+    });
+    return count > 0;
+  }
+}  
+

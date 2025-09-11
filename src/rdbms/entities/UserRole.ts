@@ -7,7 +7,7 @@ export class UserRole extends Model {
         user_id: { type: DataTypes.INTEGER, allowNull: false },
         role_id: { type: DataTypes.INTEGER, allowNull: false },
       },
-      { sequelize, tableName: 'user_role', underscored: true, timestamps: false }
+      { sequelize, tableName: 'user_roles', underscored: true, timestamps: false }
     );
   }
   // no associate needed; used via through
