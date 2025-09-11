@@ -10,7 +10,8 @@
         "db:seed": "sequelize db:seed:all",
         "db:seed:undo": "sequelize db:seed:undo:all",
         "test": "jest --testPathPatterns=\"src/test/int/.*\\.test\\.(ts|tsx)$\"",
-        "unitTest": "jest --testPathPatterns=\"src/test/unit/.*\\.test\\.(ts|tsx)$\""
+        "unitTest": "jest --testPathPatterns=\"src/test/unit/.*\\.test\\.(ts|tsx)$\"",
+        "intTest": "jest --testPathPatterns=\"src/test/int/.*\\.test\\.(ts|tsx)$\""
     },
     "dependencies": {
         "@advana/redis-client": "4.4.0",
