@@ -1,16 +1,13 @@
-import { IsString, validateSync } from "class-validator";
+import { IsBoolean, IsString, validateSync } from "class-validator";
 import ConstraintError from "src/domain/errors/ConstraintError";
 
 interface PropsI {
-  hasRole?: Boolean | null;
-  errMsg?: string;
+  hasRole: boolean;
 }
 
 class Props {
-  hasRole: Boolean | null = null;
-
-  @IsString()
-  errMsg: string = "";
+  @IsBoolean()
+  hasRole!: boolean;
 
   constructor(data: PropsI) {
     Object.assign(this, data);
@@ -18,8 +15,7 @@ class Props {
 }
 
 export default class RoleCheckResponseDto {
-  public readonly hasRole!: Boolean | null;
-  public readonly errMsg!: string;
+  public readonly hasRole!: boolean;
 
   constructor(data: PropsI) {
     const props = new Props(data);
@@ -31,6 +27,5 @@ export default class RoleCheckResponseDto {
 
     // Since this is the final object, it is critical that only the desired props are set
     this.hasRole = props.hasRole;
-    this.errMsg = props.errMsg;
   }
 }
