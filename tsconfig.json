@@ -28,7 +28,9 @@
 
     "plugins": [{ "name": "next" }],
 
-    "types": ["node"]
+    "types": ["node"],
+
+    "outDir": "dist"
   },
   "include": [
     "next-env.d.ts",

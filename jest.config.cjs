@@ -6,21 +6,40 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
 
-  // Compile .ts/.tsx with ts-jest
+  // Compile .ts/.tsx with ts-jest and override just what's needed for tests
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.jest.json', useESM: false }],
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        // Inline tsconfig overrides for the test environment
+        tsconfig: {
+          module: 'CommonJS',
+          moduleResolution: 'Node',
+          types: ['jest', 'node'],
+          isolatedModules: false,   // let ts-jest do full type transforms
+          // Optional but often helpful in mixed ESM/CJS repos:
+          esModuleInterop: true
+        },
+        useESM: false
+        // diagnostics: true, // uncomment if you want detailed TS diagnostics in tests
+      }
+    ],
   },
 
-  // Only if you have TS path aliases
-  moduleNameMapper: pathsToModuleNameMapper(appTsconfig.compilerOptions?.paths || {}, {
-    prefix: '<rootDir>/',
-  }),
+  // Map TS path aliases from your main tsconfig
+  moduleNameMapper: pathsToModuleNameMapper(
+    appTsconfig.compilerOptions?.paths || {},
+    { prefix: '<rootDir>/' } // with your "baseUrl": ".", this resolves "src/*" -> "<rootDir>/src/*"
+  ),
 
-  // If you need to transpile a specific ESM package in node_modules
+  // If you need to transpile specific ESM packages in node_modules, list them here
   transformIgnorePatterns: ['/node_modules/(?!@bollo-aggrey/ts-autogen)'],
 
-  // (Optional) limit test roots; adjust if yours differ
+  // Limit test roots if you want (adjust to your layout)
   roots: ['<rootDir>/src/test'],
 
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+
+  // Optional: make Jest’s test file detection explicit
+  testMatch: ['**/?(*.)+(spec|test).[tj]s?(x)'],
 };
