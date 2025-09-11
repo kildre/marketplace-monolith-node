@@ -1,9 +1,9 @@
 import winston from "winston";
 import DailyRotateFile from 'winston-daily-rotate-file';
-import { isDev, isProd } from '../config/services/expressProfileService'
+import nodeEnvService from '../config/services/nodeEnvService'
 
 const getLogLevel = () => {
-    if (isDev()) {
+    if (nodeEnvService.isDev()) {
         return 'silly';
     } else {
         return 'http';
@@ -38,7 +38,7 @@ const createLogger = () => {
     const rejectionHandlers = [ rotatingTransport ] as any[];
 
 
-    if (!isProd()) {
+    if (!nodeEnvService.isProd()) {
         const consoleTransport = new winston.transports.Console({
             format: winston.format.cli()
         });

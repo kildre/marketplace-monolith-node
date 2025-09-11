@@ -1,11 +1,11 @@
 import { Application,  Request, Response } from "express";
 import morgan, { StreamOptions } from "morgan";
-import { isProd } from "../service/expressProfileService";
+import nodeEnvService from "./services/nodeEnvService";
 import log from "../service/loggingService";
 
 
 const getMorganFormat = () => {
-    if (isProd()) {
+    if (nodeEnvService.isProd()) {
         return 'combined';
     } else {
         return 'dev';
