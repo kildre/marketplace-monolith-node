@@ -1,4 +1,4 @@
-import { sequelize } from '../../config/sequelizeConfig';
+import { sequelize } from '../../config/sequelizeCLIConfig.cjs';
 import { Sequelize } from 'sequelize';
 
 import { MarketplaceUser } from './MarketplaceUser';
