@@ -7,7 +7,6 @@ describe("MarketplaceSummaryReport", () => {
     totalUsers: 10,
     totalUseCases: 5,
     totalOrders: 3,
-    errMsg: "",
   };
 
   test("should create a valid MarketplaceSummaryReport", () => {
@@ -15,7 +14,6 @@ describe("MarketplaceSummaryReport", () => {
     expect(dto.totalUsers).toBe(validData.totalUsers);
     expect(dto.totalUseCases).toBe(validData.totalUseCases);
     expect(dto.totalOrders).toBe(validData.totalOrders);
-    expect(dto.errMsg).toBe(validData.errMsg);
   });
 
   test("should throw ConstraintError for non-int totalUsers", () => {
@@ -23,8 +21,5 @@ describe("MarketplaceSummaryReport", () => {
     expect(() => new MarketplaceSummaryReport(data)).toThrow(ConstraintError);
   });
 
-  test("should throw ConstraintError for non-string errMsg", () => {
-    const data = { ...validData, errMsg: 123 as any };
-    expect(() => new MarketplaceSummaryReport(data)).toThrow(ConstraintError);
-  });
+  // removed errMsg property tests
 });

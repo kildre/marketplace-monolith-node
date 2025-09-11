@@ -1,4 +1,4 @@
-import { IsBoolean, IsString, validateSync } from "class-validator";
+import { IsBoolean, validateSync } from "class-validator";
 import ConstraintError from "src/domain/errors/ConstraintError";
 
 interface PropsI {
