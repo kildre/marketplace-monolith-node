@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { plainToInstance } from "class-transformer";
 import RoleCheckRequestDto from "../dtos/RoleCheckRequestDto";
 import endpointService from "../../service/userEndpointService";
 import log from "src/service/loggingService";
