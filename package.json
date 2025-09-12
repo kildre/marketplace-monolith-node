@@ -1,10 +1,9 @@
 {
   "name": "advana-marketplace-monolith",
-  "type": "module",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsup index.ts --format esm,cjs --dts",
     "start": "tsx index.ts",
     "db:migrate": "sequelize db:migrate",
     "db:migrate:undo": "sequelize db:migrate:undo",
@@ -16,7 +15,6 @@
   },
   "dependencies": {
     "@advana/redis-client": "4.4.0",
-    "@bollo-aggrey/ts-autogen": "^1.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "dotenv": "^16.4.7",
@@ -40,6 +38,7 @@
     "@babel/plugin-transform-class-static-block": "^7.28.3",
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-typescript": "^7.27.1",
+    "@swc/core": "^1.13.5",
     "@types/express-actuator": "^1.8.3",
     "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.10",
@@ -52,6 +51,7 @@
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsup": "^8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.5.4"
   }
