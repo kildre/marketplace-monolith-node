@@ -1,6 +1,6 @@
 import RoleCheckRequestDto from 'src/web/dtos/RoleCheckRequestDto';
 import RoleCheckResponseDto from 'src/web/dtos/RoleCheckResponseDto'; 
-import { RoleEnum } from 'src/rdbms/entities/RoleEnum';
+import { RoleEnum } from 'src/domain/enumeration/RoleEnum';
 import { MarketplaceUserDAO } from 'src/rdbms/dao/MarketplaceUserDAO';
 
 interface UserEndpointServiceI {
@@ -14,7 +14,7 @@ const isAuthorizedAdjudicator = async (
 ): Promise<RoleCheckResponseDto> => {
   const hasRole = await userDao.existsByEmailAndRoleId(
     request.userEmail,
-    RoleEnum.ADJUDICATOR
+    RoleEnum.ADJUDICATOR.id
   );
   return new RoleCheckResponseDto({ hasRole });
 };

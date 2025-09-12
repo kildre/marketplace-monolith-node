@@ -8,7 +8,7 @@ export class Product extends Model {
     Product.init(
       {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-        name: { type: DataTypes.STRING(128), allowNull: false },
+        name: {unique: true, type: DataTypes.STRING(128), allowNull: false },
       },
       { sequelize, tableName: 'product', underscored: true }
     );

@@ -6,7 +6,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     request_id: { type: DataTypes.INTEGER, allowNull: false },
     product_id: { type: DataTypes.INTEGER, allowNull: false },
-    quantity: { type: DataTypes.INTEGER, allowNull: true }, // set a default if you want: defaultValue: 1
+    quantity: { type: DataTypes.INTEGER, allowNull: false }, // set a default if you want: defaultValue: 1
   });
 
   // UNIQUE(product_id, request_id)
