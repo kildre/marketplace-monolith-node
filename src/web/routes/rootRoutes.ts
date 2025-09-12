@@ -1,5 +1,9 @@
-import express from 'express';
-import { renderIndex } from '../controllers/rootController';
+import express from "express";
+import { renderIndex } from "../controllers/rootController";
+import {
+  throwTestError,
+  throwConstraintError,
+} from "../controllers/errorTestController";
 
 const router = express.Router();
 
@@ -12,6 +16,10 @@ const router = express.Router();
  *       200:
  *         description: Returns the index.html file
  */
-router.get('/', renderIndex);
+
+router.get("/", renderIndex);
+// Test error routes
+router.get("/test-error", throwTestError);
+router.get("/test-constraint-error", throwConstraintError);
 
 export default router;
