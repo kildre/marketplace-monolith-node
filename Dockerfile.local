@@ -1,4 +1,15 @@
 ARG BASE_IMAGE=node:20-slim
+FROM ${BASE_IMAGE} AS cli
+ENV NODE_ENV=development
+WORKDIR /app
+# (root by default) -> no permission issues
+COPY package*.json ./
+RUN npm ci --prefer-offline            # installs devDependencies too
+COPY . .
+# If you want to run CLI as the 'node' user, make the tree writable and switch:
+RUN chown -R node:node /app
+USER node
+
 FROM ${BASE_IMAGE} AS build
 #ARG BASE_IMAGE="231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:24"
 

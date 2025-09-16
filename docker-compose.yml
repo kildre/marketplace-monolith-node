@@ -45,3 +45,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  # One-off container that runs migrations and exits
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+      target: cli                     # <-- IMPORTANT: has devDeps
+    working_dir: /app                 # <-- so .sequelizerc is used
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Your config reads this URL (it sets SEQUELIZE_URL internally)
+      SECRET_ENV_POSTGRESQL: postgres://postgres:password@postgres:5432/advana-marketplace-monolith-db
+      DIALECT: postgres
+      DB_DIALECT: postgres
+      NODE_ENV: development
+    command: ["npx","--yes","sequelize-cli","db:migrate"]  # <-- array form, no shell
+    networks: [app-network]
+    restart: "no"
