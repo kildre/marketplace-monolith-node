@@ -315,10 +315,10 @@ secret:
           PG_APP_DUMP_FILE: ''
           # define which migration file to revert to
           APP_MIGRATION_FILE: ''
-
-      'public-env-db-redis':
+      'secret-env-db-postgresql':
         data:
-          REDIS_URL: 'redis://{{ $.Release.Name }}-redis-master'
+          SECRET_ENV_POSTGRESQL: 'postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@marketplace-postgres.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/marketplace-postgres'
+          DIALECT: 'postgres'
 
       'public-env-platform-ui':
         data:
