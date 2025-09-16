@@ -53,7 +53,7 @@ podSecurityContext:
 
 job:
   'sequelize-migrate-{{ $.Release.Revision }}':
-    enabled: false
+    enabled: true
     restartPolicy: 'Never'
     ttlSecondsAfterFinished: 100
     initContainer:
@@ -174,8 +174,6 @@ deployment:
           - secretRef:
               name: public-env-db-postgresql
           - secretRef:
-              name: public-env-db-redis
-          - secretRef:
               name: public-env-platform-ui
           - secretRef:
               name: public-env-sso
@@ -184,15 +182,13 @@ deployment:
           - secretRef:
               name: secret-env-db-postgresql
           - secretRef:
-              name: secret-env-db-redis
-          - secretRef:
               name: secret-env-sso
           - secretRef:
               name: secret-env-web
         startupProbe: # checks if container is reachable accounting for startup delays
           httpGet:
             scheme: HTTP
-            path: /
+            path: /health
             port: http
           initialDelaySeconds: 0
           timeoutSeconds: 1
@@ -202,7 +198,7 @@ deployment:
         livenessProbe: # checks if container is reachable
           httpGet:
             scheme: HTTP
-            path: /
+            path: /health
             port: http
           initialDelaySeconds: 0
           timeoutSeconds: 1
@@ -212,7 +208,7 @@ deployment:
         readinessProbe: # checks if container is ready to receive traffic
           httpGet:
             scheme: HTTP
-            path: /
+            path: /health
             port: http
           initialDelaySeconds: 0
           timeoutSeconds: 1
@@ -243,8 +239,6 @@ env:
   secret:
     'public-env-db-postgresql':
       secretName: public-env-db-postgresql
-    'public-env-db-redis':
-      secretName: public-env-db-redis
     'public-env-platform-ui':
       secretName: public-env-platform-ui
     'public-env-sso':
@@ -253,8 +247,6 @@ env:
       secretName: public-env-web
     'secret-env-db-postgresql':
       secretName: secret-env-db-postgresql
-    'secret-env-db-redis':
-      secretName: secret-env-db-redis
     'secret-env-sso':
       secretName: secret-env-sso
     'secret-env-web':
