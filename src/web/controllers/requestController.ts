@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction } from "express";
-import log from "src/service/loggingService";
-import endpointService from "src/service/requestEndpointService";
+import log from "../../service/loggingService";
+import endpointService from "../../service/requestEndpointService";
 import ViewRequestsRequestDto from "../dtos/ViewRequestsRequestDto";
 
 

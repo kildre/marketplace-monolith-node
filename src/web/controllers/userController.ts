@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import RoleCheckRequestDto from "../dtos/RoleCheckRequestDto";
 import endpointService from "../../service/userEndpointService";
-import log from "src/service/loggingService";
+import log from "../../service/loggingService";
 
 
 interface UserControllerI {
