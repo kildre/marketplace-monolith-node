@@ -237,7 +237,7 @@ deployment:
           http:
             protocol: TCP
             port: 80 # k8s service port
-            targetPort: 8081 # internal container port
+            targetPort: 8082 # internal container port
 
 env:
   secret:
@@ -352,7 +352,7 @@ secret:
       'public-env-web':
         data:
           VERSION: '{{ $.Chart.AppVersion }}'
-          EXPRESS_PORT: '8081'
+          EXPRESS_PORT: '8082'
           SECURE_SESSION: 'true'
           NODE_ENV: 'production'
           #TLS_CERT_CA_FILEPATH: '/etc/ssl/certs/ca-bundle.crt'
