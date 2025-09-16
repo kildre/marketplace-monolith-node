@@ -8,10 +8,11 @@ const num = (v, d) => (v !== undefined && v !== '' ? Number(v) : d);
 const nonEmpty = (v) => (v && String(v).trim().length ? String(v).trim() : undefined);
 
 // ---------- env → connection ----------
-const DIALECT =
-  process.env.DB_DIALECT ||
-  process.env.DIALECT ||
-  'postgres';
+const RAW_DIALECT = (process.env.DB_DIALECT || process.env.DIALECT || 'postgres').toLowerCase();
+const DIALECT = RAW_DIALECT === 'sqlite3' ? 'sqlite' : RAW_DIALECT;
+if (RAW_DIALECT === 'sqlite3') {
+  console.warn('[sequelize] Normalized dialect "sqlite3" -> "sqlite"');
+}
 
 // Prefer URL if available (supports your secret key with hyphens)
 const URL =
@@ -114,6 +115,8 @@ function createSequelize(envName) {
 
   return new Sequelize(database, username, password, sequelizeOpts);
 }
+
+
 
 const sequelize = createSequelize();
 

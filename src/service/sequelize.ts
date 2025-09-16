@@ -1,21 +1,22 @@
 import { Sequelize } from 'sequelize';
-import { rdbmsDatabase, rdbmsDriver, rdbmsHost, rdbmsPassword, rdbmsPort, rdbmsUser } from 'src/config/services/rdbmsConfigService';
+import { sequelize } from '../config/sequelizeCLIConfig.cjs';
+//import { rdbmsDatabase, rdbmsDriver, rdbmsHost, rdbmsPassword, rdbmsPort, rdbmsUser } from 'src/config/services/rdbmsConfigService';
 
 // Use require because config/config.js is CommonJS
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 
 
-export const sequelize = new Sequelize(
-  rdbmsDatabase,
-  rdbmsUser,
-  rdbmsPassword,
-  {
-    host: rdbmsHost,
-    port: rdbmsPort,
-    dialect: rdbmsDriver as any,
-    logging: false,
-  }
-);
+//export const sequelize = new Sequelize(
+//  rdbmsDatabase,
+//  rdbmsUser,
+//  rdbmsPassword,
+//  {
+//    host: rdbmsHost,
+//    port: rdbmsPort,
+//    dialect: rdbmsDriver as any,
+//    logging: false,
+//  }
+//);
 
 
 export async function assertDatabaseConnectionOk() {

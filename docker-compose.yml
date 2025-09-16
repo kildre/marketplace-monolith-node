@@ -2,6 +2,9 @@ networks:
   app-network:
     driver: bridge
 
+volumes:
+  pgdata:
+
 services:
   app:
     container_name: advana-marketplace-monolith-node
@@ -10,7 +13,11 @@ services:
       dockerfile: Dockerfile.local
     restart: always
     environment:
-      - REDIS_URL=redis://redis:6379
+      # Prefer a single URL env
+      SECRET_ENV_POSTGRESQL: postgres://postgres:password@postgres:5432/advana-marketplace-monolith-db
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8082:8082"
     networks:

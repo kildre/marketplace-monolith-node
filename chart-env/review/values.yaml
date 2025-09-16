@@ -63,8 +63,6 @@ postgresql:
   readReplicas:
     persistence:
       enabled: false
-redis:
-  enabled: true
   #  architecture: standalone
   master:
     persistence:
@@ -87,9 +85,6 @@ secret:
         data:
           PG_HOST: "review-bitnami-pg"
           PG_DATABASE: "advana-marketplace-monolith-db"
-      "public-env-db-redis":
-        data:
-          REDIS_URL: "redis://{{ $.Release.Name }}-redis-master.{{ $.Release.Namespace }}.svc.cluster.local"
       "public-env-platform-ui":
         data:
           REACT_APP_NODE_ENV: "nipr" # nipr, sipr or jwics

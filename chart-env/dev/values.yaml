@@ -53,9 +53,6 @@ secret:
           PG_APP_HOST: "test"
           PG_APP_DB: "test"
 #end added for debugging
-      "public-env-db-redis":
-        data:
-          REDIS_URL: "rediss://darq-redis-rmkk02.serverless.usgw1.cache.amazonaws.com"
       "public-env-platform-ui":
         data:
           REACT_APP_NODE_ENV: "nipr" # nipr, sipr or jwics
