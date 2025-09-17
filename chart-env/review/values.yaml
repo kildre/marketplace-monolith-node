@@ -4,17 +4,17 @@
 
 global:
   awsRegion: us-gov-west-1
-  appName: '{{ $.Release.Name }}'
+  appName: advana-marketplace-monolith-node
   baseDomain: app.advana.cdao.us
-  registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
-  vaultPrefix: aws/csn/dev/advana-marketplace-monolith
+  registry: 231388672283.dkr.ecr.us-gov-west-1.amazonaws.com
+  vaultPrefix: aws/csn/dev/advana-marketplace-monolith-node
 
 ###############################################################################
 ## Environment Specific Public Values                                        ##
 ###############################################################################
 
 image:
-  repository: tenant/images/advana-marketplace-monolith
+  repository: tenant/images/advana-marketplace-monolith-node
   pullPolicy: IfNotPresent
   # tag: ""
 
