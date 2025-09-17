@@ -188,33 +188,33 @@ deployment:
         startupProbe: # checks if container is reachable accounting for startup delays
           httpGet:
             scheme: HTTP
-            path: /health
+            path: /
             port: http
-          initialDelaySeconds: 0
-          timeoutSeconds: 1
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
           periodSeconds: 10
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 12
         livenessProbe: # checks if container is reachable
           httpGet:
             scheme: HTTP
-            path: /health
+            path: /
             port: http
-          initialDelaySeconds: 0
-          timeoutSeconds: 1
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          periodSeconds: 30
           successThreshold: 1
           failureThreshold: 3
         readinessProbe: # checks if container is ready to receive traffic
           httpGet:
             scheme: HTTP
-            path: /health
+            path: /
             port: http
-          initialDelaySeconds: 0
-          timeoutSeconds: 1
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
           periodSeconds: 10
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 6
         resources: # only set values in environment-specific overrides
           limits:
             cpu: 0
