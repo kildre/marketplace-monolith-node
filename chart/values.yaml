@@ -169,10 +169,6 @@ deployment:
               name: public-env-web
           - secretRef:
               name: secret-env-db-postgresql
-          - secretRef:
-              name: secret-env-sso
-          - secretRef:
-              name: secret-env-web
         startupProbe: # checks if container is reachable accounting for startup delays
           httpGet:
             scheme: HTTP
@@ -235,10 +231,6 @@ env:
       secretName: public-env-web
     'secret-env-db-postgresql':
       secretName: secret-env-db-postgresql
-    'secret-env-sso':
-      secretName: secret-env-sso
-    'secret-env-web':
-      secretName: secret-env-web
 
 volume:
   emptyDir:
