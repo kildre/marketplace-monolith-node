@@ -15,9 +15,24 @@ export class MarketplaceOrder extends Model {
   static associate(sequelize: Sequelize) {
     const { MarketplaceUser, Status, OrderItem, Decision } = sequelize.models as any;
 
-    MarketplaceOrder.belongsTo(MarketplaceUser, { foreignKey: 'requestor_id', as: 'requestor' });
-    MarketplaceOrder.belongsTo(Status,          { foreignKey: 'status_id',    as: 'status' });
-    MarketplaceOrder.hasMany(OrderItem,         { foreignKey: 'order_id',     as: 'items'  });
-    MarketplaceOrder.hasMany(Decision,          { foreignKey: 'order_id',     as: 'decisions' });
+    MarketplaceOrder.belongsTo(MarketplaceUser, {
+      as: 'requestor',
+      foreignKey: { name: 'requestor_id', allowNull: false },
+    });
+
+    MarketplaceOrder.belongsTo(Status, {
+      as: 'status',
+      foreignKey: { name: 'status_id', allowNull: false },
+    });
+
+    MarketplaceOrder.hasMany(OrderItem, {
+      as: 'items',
+      foreignKey: { name: 'order_id', allowNull: false },
+    });
+
+    MarketplaceOrder.hasMany(Decision, {
+      as: 'decisions',
+      foreignKey: { name: 'order_id', allowNull: false },
+    });
   }
 }
