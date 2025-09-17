@@ -16,6 +16,7 @@ global:
 image:
   repository: tenant/images/advana-marketplace-monolith-node
   pullPolicy: Always
+  
 
 serviceAccount:
   name: '{{ $.Release.Name }}'
@@ -331,7 +332,7 @@ secret:
           #TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
           #TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
 
-          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://advana-marketplace-monolith.app.advana.cdao.us'
+          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://advana-marketplace-monolith-node.app.advana.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
           REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
 
