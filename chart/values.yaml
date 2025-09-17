@@ -5,7 +5,7 @@ namespace: advana-marketplace-monolith-node
 global:
   awsRegion: us-gov-west-1
   appName: advana-marketplace-monolith-node
-  baseDomain: app.advana.cdao.us
+  baseDomain: dev.mtt.cdao.us
   registry: 231388672283.dkr.ecr.us-gov-west-1.amazonaws.com
   vaultPrefix: aws/csn/dev/advana-marketplace-monolith-node
 
