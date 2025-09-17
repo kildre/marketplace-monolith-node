@@ -173,7 +173,7 @@ deployment:
         startupProbe: # checks if container is reachable accounting for startup delays
           httpGet:
             scheme: HTTP
-            path: /
+            path: /actuator/health
             port: http
           initialDelaySeconds: 30
           timeoutSeconds: 10
@@ -183,7 +183,7 @@ deployment:
         livenessProbe: # checks if container is reachable
           httpGet:
             scheme: HTTP
-            path: /
+            path: /actuator/health
             port: http
           initialDelaySeconds: 60
           timeoutSeconds: 5
@@ -193,7 +193,7 @@ deployment:
         readinessProbe: # checks if container is ready to receive traffic
           httpGet:
             scheme: HTTP
-            path: /
+            path: /actuator/health
             port: http
           initialDelaySeconds: 15
           timeoutSeconds: 5
