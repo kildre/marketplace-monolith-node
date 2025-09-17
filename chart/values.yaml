@@ -170,7 +170,7 @@ deployment:
               name: public-env-web
           - secretRef:
               name: secret-env-db-postgresql
-        startupProbe: # checks if container is reachable accounting for startup delays
+        startupProbe: # checks if container is reachable accounting for startup delays test
           httpGet:
             scheme: HTTP
             path: /actuator/health
