@@ -154,18 +154,6 @@ deployment:
       #     - secretRef:
       #         name: public-env-web
 
-      # 04-redis-ready:
-      #   # redis-ready script installed by @advana/redis-client module
-      #   args:
-      #     - node_modules/.bin/redis-ready
-      #   envFrom:
-      #     - secretRef:
-      #         name: public-env-db-redis
-      #     - secretRef:
-      #         name: secret-env-db-redis
-      #     - secretRef:
-      #         name: public-env-web
-
     container:
       web:
         args:
