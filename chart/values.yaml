@@ -5,7 +5,7 @@ namespace: advana-marketplace-monolith-node
 global:
   awsRegion: us-gov-west-1
   appName: advana-marketplace-monolith-node
-  baseDomain: app.advana.cdao.us
+  baseDomain: dev.mtt.cdao.us
   registry: 231388672283.dkr.ecr.us-gov-west-1.amazonaws.com
   vaultPrefix: aws/csn/dev/advana-marketplace-monolith-node
 
@@ -170,7 +170,7 @@ deployment:
               name: public-env-web
           - secretRef:
               name: secret-env-db-postgresql
-        startupProbe: # checks if container is reachable accounting for startup delays
+        startupProbe: # checks if container is reachable accounting for startup delays test
           httpGet:
             scheme: HTTP
             path: /actuator/health
@@ -332,7 +332,7 @@ secret:
           #TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
           #TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
 
-          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://advana-marketplace-monolith-node.app.advana.cdao.us'
+          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} https://advana-marketplace.dev.mtt.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
           REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
 
