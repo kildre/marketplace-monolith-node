@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsup index.ts --format esm,cjs --dts",
+    "build": "tsc -p tsconfig.json --noEmitOnError false && tsup index.ts --format esm,cjs --dts",
     "start": "tsx index.ts",
     "db:migrate": "sequelize db:migrate",
     "db:migrate:undo": "sequelize db:migrate:undo",
