@@ -91,10 +91,10 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
       findOptions?: Omit<FindOptions, 'where' | 'include' | 'limit' | 'offset'>;
     } = {}
   ): Promise<MarketplaceOrder[]> {
-    const include = [
+    const include: Array<import('sequelize').Includeable> = [
       { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
       { model: Status, as: 'status', attributes: ['id', 'name'] },
-    ] as NonNullable<FindOptions['include']>;
+    ];
 
     if (options.includeItems) {
       include.push({ model: OrderItem, as: 'items', separate: true, order: [['id', 'ASC']] });
@@ -104,7 +104,7 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
       where: { requestor_id: requestorId },
       include,
       order: [['id', 'DESC']],
-      distinct: true, // safe for pagination with includes
+      // distinct: true, // safe for pagination with includes
       limit: options.limit,
       offset: options.offset,
       transaction: options.transaction,
@@ -126,7 +126,6 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
         { model: Status, as: 'status', attributes: ['id', 'name'] },
       ],
       order: [['id', 'DESC']],
-      distinct: true,
       limit: options.limit,
       offset: options.offset,
       transaction: options.transaction,

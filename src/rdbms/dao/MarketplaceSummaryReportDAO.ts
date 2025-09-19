@@ -1,6 +1,6 @@
 // src/dao/MarketplaceSummaryReportDAO.ts
 import { Transaction, QueryTypes } from 'sequelize';
-import { sequelize } from '../db'; // wherever you export your Sequelize instance
+import { sequelize } from '../../config/sequelizeCLIConfig.cjs'; 
 import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { UseCaseRequest } from '../entities/UseCaseRequest';
 import { MarketplaceOrder } from '../entities/MarketplaceOrder';

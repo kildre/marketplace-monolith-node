@@ -2,44 +2,60 @@
 const { pathsToModuleNameMapper } = require('ts-jest');
 const appTsconfig = require('./tsconfig.json');
 
-module.exports = {
+const tsTransform = {
+  '^.+\\.tsx?$': [
+    'ts-jest',
+    {
+      tsconfig: {
+        module: 'CommonJS',
+        moduleResolution: 'Node',
+        target: 'ES2020',
+        types: ['jest', 'node'],
+        esModuleInterop: true,
+        isolatedModules: false,
+      },
+      useESM: false,
+      // diagnostics: true, // uncomment to see detailed TS diagnostics in tests
+    },
+  ],
+};
+
+// Shared across projects
+const baseConfig = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-
-  // Compile .ts/.tsx with ts-jest and override just what's needed for tests
-  transform: {
-    '^.+\\.tsx?$': [
-      'ts-jest',
-      {
-        // Inline tsconfig overrides for the test environment
-        tsconfig: {
-          module: 'CommonJS',
-          moduleResolution: 'Node',
-          types: ['jest', 'node'],
-          isolatedModules: false,   // let ts-jest do full type transforms
-          // Optional but often helpful in mixed ESM/CJS repos:
-          esModuleInterop: true
-        },
-        useESM: false
-        // diagnostics: true, // uncomment if you want detailed TS diagnostics in tests
-      }
-    ],
-  },
-
-  // Map TS path aliases from your main tsconfig
+  transform: tsTransform,
   moduleNameMapper: pathsToModuleNameMapper(
     appTsconfig.compilerOptions?.paths || {},
-    { prefix: '<rootDir>/' } // with your "baseUrl": ".", this resolves "src/*" -> "<rootDir>/src/*"
+    { prefix: '<rootDir>/' }
   ),
-
-  // If you need to transpile specific ESM packages in node_modules, list them here
   transformIgnorePatterns: ['/node_modules/(?!@bollo-aggrey/ts-autogen)'],
-
-  // Limit test roots if you want (adjust to your layout)
-  roots: ['<rootDir>/src/test'],
-
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  clearMocks: true,
+  restoreMocks: true,
+};
 
-  // Optional: make Jest’s test file detection explicit
-  testMatch: ['**/?(*.)+(spec|test).[tj]s?(x)'],
+module.exports = {
+  // Two Jest projects: unit (parallel), integration (serial w/ setup)
+  projects: [
+    {
+      displayName: 'unit',
+      ...baseConfig,
+      roots: ['<rootDir>/src'],
+      testMatch: ['**/test/**/*.unit.test.(ts|tsx|js)'],
+      testPathIgnorePatterns: ['\\.int\\.test\\.(ts|tsx|js)$', '/dist/'],
+    },
+    {
+      displayName: 'integration',
+      ...baseConfig,
+      // Keep DB tests isolated & predictable
+      runInBand: true,
+      // Give Testcontainers/DB time to start
+      testTimeout: 30000,
+      roots: ['<rootDir>/src'],
+      testMatch: ['**/test/**/*.int.test.(ts|tsx|js)'],
+      setupFilesAfterEnv: ['<rootDir>/src/test/setup-db.ts'],
+      testPathIgnorePatterns: ['/dist/'],
+    },
+  ],
 };
