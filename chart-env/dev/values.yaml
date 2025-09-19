@@ -5,7 +5,7 @@
 global:
   awsRegion: us-gov-west-1
   appName: advana-marketplace-monolith-node
-  baseDomain: app.advana.cdao.us
+  baseDomain: dev.mtt.cdao.us
   registry: 231388672283.dkr.ecr.us-gov-west-1.amazonaws.com
   vaultPrefix: aws/csn/dev/advana-marketplace-monolith-node
 
@@ -15,7 +15,7 @@ global:
 
 image:
   repository: tenant/images/advana-marketplace-monolith-node
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # tag: ""
 
 serviceAccount:
@@ -24,7 +24,7 @@ serviceAccount:
     
 ingress:
   gateways:  # set to use gateways instead of ingress
-    - istio-gateway/public
+    - istio-gateway/public-ingressgateway
 
 deployment:
   web:

@@ -335,6 +335,10 @@ secret:
           APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} https://advana-marketplace.dev.mtt.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
           REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
+  ingress:      
+    tls:
+        'advana-marketplace-monolith-node.dev.mtt.cdao.us':
+          secretName: 'advana-marketplace-monolith-node-dev-mtt-cdao-us'
 
   volume:
     secret:
