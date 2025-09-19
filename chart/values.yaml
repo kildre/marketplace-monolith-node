@@ -5,8 +5,8 @@ namespace: advana-marketplace-monolith-node
 global:
   awsRegion: us-gov-west-1
   appName: advana-marketplace-monolith-node
-  baseDomain: app.advana.cdao.us
-  registry: 231134345536.dkr.ecr.us-gov-west-1.amazonaws.com
+  baseDomain: dev.mtt.cdao.us
+  registry: 231388672283.dkr.ecr.us-gov-west-1.amazonaws.com
   vaultPrefix: aws/csn/dev/advana-marketplace-monolith-node
 
 ###############################################################################
@@ -16,6 +16,7 @@ global:
 image:
   repository: tenant/images/advana-marketplace-monolith-node
   pullPolicy: Always
+  
 
 serviceAccount:
   name: '{{ $.Release.Name }}'
@@ -53,7 +54,7 @@ podSecurityContext:
 
 job:
   'sequelize-migrate-{{ $.Release.Revision }}':
-    enabled: false
+    enabled: true
     restartPolicy: 'Never'
     ttlSecondsAfterFinished: 100
     initContainer:
@@ -154,18 +155,6 @@ deployment:
       #     - secretRef:
       #         name: public-env-web
 
-      # 04-redis-ready:
-      #   # redis-ready script installed by @advana/redis-client module
-      #   args:
-      #     - node_modules/.bin/redis-ready
-      #   envFrom:
-      #     - secretRef:
-      #         name: public-env-db-redis
-      #     - secretRef:
-      #         name: secret-env-db-redis
-      #     - secretRef:
-      #         name: public-env-web
-
     container:
       web:
         args:
@@ -174,8 +163,6 @@ deployment:
           - secretRef:
               name: public-env-db-postgresql
           - secretRef:
-              name: public-env-db-redis
-          - secretRef:
               name: public-env-platform-ui
           - secretRef:
               name: public-env-sso
@@ -183,42 +170,36 @@ deployment:
               name: public-env-web
           - secretRef:
               name: secret-env-db-postgresql
-          - secretRef:
-              name: secret-env-db-redis
-          - secretRef:
-              name: secret-env-sso
-          - secretRef:
-              name: secret-env-web
-        startupProbe: # checks if container is reachable accounting for startup delays
+        startupProbe: # checks if container is reachable accounting for startup delays test
           httpGet:
             scheme: HTTP
-            path: /
+            path: /actuator/health
             port: http
-          initialDelaySeconds: 0
-          timeoutSeconds: 1
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
           periodSeconds: 10
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 12
         livenessProbe: # checks if container is reachable
           httpGet:
             scheme: HTTP
-            path: /
+            path: /actuator/health
             port: http
-          initialDelaySeconds: 0
-          timeoutSeconds: 1
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          periodSeconds: 30
           successThreshold: 1
           failureThreshold: 3
         readinessProbe: # checks if container is ready to receive traffic
           httpGet:
             scheme: HTTP
-            path: /
+            path: /actuator/health
             port: http
-          initialDelaySeconds: 0
-          timeoutSeconds: 1
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
           periodSeconds: 10
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 6
         resources: # only set values in environment-specific overrides
           limits:
             cpu: 0
@@ -237,14 +218,12 @@ deployment:
           http:
             protocol: TCP
             port: 80 # k8s service port
-            targetPort: 8081 # internal container port
+            targetPort: 8082 # internal container port
 
 env:
   secret:
     'public-env-db-postgresql':
       secretName: public-env-db-postgresql
-    'public-env-db-redis':
-      secretName: public-env-db-redis
     'public-env-platform-ui':
       secretName: public-env-platform-ui
     'public-env-sso':
@@ -253,12 +232,6 @@ env:
       secretName: public-env-web
     'secret-env-db-postgresql':
       secretName: secret-env-db-postgresql
-    'secret-env-db-redis':
-      secretName: secret-env-db-redis
-    'secret-env-sso':
-      secretName: secret-env-sso
-    'secret-env-web':
-      secretName: secret-env-web
 
 volume:
   emptyDir:
@@ -315,10 +288,10 @@ secret:
           PG_APP_DUMP_FILE: ''
           # define which migration file to revert to
           APP_MIGRATION_FILE: ''
-
-      'public-env-db-redis':
+      'secret-env-db-postgresql':
         data:
-          REDIS_URL: 'redis://{{ $.Release.Name }}-redis-master'
+          SECRET_ENV_POSTGRESQL: 'postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require'
+          DIALECT: 'postgres'
 
       'public-env-platform-ui':
         data:
@@ -352,14 +325,14 @@ secret:
       'public-env-web':
         data:
           VERSION: '{{ $.Chart.AppVersion }}'
-          EXPRESS_PORT: '8081'
+          EXPRESS_PORT: '8082'
           SECURE_SESSION: 'true'
           NODE_ENV: 'production'
           #TLS_CERT_CA_FILEPATH: '/etc/ssl/certs/ca-bundle.crt'
           #TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
           #TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
 
-          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} http://advana-marketplace-monolith.app.advana.cdao.us'
+          APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} https://advana-marketplace.dev.mtt.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
           REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
 
