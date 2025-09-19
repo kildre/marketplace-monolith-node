@@ -1,0 +1,3 @@
+
+# see: https://gitlab.advana.boozallencsn.com/platform/chart/advana-library/-/blob/main/templates/_crossplane.tpl
+{{ include "common.crossplane" $ }}
