@@ -15,7 +15,7 @@ global:
 
 image:
   repository: tenant/images/advana-marketplace-monolith-node
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # tag: ""
 
 serviceAccount:
@@ -24,7 +24,7 @@ serviceAccount:
 
 ingress:
   gateways:  # set to use gateways instead of ingress
-    - istio-gateway/public
+    - istio-gateway/public-ingressgateway
 
 deployment:
   web:
