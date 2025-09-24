@@ -62,7 +62,7 @@ job:
         image: 
           registry: '{{ $.Values.global.registry }}'
           repository: tenant/images/advana-marketplace-monolith-node
-          tag: latest
+          tag: 24f95455118c331b54064224dd5b14df1326e00d
         workingDir: /app
         env:
           SECRET_ENV_POSTGRESQL: postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require
