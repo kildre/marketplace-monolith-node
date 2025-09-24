@@ -70,17 +70,8 @@ job:
           DB_DIALECT: postgres
           NODE_ENV: development
         command: ["/bin/sh", "-c"]
-        args: [
-          "echo 'Migration job started at $(date)' && 
-           SEQUELIZE_CLI=$(find /app -name sequelize-cli -type f 2>/dev/null | head -1) && 
-           if [ -n \"$SEQUELIZE_CLI\" ]; then 
-             echo 'Using sequelize-cli at: $SEQUELIZE_CLI' && $SEQUELIZE_CLI db:migrate; 
-           else 
-             echo 'Using node with sequelize-cli' && /usr/local/bin/node /app/node_modules/.bin/sequelize-cli db:migrate; 
-           fi && 
-           echo 'Migration job completed successfully at $(date)' || 
-           (echo 'Migration job failed at $(date)' && exit 1)"
-        ]
+        args: ["find /app -name sequelize-cli -type f 2>/dev/null | head -1 | xargs -I {} {} db:migrate || /usr/local/bin/node /app/node_modules/.bin/sequelize-cli db:migrate"]
+
 #  'sequelize-undo-migration-{{ $.Release.Revision }}':
 #    enabled: false
 #    restartPolicy: 'Never'
