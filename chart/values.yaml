@@ -67,26 +67,26 @@ job:
         NODE_ENV: development
       command: ["npx","--yes","sequelize-cli","db:migrate"]
 
-  'sequelize-undo-migration-{{ $.Release.Revision }}':
-    enabled: false
-    restartPolicy: 'Never'
-    ttlSecondsAfterFinished: 100
-    initContainer:
-      postgresql-app-ready: *postgresql-app-ready-init-container
-    container:
-      migration-job:
-        args:
-          - node_modules/.bin/sequelize
-          - db:migrate:undo:all
-          - --to
-          - $(APP_MIGRATION_FILE)
-        envFrom:
-          - secretRef:
-              name: public-env-db-postgresql
-          - secretRef:
-              name: secret-env-db-postgresql
-          - secretRef:
-              name: public-env-web
+#  'sequelize-undo-migration-{{ $.Release.Revision }}':
+#    enabled: false
+#    restartPolicy: 'Never'
+#    ttlSecondsAfterFinished: 100
+#    initContainer:
+#      postgresql-app-ready: *postgresql-app-ready-init-container
+#    container:
+#      migration-job:
+#        args:
+#          - node_modules/.bin/sequelize
+#          - db:migrate:undo:all
+#          - --to
+#          - $(APP_MIGRATION_FILE)
+#        envFrom:
+#          - secretRef:
+#              name: public-env-db-postgresql
+#          - secretRef:
+#              name: secret-env-db-postgresql
+#          - secretRef:
+#              name: public-env-web
 
 deployment:
   web:
