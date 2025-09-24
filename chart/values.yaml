@@ -57,16 +57,16 @@ job:
     enabled: true
     restartPolicy: 'Never'
     ttlSecondsAfterFinished: 100
-    initContainer:
-      name: sequelize-migrate
-      image: tenant/images/advana-marketplace-monolith-node:24f95455118c331b54064224dd5b14df1326e00d
-      workingDir: /app
-      environment:
-        SECRET_ENV_POSTGRESQL: postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require
-        DIALECT: postgres
-        DB_DIALECT: postgres
-        NODE_ENV: development
-      command: ["npx","--yes","sequelize-cli","db:migrate"]
+    container:
+      sequelize-migrate:
+        image: tenant/images/advana-marketplace-monolith-node:24f95455118c331b54064224dd5b14df1326e00d
+        workingDir: /app
+        environment:
+          SECRET_ENV_POSTGRESQL: postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require
+          DIALECT: postgres
+          DB_DIALECT: postgres
+          NODE_ENV: development
+        command: ["npx","--yes","sequelize-cli","db:migrate"]
 
 #  'sequelize-undo-migration-{{ $.Release.Revision }}':
 #    enabled: false
