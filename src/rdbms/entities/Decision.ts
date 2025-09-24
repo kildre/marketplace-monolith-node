@@ -32,11 +32,8 @@ export class Decision extends Model {
         quantity: { type: DataTypes.INTEGER, allowNull: true },
         estimatedPrice: { type: DataTypes.DECIMAL(18, 2), allowNull: true },
         comments: { unique: false, type: DataTypes.STRING(1024), allowNull: false },
-        createdAt: {type: DataTypes.DATE, allowNull: false},
-        updateAt: {type: DataTypes.DATE, allowNull: false},
-        decisionAt: {type: DataTypes.DATE, allowNull: false},
       },
-      { sequelize, tableName: 'decision', underscored: true }
+      { sequelize, tableName: 'decision', underscored: true, timestamps: false }
     );
   }
 

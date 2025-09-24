@@ -8,7 +8,7 @@ export class OrderItem extends Model {
       {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       },
-      { sequelize, tableName: 'order_item', underscored: true }
+      { sequelize, tableName: 'order_item', underscored: true, timestamps: false }
     );
   }
 

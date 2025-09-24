@@ -1,24 +1,78 @@
-import {Request, Response, NextFunction } from "express";
-import log from "../../service/loggingService";
-import endpointService from "../../service/requestEndpointService";
-import ViewRequestsRequestDto from "../dtos/ViewRequestsRequestDto";
+// src/web/controllers/requestController.ts
+import { Request, Response } from 'express';
+import {
+  SubmitRequestRequestDto,
+  SubmitRequestResponseDto,
+  ViewRequestsRequestDto,
+  ViewRequestsResponseDto,
+} from '../dtos';
+
+import { RequestEndpointService } from '../../service/requestEndpointService';
+
+import { UnauthorizedRequestorException } from '../../service/errors/UnauthorizedRequestorException';
+import { UnauthorizedAdjudicatorException } from '../../service/errors/UnauthorizedAdjudicatorException';
 
 
-interface RequestControllerI {
-    viewAllRequests: (req: Request, res: Response, next: NextFunction) => void;
-}
+// use the stub by default; swap in your real implementation via DI if desired
+import userEndpointService from '../../service/userEndpointService';
 
-const viewAllRequests = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        log.info('Checking if user is an authorized adjudicator ...');
-        const result = await endpointService.viewAllRequests(new ViewRequestsRequestDto(req.body)); // <-- await
-        res.status(200).json(result);
-    } catch (e: any) {
-        next(e);
+const service: RequestEndpointService = new RequestEndpointService();
+
+async function submit(req: Request, res: Response<SubmitRequestResponseDto>) {
+  try {
+    const payload = req.body as SubmitRequestRequestDto;
+    const response = await service.submit(payload);
+    return res.status(200).json(response);
+  } catch (e: any) {
+    if (e instanceof UnauthorizedRequestorException) {
+      return res.status(403).json({ errMsg: e.message });
     }
-};
-
-const requestController: RequestControllerI = {
-    viewAllRequests
+    return res.status(500).json({ errMsg: e?.message || 'Internal Server Error' });
+  }
 }
-export default requestController;
+
+async function viewPendingRequests(req: Request, res: Response<ViewRequestsResponseDto>) {
+  try {
+    const payload = req.body as ViewRequestsRequestDto;
+    const response = await service.viewPendingRequests(payload);
+    return res.status(200).json(response);
+  } catch (e: any) {
+    if (e instanceof UnauthorizedAdjudicatorException) {
+      return res.status(403).json({ errMsg: e.message });
+    }
+    return res.status(500).json({ errMsg: e?.message || 'Internal Server Error' });
+  }
+}
+
+async function viewAllRequests(req: Request, res: Response<ViewRequestsResponseDto>) {
+  try {
+    const payload = req.body as ViewRequestsRequestDto;
+    const response = await service.viewAllRequests(payload);
+    return res.status(200).json(response);
+  } catch (e: any) {
+    if (e instanceof UnauthorizedAdjudicatorException) {
+      return res.status(403).json({ errMsg: e.message });
+    }
+    return res.status(500).json({ errMsg: e?.message || 'Internal Server Error' });
+  }
+}
+
+async function viewRequestsForRequestor(req: Request, res: Response<ViewRequestsResponseDto>) {
+  try {
+    const payload = req.body as ViewRequestsRequestDto;
+    const response = await service.viewRequestsForRequestor(payload);
+    return res.status(200).json(response);
+  } catch (e: any) {
+    if (e instanceof UnauthorizedRequestorException) {
+      return res.status(403).json({ errMsg: e.message });
+    }
+    return res.status(500).json({ errMsg: e?.message || 'Internal Server Error' });
+  }
+}
+
+export default {
+  submit,
+  viewPendingRequests,
+  viewAllRequests,
+  viewRequestsForRequestor,
+};

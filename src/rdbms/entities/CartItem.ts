@@ -16,7 +16,7 @@ export class CartItem extends Model {
                 id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
                 quantity: { type: DataTypes.INTEGER, allowNull: false },
             },
-                { sequelize, tableName: 'cart_item', underscored: true }
+                { sequelize, tableName: 'cart_item', underscored: true, timestamps: false }
             );
     }
 

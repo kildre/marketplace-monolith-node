@@ -10,7 +10,7 @@ export class Role extends Model {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: DataTypes.STRING(64), allowNull: false, unique: true },
       },
-      { sequelize, tableName: 'role', underscored: true }
+      { sequelize, tableName: 'role', underscored: true, timestamps: false }
     );
   }
 

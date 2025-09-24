@@ -109,6 +109,7 @@ let RUNTIME_UNAVAILABLE = false;
       { sequelize, tableName: 'decision', underscored: true }
     );
 
+    
     // ---- Associations
     UseCaseRequest.belongsTo(MarketplaceUser, { foreignKey: 'requestor_id', as: 'requestor' });
     UseCaseRequest.belongsTo(Status, { foreignKey: 'status_id', as: 'status' });

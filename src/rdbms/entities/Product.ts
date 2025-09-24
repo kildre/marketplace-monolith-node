@@ -10,7 +10,7 @@ export class Product extends Model {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         name: {unique: true, type: DataTypes.STRING(128), allowNull: false },
       },
-      { sequelize, tableName: 'product', underscored: true }
+      { sequelize, tableName: 'product', underscored: true, timestamps: false }
     );
   }
 

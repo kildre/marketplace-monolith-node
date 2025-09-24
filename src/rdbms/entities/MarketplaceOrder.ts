@@ -8,7 +8,7 @@ export class MarketplaceOrder extends Model {
       {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       },
-      { sequelize, tableName: 'marketplace_order', underscored: true }
+      { sequelize, tableName: 'marketplace_order', underscored: true, timestamps: false }
     );
   }
 

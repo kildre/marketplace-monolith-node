@@ -10,7 +10,7 @@ export class Status extends Model {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         code: { type: DataTypes.STRING(64), allowNull: false, unique: true },
       },
-      { sequelize, tableName: 'status', underscored: true }
+      { sequelize, tableName: 'status', underscored: true, timestamps: false }
     );
   }
 

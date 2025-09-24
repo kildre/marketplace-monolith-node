@@ -37,11 +37,10 @@ export class UseCaseRequest extends Model {
         phoneNumber: { unique: false, type: DataTypes.STRING(32), allowNull: true },
         estimatedRom: { unique: false, type: DataTypes.STRING(32), allowNull: true },
         description: { unique: false, type: DataTypes.STRING(1024), allowNull: false },
-        createdAt: { type: DataTypes.DATE, allowNull: false },
-        updateAt: { type: DataTypes.DATE, allowNull: false },
-
+        createdAt: { type: DataTypes.DATE, allowNull: false, field: 'created_at' },
+        updatedAt: { type: DataTypes.DATE, allowNull: false, field: 'updated_at' },        
       },
-      { sequelize, tableName: 'use_case_request', underscored: true }
+      { sequelize, tableName: 'use_case_request', underscored: true, timestamps: true }
     );
   }
 

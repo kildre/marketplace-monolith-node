@@ -1,9 +1,9 @@
 // src/rdbms/dao/MarketplaceUserDAO.ts
-import { Transaction, FindOptions } from 'sequelize';
 import { sequelize } from '../../config/sequelizeCLIConfig.cjs';
 import { BaseDAO } from './BaseDAO';
 import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { Role } from '../entities/Role';
+import { FindOptions, Transaction, fn, col, where, Op } from 'sequelize';
 
 type WithTx = { transaction?: Transaction };
 
@@ -24,10 +24,19 @@ export class MarketplaceUserDAO extends BaseDAO<MarketplaceUser> {
   // ---------- reads ----------
   async findByEmail(
     email: string,
-    options?: FindOptions & WithTx
+    opts: Omit<FindOptions, 'where' | 'transaction'> & WithTx = {}
   ): Promise<MarketplaceUser | null> {
-    const { transaction, ...rest } = options ?? {};
-    return MarketplaceUser.findOne({ where: { email }, transaction, ...rest });
+    const e = email?.trim().toLowerCase();
+    if (!e) throw new Error('email is required');
+
+    const { transaction, ...rest } = opts;
+
+    // Option A (DB-agnostic): lower(email) = lower(:email)
+    return this.model.findOne({
+      ...rest, // safe: does not contain `where` or `transaction`
+      where: where(fn('lower', col('email')), e),
+      transaction,
+    });
   }
 
   async getWithRoles(

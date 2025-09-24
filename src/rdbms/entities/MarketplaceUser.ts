@@ -10,7 +10,7 @@ export class MarketplaceUser extends Model {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         email: { type: DataTypes.STRING(128), allowNull: false, unique: true },
       },
-      { sequelize, tableName: 'marketplace_user', underscored: true }
+      { sequelize, tableName: 'marketplace_user', underscored: true, timestamps: false }
     );
   }
 

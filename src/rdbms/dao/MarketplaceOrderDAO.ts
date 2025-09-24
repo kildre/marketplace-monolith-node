@@ -93,7 +93,7 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
   ): Promise<MarketplaceOrder[]> {
     const include: Array<import('sequelize').Includeable> = [
       { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-      { model: Status, as: 'status', attributes: ['id', 'name'] },
+      { model: Status, as: 'status', attributes: ['id', 'code'] },
     ];
 
     if (options.includeItems) {
