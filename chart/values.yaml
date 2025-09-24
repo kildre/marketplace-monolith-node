@@ -70,7 +70,7 @@ job:
           DB_DIALECT: postgres
           NODE_ENV: development
         command: ["/bin/sh", "-c"]
-        args: ["echo 'Migration job started at '$(date); CLI_PATH=$(find /app -name sequelize-cli -type f 2>/dev/null | head -1); if [ -n \"$CLI_PATH\" ]; then echo \"Using sequelize-cli at: $CLI_PATH\"; $CLI_PATH db:migrate; RESULT=$?; else echo 'Using fallback: /usr/local/bin/node with sequelize-cli'; /usr/local/bin/node /app/node_modules/.bin/sequelize-cli db:migrate; RESULT=$?; fi; if [ $RESULT -eq 0 ]; then echo 'Migration job completed successfully at '$(date); else echo 'Migration job failed at '$(date); fi; exit $RESULT"]
+        args: ["echo 'Migration job started at '$(date); CLI_PATH=$(find /app -name sequelize-cli -type f 2>/dev/null | head -1); if [ -n \"$CLI_PATH\" ]; then echo \"Using sequelize-cli at: $CLI_PATH\"; $CLI_PATH db:migrate; RESULT=$?; else echo 'Using fallback: /usr/bin/node with sequelize-cli'; /usr/bin/node /app/node_modules/.bin/sequelize-cli db:migrate; RESULT=$?; fi; if [ $RESULT -eq 0 ]; then echo 'Migration job completed successfully at '$(date); else echo 'Migration job failed at '$(date); fi; exit $RESULT"]
 #  'sequelize-undo-migration-{{ $.Release.Revision }}':
 #    enabled: false
 #    restartPolicy: 'Never'
