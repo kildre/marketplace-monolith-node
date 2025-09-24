@@ -57,7 +57,7 @@ job:
     enabled: true
     restartPolicy: 'Never'
     ttlSecondsAfterFinished: 100
-    container:
+    initContainer:
       image: tenant/images/advana-marketplace-monolith-node:latest
       workingDir: /app
       environment:
