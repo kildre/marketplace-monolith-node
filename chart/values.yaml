@@ -69,7 +69,7 @@ job:
           DIALECT: postgres
           DB_DIALECT: postgres
           NODE_ENV: development
-        command: ["node_modules/.bin/sequelize-cli","db:migrate"]
+        command: ["npx", "sequelize-cli", "db:migrate"]
 
 #  'sequelize-undo-migration-{{ $.Release.Revision }}':
 #    enabled: false
