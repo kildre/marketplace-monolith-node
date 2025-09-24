@@ -57,51 +57,41 @@ job:
     enabled: true
     restartPolicy: 'Never'
     ttlSecondsAfterFinished: 100
-    initContainer:
-      postgresql-app-ready:
-        &postgresql-app-ready-init-container # postgres-ready script installed by @advana/sequelize module
-        args:
-          - node_modules/.bin/postgres-ready
-        envFrom:
-          - secretRef:
-              name: public-env-db-postgresql
-          - secretRef:
-              name: secret-env-db-postgresql
-          - secretRef:
-              name: public-env-web
     container:
-      migration-job:
-        args:
-          - node_modules/.bin/sequelize
-          - db:migrate
-        envFrom:
-          - secretRef:
-              name: public-env-db-postgresql
-          - secretRef:
-              name: secret-env-db-postgresql
-          - secretRef:
-              name: public-env-web
+      sequelize-migrate:
+        image: 
+          registry: '{{ $.Values.global.registry }}'
+          repository: tenant/images/advana-marketplace-monolith-node
+          tag: 24f95455118c331b54064224dd5b14df1326e00d
+        workingDir: /app
+        env:
+          SECRET_ENV_POSTGRESQL: postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require
+          DIALECT: postgres
+          DB_DIALECT: postgres
+          NODE_ENV: development
+        command: ["/bin/sh", "-c"]
+        args: ["find /app -name sequelize-cli -type f 2>/dev/null | head -1 | xargs -I {} {} db:migrate || /usr/local/bin/node /app/node_modules/.bin/sequelize-cli db:migrate"]
 
-  'sequelize-undo-migration-{{ $.Release.Revision }}':
-    enabled: false
-    restartPolicy: 'Never'
-    ttlSecondsAfterFinished: 100
-    initContainer:
-      postgresql-app-ready: *postgresql-app-ready-init-container
-    container:
-      migration-job:
-        args:
-          - node_modules/.bin/sequelize
-          - db:migrate:undo:all
-          - --to
-          - $(APP_MIGRATION_FILE)
-        envFrom:
-          - secretRef:
-              name: public-env-db-postgresql
-          - secretRef:
-              name: secret-env-db-postgresql
-          - secretRef:
-              name: public-env-web
+#  'sequelize-undo-migration-{{ $.Release.Revision }}':
+#    enabled: false
+#    restartPolicy: 'Never'
+#    ttlSecondsAfterFinished: 100
+#    initContainer:
+#      postgresql-app-ready: *postgresql-app-ready-init-container
+#    container:
+#      migration-job:
+#        args:
+#          - node_modules/.bin/sequelize
+#          - db:migrate:undo:all
+#          - --to
+#          - $(APP_MIGRATION_FILE)
+#        envFrom:
+#          - secretRef:
+#              name: public-env-db-postgresql
+#          - secretRef:
+#              name: secret-env-db-postgresql
+#          - secretRef:
+#              name: public-env-web
 
 deployment:
   web:
