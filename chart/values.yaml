@@ -71,7 +71,7 @@ job:
           NODE_ENV: development
           NODE_DEBUG: "*"
           DEBUG: "*"
-        command: ["/bin/sh", "-c"]
+        command: ["/bin/sh", "-vxc"]
         args: ["find /app -name sequelize-cli -type f 2>/dev/null | head -1 | xargs -I {} {} db:migrate || /usr/local/bin/node /app/node_modules/.bin/sequelize-cli db:migrate"]
 
 #  'sequelize-undo-migration-{{ $.Release.Revision }}':
