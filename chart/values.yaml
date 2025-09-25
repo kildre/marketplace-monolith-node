@@ -150,7 +150,6 @@ deployment:
       #         name: secret-env-db-postgresql
       #     - secretRef:
       #         name: public-env-web
-
     container:
       web:
         args:
