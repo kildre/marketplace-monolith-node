@@ -138,7 +138,6 @@ deployment:
       #         name: public-env-web
 
       # 02-postgresql-app-ready: *postgresql-app-ready-init-container
-
       # 03-postgresql-app-migration-ready:
       #   # migration-ready script installed by @advana/sequelize module
       #   args:
