@@ -67,41 +67,7 @@ deployment:
     podAnnotations:
       iam.amazonaws.com/role: aws-role-arn
     serviceAccountName: '{{ $.Release.Name }}'
-    # initContainer:
-      # 01-postgresql-advana-ready:
-      #   # postgres-ready script installed by @advana/sequelize module
-      #   args:
-      #     - node_modules/.bin/postgres-ready
-      #     - --host
-      #     - $(PG_HOST)
-      #     - --port
-      #     - $(PG_PORT)
-      #     - --database
-      #     - $(PG_UM_DB)
-      #     - --user
-      #     - $(PG_USER)
-      #     - --password
-      #     - $(PG_PASSWORD)
-      #   envFrom:
-      #     - secretRef:
-      #         name: public-env-db-postgresql
-      #     - secretRef:
-      #         name: secret-env-db-postgresql
-      #     - secretRef:
-      #         name: public-env-web
 
-      # 02-postgresql-app-ready: *postgresql-app-ready-init-container
-      # 03-postgresql-app-migration-ready:
-      #   # migration-ready script installed by @advana/sequelize module
-      #   args:
-      #     - node_modules/.bin/migration-ready
-      #   envFrom:
-      #     - secretRef:
-      #         name: public-env-db-postgresql
-      #     - secretRef:
-      #         name: secret-env-db-postgresql
-      #     - secretRef:
-      #         name: public-env-web
     container:
       web:
         args:
