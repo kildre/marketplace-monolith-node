@@ -5,8 +5,8 @@ jest.mock('../../../../rdbms/entities/Status', () => {
   return { Status };
 });
 
-import { Status } from '../../../../rdbms/entities/Status';
-import { StatusDAO } from '../../../../rdbms/dao/StatusDAO';
+import { Status } from '../../../../main/rdbms/entities/Status';
+import { StatusDAO } from '../../../../main/rdbms/dao/StatusDAO';
 
 describe('StatusDAO', () => {
   const dao = new StatusDAO();

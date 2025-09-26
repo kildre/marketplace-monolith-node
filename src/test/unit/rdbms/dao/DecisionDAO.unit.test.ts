@@ -26,10 +26,10 @@ jest.mock('../../../../rdbms/entities/Status', () => ({
 }));
 
 // ---- Imports ----
-import { Decision } from '../../../../rdbms/entities/Decision';
-import { MarketplaceUser } from '../../../../rdbms/entities/MarketplaceUser';
-import { Status } from '../../../../rdbms/entities/Status';
-import { DecisionDAO } from '../../../../rdbms/dao/DecisionDAO';
+import { Decision } from '../../../../main/rdbms/entities/Decision';
+import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
+import { Status } from '../../../../main/rdbms/entities/Status';
+import { DecisionDAO } from '../../../../main/rdbms/dao/DecisionDAO';
 
 // ---- Tests ----
 describe('DecisionDAO', () => {

@@ -20,9 +20,9 @@ jest.mock('../../../../rdbms/entities/Role', () => {
 });
 
 // ---- Imports ----
-import { MarketplaceUser } from '../../../../rdbms/entities/MarketplaceUser';
-import { Role } from '../../../../rdbms/entities/Role';
-import { MarketplaceUserDAO } from '../../../../rdbms/dao/MarketplaceUserDAO';
+import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
+import { Role } from '../../../../main/rdbms/entities/Role';
+import { MarketplaceUserDAO } from '../../../../main/rdbms/dao/MarketplaceUserDAO';
 
 describe('MarketplaceUserDAO', () => {
   const dao = new MarketplaceUserDAO();

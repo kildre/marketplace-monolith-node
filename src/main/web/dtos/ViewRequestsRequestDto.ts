@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsString, validateSync } from "class-validator";
-import ConstraintError from "src/domain/errors/ConstraintError";
+// Converted from Java: ViewRequestsRequestDto.java
+import { IsString, validateSync } from "class-validator";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
 
 interface PropsI {
   userEmail: string;
@@ -7,7 +8,6 @@ interface PropsI {
 
 class Props {
   @IsString()
-  @IsNotEmpty()
   userEmail!: string;
 
   constructor(data: PropsI) {
@@ -15,18 +15,15 @@ class Props {
   }
 }
 
-export default class RoleCheckRequestDto {
+export default class ViewRequestsRequestDto {
   public readonly userEmail!: string;
 
   constructor(data: PropsI) {
     const props = new Props(data);
     const errors = validateSync(props);
-
     if (errors.length > 0) {
       throw new ConstraintError(errors);
     }
-
-    // Since this is the final object, it is critical that only the desired props are set
     this.userEmail = props.userEmail;
   }
 }

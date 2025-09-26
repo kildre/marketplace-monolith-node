@@ -1,4 +1,4 @@
-// src/config/sequelizeCLIConfig.cjs
+// src/main/config/sequelizeCLIConfig.cjs
 require('dotenv/config');
 const { Sequelize } = require('sequelize');
 

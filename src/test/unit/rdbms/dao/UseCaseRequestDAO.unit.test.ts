@@ -10,8 +10,8 @@ jest.mock("../../../../rdbms/entities/UseCaseRequest", () => {
 });
 
 // ---- Imports ----
-import { UseCaseRequest } from "../../../../rdbms/entities/UseCaseRequest";
-import { UseCaseRequestDAO } from "../../../../rdbms/dao/UseCaseRequestDAO";
+import { UseCaseRequest } from "../../../../main/rdbms/entities/UseCaseRequest";
+import { UseCaseRequestDAO } from "../../../../main/rdbms/dao/UseCaseRequestDAO";
 
 describe("UseCaseRequestDAO (unit)", () => {
   const dao = new UseCaseRequestDAO();

@@ -1,5 +1,5 @@
-import ConstraintError from "src/domain/errors/ConstraintError";
-import RoleCheckRequestDto from "src/web/dtos/RoleCheckRequestDto";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
+import RoleCheckRequestDto from "src/main/web/dtos/RoleCheckRequestDto";
 
 describe("RoleCheckRequestDto", () => {
   const validData = {

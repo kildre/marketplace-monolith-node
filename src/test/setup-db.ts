@@ -46,7 +46,7 @@ beforeAll(async () => {
   process.env.NODE_ENV = 'test';
 
   // 3) Import your entities (this file initializes models & associations)
-  const entities = await import('../rdbms/entities'); // adjust path if needed
+  const entities = await import('../main/rdbms/entities'); // adjust path if needed
   // entities exports: { sequelize, initDb, ...models }
 
   // 4) Authenticate (your helper)

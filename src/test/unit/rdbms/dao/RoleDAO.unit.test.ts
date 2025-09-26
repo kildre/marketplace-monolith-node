@@ -7,8 +7,8 @@ jest.mock('../../../../rdbms/entities/Role', () => {
   return { Role };
 });
 
-import { Role } from '../../../../rdbms/entities/Role';
-import { RoleDAO } from '../../../../rdbms/dao/RoleDAO';
+import { Role } from '../../../../main/rdbms/entities/Role';
+import { RoleDAO } from '../../../../main/rdbms/dao/RoleDAO';
 
 describe('RoleDAO', () => {
   const dao = new RoleDAO();

@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import ConstraintError from "src/domain/errors/ConstraintError";
-import UseCaseRequestDto from "src/web/dtos/UseCaseRequestDto";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
+import UseCaseRequestDto from "src/main/web/dtos/UseCaseRequestDto";
 
 describe("UseCaseRequestDto", () => {
   const validData = {

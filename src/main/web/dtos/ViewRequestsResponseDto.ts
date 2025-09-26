@@ -1,6 +1,6 @@
 // Converted from Java: ViewRequestsResponseDto.java
 import { IsArray, IsString, validateSync } from "class-validator";
-import ConstraintError from "src/domain/errors/ConstraintError";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
 import UseCaseRequestDto from "./UseCaseRequestDto";
 
 interface PropsI {

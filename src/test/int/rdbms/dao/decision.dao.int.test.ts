@@ -131,7 +131,7 @@ let RUNTIME_UNAVAILABLE = false;
     jest.doMock('../../../../rdbms/entities/Status', () => ({ Status }), { virtual: true });
 
     // Import the DAO now that mocks are in place
-    const daoMod = await import('../../../../rdbms/dao/DecisionDAO');
+    const daoMod = await import('../../../../main/rdbms/dao/DecisionDAO');
     DecisionDAO = daoMod.DecisionDAO;
 
     jest.setTimeout(60_000);

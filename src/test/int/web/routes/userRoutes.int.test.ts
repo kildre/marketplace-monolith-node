@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
-import userRoutes from 'src/web/routes/userRoutes';
-import endpointService from '../../../../service/userEndpointService';
+import userRoutes from 'src/main/web/routes/userRoutes';
+import endpointService from '../../../../main/service/userEndpointService';
 
 jest.mock('src/service/userEndpointService', () => ({
   __esModule: true, // 👈 This is critical for default exports

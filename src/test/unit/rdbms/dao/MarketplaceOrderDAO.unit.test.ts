@@ -30,11 +30,11 @@ jest.mock('../../../../rdbms/entities/Status', () => ({
 }));
 
 // ---- Imports under test ----
-import { MarketplaceOrderDAO } from '../../../../rdbms/dao/MarketplaceOrderDAO';
-import { MarketplaceOrder } from '../../../../rdbms/entities/MarketplaceOrder';
-import { OrderItem } from '../../../../rdbms/entities/OrderItem';
-import { MarketplaceUser } from '../../../../rdbms/entities/MarketplaceUser';
-import { Status } from '../../../../rdbms/entities/Status';
+import { MarketplaceOrderDAO } from '../../../../main/rdbms/dao/MarketplaceOrderDAO';
+import { MarketplaceOrder } from '../../../../main/rdbms/entities/MarketplaceOrder';
+import { OrderItem } from '../../../../main/rdbms/entities/OrderItem';
+import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
+import { Status } from '../../../../main/rdbms/entities/Status';
 
 describe('MarketplaceOrderDAO (unit)', () => {
   const dao = new MarketplaceOrderDAO();

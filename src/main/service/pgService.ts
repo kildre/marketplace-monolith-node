@@ -1,6 +1,6 @@
 import { Client } from 'pg';
 import { getCert } from "./securityService";
-import { rdbmsDatabase, rdbmsHost, rdbmsPassword, rdbmsPort, rdbmsUser } from 'src/config/services/rdbmsConfigService';
+import { rdbmsDatabase, rdbmsHost, rdbmsPassword, rdbmsPort, rdbmsUser } from 'src/main/config/services/rdbmsConfigService';
 
 
 const getPgClient = () => {

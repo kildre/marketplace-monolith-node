@@ -1,5 +1,5 @@
-import ConstraintError from "src/domain/errors/ConstraintError";
-import DecisionDto from "src/web/dtos/DecisionDto";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
+import DecisionDto from "src/main/web/dtos/DecisionDto";
 
 describe("DecisionDto", () => {
   const validData = {

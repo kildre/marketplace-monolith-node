@@ -1,4 +1,4 @@
-import { BaseDAO } from '../../../../rdbms/dao/BaseDAO';
+import { BaseDAO } from '../../../../main/rdbms/dao/BaseDAO';
 import { Model } from 'sequelize';
 
 // Minimal mock model with the static methods BaseDAO uses

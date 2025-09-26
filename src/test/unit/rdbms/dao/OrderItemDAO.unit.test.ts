@@ -11,9 +11,9 @@ jest.mock('../../../../rdbms/entities/Product', () => {
   return { Product };
 });
 
-import { OrderItem } from '../../../../rdbms/entities/OrderItem';
-import { Product } from '../../../../rdbms/entities/Product';
-import { OrderItemDAO } from '../../../../rdbms/dao/OrderItemDAO';
+import { OrderItem } from '../../../../main/rdbms/entities/OrderItem';
+import { Product } from '../../../../main/rdbms/entities/Product';
+import { OrderItemDAO } from '../../../../main/rdbms/dao/OrderItemDAO';
 
 describe('OrderItemDAO', () => {
   const dao = new OrderItemDAO();

@@ -1,5 +1,5 @@
-import ConstraintError from "src/domain/errors/ConstraintError";
-import CartItemDto from "src/web/dtos/CartItemDto";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
+import CartItemDto from "src/main/web/dtos/CartItemDto";
 
 describe('CartItemDto', () => {
 

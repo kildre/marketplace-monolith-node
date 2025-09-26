@@ -1,22 +1,22 @@
-// Converted from Java: ViewRequestsRequestDto.java
+// Converted from Java: SubmitDecisionResponseDto.java
 import { IsString, validateSync } from "class-validator";
-import ConstraintError from "src/domain/errors/ConstraintError";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
 
 interface PropsI {
-  userEmail: string;
+  decisionNumber: string;
 }
 
 class Props {
   @IsString()
-  userEmail!: string;
+  decisionNumber!: string;
 
   constructor(data: PropsI) {
     Object.assign(this, data);
   }
 }
 
-export default class ViewRequestsRequestDto {
-  public readonly userEmail!: string;
+export default class SubmitDecisionResponseDto {
+  public readonly decisionNumber!: string;
 
   constructor(data: PropsI) {
     const props = new Props(data);
@@ -24,6 +24,6 @@ export default class ViewRequestsRequestDto {
     if (errors.length > 0) {
       throw new ConstraintError(errors);
     }
-    this.userEmail = props.userEmail;
+    this.decisionNumber = props.decisionNumber;
   }
 }

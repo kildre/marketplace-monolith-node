@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import ConstraintError from "src/domain/errors/ConstraintError";
-import SubmitRequestResponseDto from "src/web/dtos/SubmitRequestResponseDto";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
+import SubmitRequestResponseDto from "src/main/web/dtos/SubmitRequestResponseDto";
 
 describe("SubmitRequestResponseDto", () => {
   const validData = {

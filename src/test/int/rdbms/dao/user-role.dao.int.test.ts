@@ -1,11 +1,11 @@
 import { Sequelize, Transaction } from 'sequelize';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { UserRoleDAO } from '../../../../rdbms/dao/UserRoleDAO';
+import { UserRoleDAO } from '../../../../main/rdbms/dao/UserRoleDAO';
 
 // Raw classes (only for types/InitModel)
-import { MarketplaceUser as MarketplaceUserClass } from '../../../../rdbms/entities/MarketplaceUser';
-import { Role as RoleClass } from '../../../../rdbms/entities/Role';
-import { UserRole as UserRoleClass } from '../../../../rdbms/entities/UserRole';
+import { MarketplaceUser as MarketplaceUserClass } from '../../../../main/rdbms/entities/MarketplaceUser';
+import { Role as RoleClass } from '../../../../main/rdbms/entities/Role';
+import { UserRole as UserRoleClass } from '../../../../main/rdbms/entities/UserRole';
 
 describe('UserRoleDAO (integration)', () => {
   let container: StartedPostgreSqlContainer | undefined;

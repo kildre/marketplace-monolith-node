@@ -1,6 +1,6 @@
 // Converted from Java: MarketplaceSummaryReport.java
 import { IsInt, IsString, validateSync } from "class-validator";
-import ConstraintError from "src/domain/errors/ConstraintError";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
 
 interface PropsI {
   totalUsers: number;

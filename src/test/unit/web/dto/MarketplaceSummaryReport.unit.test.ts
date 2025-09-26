@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import ConstraintError from "src/domain/errors/ConstraintError";
-import MarketplaceSummaryReport from "src/web/dtos/MarketplaceSummaryReport";
+import ConstraintError from "src/main/domain/errors/ConstraintError";
+import MarketplaceSummaryReport from "src/main/web/dtos/MarketplaceSummaryReport";
 
 describe("MarketplaceSummaryReport", () => {
   const validData = {
