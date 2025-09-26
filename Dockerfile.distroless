@@ -24,6 +24,7 @@ COPY --chown=node:node --from=build /app/dist ./dist
 COPY --chown=node:node --from=build /app/package*.json ./dist/
 COPY --chown=node:node --from=build /app/node_modules ./dist/node_modules
 COPY --chown=node:node --from=build /app/public ./dist/public
+COPY --chown=node:node --from=build /app/src ./dist/src
 
 WORKDIR /app/dist
 
