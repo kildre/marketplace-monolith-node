@@ -12,27 +12,51 @@ import { UnauthorizedAdjudicatorException } from "../../service/errors/Unauthori
 
 // use the stub by default; swap in your real implementation via DI if desired
 import userEndpointService from "../../service/userEndpointService";
+import { ValidationError } from "class-validator";
+import { UniqueConstraintError, ForeignKeyConstraintError } from "sequelize";
+import { UseCaseRequestNotFoundException } from "src/service/errors/UseCaseRequestNotFoundException";
 
 const service: RequestEndpointService = new RequestEndpointService();
 
-async function submit(req: Request, res: Response<SubmitRequestResponseDto>) {
+export async function submit(
+  req: Request,
+  res: Response<SubmitRequestResponseDto>
+) {
   try {
     const payload = req.body as SubmitRequestRequestDto;
     const response = await service.submit(payload);
     return res.status(200).json(response);
   } catch (e: any) {
+    console.error('Error in submit controller:', e);
+    // Domain errors
     if (e instanceof UnauthorizedRequestorException) {
-      // Return a fallback DTO with an empty requestNumber
       return res
         .status(403)
-        .json(new SubmitRequestResponseDto({ requestNumber: "" }));
+        .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: e.message }));
     }
+    if (e instanceof UseCaseRequestNotFoundException) {
+      return res
+        .status(404)
+        .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: e.message }));
+    }
+
+ // --- Wrapped generic Error messages thrown by the service ---
+    if (typeof e?.message === 'string') {
+      return res
+        .status(400)
+        .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: e.message }));
+    }
+
+    // Unknown error
+    const generic =
+      typeof e?.message === 'string' && e.message.trim()
+        ? e.message
+        : 'Internal Server Error';
     return res
       .status(500)
-      .json(new SubmitRequestResponseDto({ requestNumber: "" }));
+      .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: generic }));
   }
 }
-
 async function viewPendingRequests(
   req: Request,
   res: Response<ViewRequestsResponseDto>

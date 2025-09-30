@@ -1,10 +1,10 @@
 // src/services/requestEndpointServiceImpl.ts
-import { Transaction, Sequelize } from "sequelize";
+import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, ValidationError, Sequelize } from "sequelize";
 import { StatusEnum } from "../web/dtos/StatusEnum";
 import { UseCaseRequestDAO } from "../rdbms/dao/UseCaseRequestDAO";
 import { ProductDAO } from "../rdbms/dao/ProductDAO";
+import { CartItemDAO } from "../rdbms/dao/CartItemDAO";
 import userEndpointService from "./userEndpointService";
-import { CartItem } from "../rdbms/entities/CartItem";
 import { UseCaseRequest } from "../rdbms/entities/UseCaseRequest";
 import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
 import { Decision } from "../rdbms/entities/Decision";
@@ -42,6 +42,7 @@ export interface RequestEndpointServiceI {
 export class RequestEndpointService implements RequestEndpointServiceI {
   private userEndpointService = userEndpointService;
   private productDAO = new ProductDAO();
+  private cartItemDAO = new CartItemDAO();
   private useCaseRequestDAO = new UseCaseRequestDAO();
 
   /** Use the Sequelize instance that the models are actually bound to. */
@@ -50,75 +51,93 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     if (!s) {
       throw new Error(
         "UseCaseRequest model is not bound to a Sequelize instance. " +
-          "Make sure initDb() ran and models were initialized."
+        "Make sure initDb() ran and models were initialized."
       );
     }
     return s;
   }
 
   // ---------- submit ----------
-  async submit(
-    request: SubmitRequestRequestDto
-  ): Promise<SubmitRequestResponseDto> {
-    // Check requestor authorization (this should be "requestor", not adjudicator)
-    const payload = { userEmail: String(request.requestorEmail || "").trim() };
-    const dto = new RoleCheckRequestDto(payload);
-    const requestor = await this.userEndpointService.isAuthorizedAdjudicator(
-      dto
-    );
+  async submit(request: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto> {
+    // 1) Normalize & validate email
+    const requestorEmail = String(request.requestorEmail ?? '')
+      .trim()
+      .toLowerCase();
+    if (!requestorEmail) {
+      throw new Error('requestorEmail is required');
+    }
+
+    const dto = new RoleCheckRequestDto({ userEmail: requestorEmail });
     const requestorUser = await this.userEndpointService.findByEmail(dto);
-    // Create everything atomically
-    const created = await this.sequelize.transaction(
-      async (tx: Transaction) => {
-        // create the base use-case request
-        const useCaseReq = await this.useCaseRequestDAO.create(
-          {
-            requestNumber: request.requestNumber,
-            requestedToolName: request.requestedToolName,
-            description: request.description,
-            designation: request.designation,
-            agency: request.agency,
-            organization: request.organization,
-            otherOrganization: request.otherOrganization,
-            pointOfContact: request.pointOfContact,
-            email: request.email,
-            phoneNumber: request.phoneNumber,
-            estimatedRom: request.estimatedRom,
-            requestor_id: requestorUser.dataValues.id,
-            status_id: StatusEnum.PENDING.id, // use enum object's id
-          } as any,
-          { transaction: tx }
-        );
-        console.log("Created UseCaseRequest:");
-        // resolve product IDs for each cart item and insert cart rows
+    if (!requestorUser) {
+      throw new Error(`User with email ${requestorEmail} not found.`);
+    }
+
+    try {
+      // 3) Transaction: create request + cart items
+      const useCaseReq = await this.sequelize.transaction(async (tx: Transaction) => {
+          const ucr = await this.useCaseRequestDAO.create(
+            {
+              requestNumber: request.requestNumber,
+              requestedToolName: request.requestedToolName,
+              description: request.description,
+              designation: request.designation,
+              agency: request.agency,
+              organization: request.organization,
+              otherOrganization: request.otherOrganization,
+              pointOfContact: request.pointOfContact,
+              email: request.email,
+              phoneNumber: request.phoneNumber,
+              estimatedRom: request.estimatedRom,
+              requestorId: requestorUser.id,
+              statusId: StatusEnum.PENDING.id,
+            } as any,
+            { transaction: tx }
+          );
+        console.log("Created UseCaseRequest:", ucr);
+        // 3b) Resolve products & create CartItems
         for (const item of request.cartItems ?? []) {
-          const product = await this.productDAO.findByName(item.name, {
-            transaction: tx,
-          });
+          const product = await this.productDAO.findByName(item.name, { transaction: tx });
           if (!product) {
             throw new ProductNotFoundException(item.name);
           }
-
-          await CartItem.create(
+          console.log("Found Product:", product.dataValues.id, ucr.dataValues.id);
+          await this.cartItemDAO.create(
             {
-              request_id: (useCaseReq as any).dataValues.id,
-              product_id: (product as any).dataValues.id,
+              requestId: ucr.dataValues.id,
+              productId: product.dataValues.id,
               quantity: item.quantity,
             } as any,
             { transaction: tx }
           );
-
-          console.log("Created cartitem:");
+          console.log("Created CartItem for product:", item.name);
         }
 
-        return useCaseReq;
+        return ucr; // return from the transaction callback
+      });
+
+      // 4) Build response
+      const response = new SubmitRequestResponseDto({
+        requestNumber: String(request.requestNumber ?? '').trim(),
+        errMsg: '',
+      });
+      return response;
+    } catch (err: any) {
+      // 5) Error mapping
+      if (err instanceof UniqueConstraintError) {
+        throw new Error(
+          `Duplicate value: ${err.errors?.[0]?.message ?? 'unique constraint violated'}`
+        );
       }
-    );
-    const respPayload = {
-      requestNumber: String(request.requestNumber || "").trim(),
-    };
-    const response = new SubmitRequestResponseDto(respPayload);
-    return response;
+      if (err instanceof ForeignKeyConstraintError) {
+        const fields = Array.isArray(err.fields) ? err.fields.join(', ') : String(err.fields ?? '');
+        throw new Error(`Invalid reference on ${err.table}${fields ? ` (${fields})` : ''}`);
+      }
+      if (err instanceof ValidationError) {
+        throw new Error(`Validation failed: ${err.errors.map(e => e.message).join('; ')}`);
+      }
+      throw err; // let global handler/controller convert to HTTP 500, etc.
+    }
   }
 
   // ---------- viewPendingRequests ----------

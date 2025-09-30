@@ -3,6 +3,8 @@ import 'dotenv/config';
 import configureApp from './config/appConfig';
 import log from './service/loggingService';
 import { assertDatabaseConnectionOk, closeDatabase } from './service/sequelize';
+import { sequelize } from './config/sequelizeCLIConfig.cjs';
+import { makeMigrator } from './migrate';
 
 export default async function run() {
   log.info('Starting Advana Marketplace Monolith ...');
@@ -10,6 +12,12 @@ export default async function run() {
   // Connect to dependencies FIRST
   await assertDatabaseConnectionOk();
 
+  // run migrations (and optionally seeders) at startup
+  log.info('Running database migration ...');
+  const migrator = makeMigrator(sequelize);
+
+  const pending = await migrator.pending();
+  await migrator.up(); // <-- actually run them
   // Build app
   const app = express();
   // If configureApp starts the server inside, await it if it returns a promise
