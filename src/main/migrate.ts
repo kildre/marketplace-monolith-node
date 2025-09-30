@@ -4,15 +4,15 @@ import { Sequelize } from 'sequelize';
 import { Umzug, SequelizeStorage } from 'umzug';
 import { pathToFileURL } from 'url';
 
-const isProd = process.env.EXPRESS_PROFILE === 'prod';
+//const isProd = process.env.NODE_ENV === 'production';
 
 // Register only in dev
-if (!isProd) {
+//if (!isProd) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  require('ts-node/register/transpile-only');
+//  require('ts-node/register/transpile-only');
   // If you use TS path aliases:
-  try { require('tsconfig-paths/register'); } catch {}
-}
+//  try { require('tsconfig-paths/register'); } catch {}
+//}
 
 /** Normalize a glob for Umzug across OSes. */
 function makeGlob(relPattern: string) {
