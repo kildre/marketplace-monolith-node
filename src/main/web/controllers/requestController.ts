@@ -14,7 +14,7 @@ import { UnauthorizedAdjudicatorException } from "../../service/errors/Unauthori
 import userEndpointService from "../../service/userEndpointService";
 import { ValidationError } from "class-validator";
 import { UniqueConstraintError, ForeignKeyConstraintError } from "sequelize";
-import { UseCaseRequestNotFoundException } from "src/service/errors/UseCaseRequestNotFoundException";
+import { UseCaseRequestNotFoundException } from "../../service/errors/UseCaseRequestNotFoundException";
 
 const service: RequestEndpointService = new RequestEndpointService();
 
