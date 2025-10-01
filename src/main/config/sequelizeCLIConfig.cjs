@@ -2,93 +2,49 @@
 require('dotenv/config');
 const { Sequelize } = require('sequelize');
 
-// ---------- helpers ----------
-const bool = (v, d = false) => (v ? /^(1|true|yes|on)$/i.test(v) : d);
-const num = (v, d) => (v !== undefined && v !== '' ? Number(v) : d);
-const nonEmpty = (v) => (v && String(v).trim().length ? String(v).trim() : undefined);
+/* ---------- helpers ---------- */
+const isTrue = (v, d = false) => (v ? /^(1|true|yes|on)$/i.test(String(v)) : d);
 
-// ---------- env → connection ----------
+/* ---------- env -> connection ---------- */
 const RAW_DIALECT = (process.env.DB_DIALECT || process.env.DIALECT || 'postgres').toLowerCase();
 const DIALECT = RAW_DIALECT === 'sqlite3' ? 'sqlite' : RAW_DIALECT;
-if (RAW_DIALECT === 'sqlite3') {
-  console.warn('[sequelize] Normalized dialect "sqlite3" -> "sqlite"');
-}
+if (RAW_DIALECT === 'sqlite3') console.warn('[sequelize] Normalized dialect "sqlite3" -> "sqlite"');
 
-// Prefer URL if available (supports your secret key with hyphens)
-const URL =
-  process.env.DATABASE_URL ||
-  process.env.DB_URL ||
-  process.env.PG_URL ||
-  process.env['secret-env-postgresql'] ||
-  process.env.SECRET_ENV_POSTGRESQL ||
-  null;
+// Prefer your secret; fallback to DATABASE_URL
+const URL = process.env['secret-env-postgresql'] || process.env.DATABASE_URL || null;
+if (URL) process.env.SEQUELIZE_URL = URL; // single source for CLI
 
-// If we have a URL, expose it to the CLI via a stable env var
-if (URL) process.env.SEQUELIZE_URL = URL;
-
-const HOST = process.env.PG_HOST || process.env.DB_HOST || 'localhost';
-const PORT = num(process.env.PG_PORT || process.env.DB_PORT, 5432);
-const DATABASE = process.env.PG_DATABASE || process.env.DB_NAME || process.env.DB_DATABASE || 'postgres';
-const USERNAME = process.env.PG_USER || process.env.DB_USER || 'postgres';
-const PASSWORD = process.env.PG_PASSWORD || process.env.DB_PASSWORD || '';
-const SCHEMA = nonEmpty(process.env.DB_SCHEMA);
-
-// ---------- shared options ----------
-const BASE_OPTS = {
+/* ---------- shared options ---------- */
+const BASE = {
   dialect: DIALECT,
-  logging: bool(process.env.SEQUELIZE_LOG_SQL, false) ? console.log : false,
-  ...(SCHEMA ? { schema: SCHEMA } : {}),
+  logging: isTrue(process.env.SEQUELIZE_LOG_SQL) ? console.log : false,
   define: {
     underscored: true,
     freezeTableName: false,
-    ...(SCHEMA ? { schema: SCHEMA } : {}),
   },
+  // Optional SSL (Postgres): enable if DB_SSL=true
+  ...(DIALECT === 'postgres' && isTrue(process.env.DB_SSL)
+    ? { dialectOptions: { ssl: { require: true, rejectUnauthorized: false } } }
+    : {}),
 };
 
-const sharedStorage = {
+const STORAGE = {
   migrationStorage: 'sequelize',
   migrationStorageTableName: 'SequelizeMeta',
   seederStorage: 'sequelize',
   seederStorageTableName: 'SequelizeData',
 };
 
-// Build the connection shape the CLI expects.
-// If a URL is present, use a "use_env_variable" indirection.
-// Otherwise, pass discrete fields.
-function connectionFields() {
-  if (process.env.SEQUELIZE_URL) {
-    return { use_env_variable: 'SEQUELIZE_URL' };
-  }
-  return {
-    username: USERNAME,
-    password: PASSWORD,
-    database: DATABASE,
-    host: HOST,
-    port: PORT,
-  };
-}
+/* ---------- connection fields ---------- */
+const connectionFields = () =>
+  process.env.SEQUELIZE_URL ? { use_env_variable: 'SEQUELIZE_URL' } : {};
 
-// ---------- CLI environments ----------
-const development = {
-  ...connectionFields(),
-  ...BASE_OPTS,
-  ...sharedStorage,
-};
+/* ---------- environments for sequelize-cli ---------- */
+const development = { ...connectionFields(), ...BASE, ...STORAGE };
+const test        = { ...connectionFields(), ...BASE, logging: false, ...STORAGE };
+const production  = { ...connectionFields(), ...BASE, ...STORAGE };
 
-const test = {
-  ...connectionFields(),
-  ...BASE_OPTS,
-  logging: false,
-  ...sharedStorage,
-};
-
-const production = {
-  ...connectionFields(),
-  ...BASE_OPTS,
-  ...sharedStorage,
-};
-
-// ---------- Runtime factory (optional, for app code) ----------
+/* ---------- optional: runtime factory for app code ---------- */
 function createSequelize(envName) {
   const env = envName || process.env.NODE_ENV || 'development';
   const cfgMap = { development, test, production };
@@ -96,10 +52,6 @@ function createSequelize(envName) {
 
   const {
     use_env_variable,
-    username,
-    password,
-    database,
-    // strip CLI-only fields:
     migrationStorage,
     migrationStorageTableName,
     seederStorage,
@@ -113,18 +65,19 @@ function createSequelize(envName) {
     return new Sequelize(url, sequelizeOpts);
   }
 
+  // Only used if you decide to pass discrete creds instead of URL.
+  const { database, username, password } = process.env;
+  if (!database || !username) throw new Error('Database or username missing for non-URL config');
   return new Sequelize(database, username, password, sequelizeOpts);
 }
 
-
-
 const sequelize = createSequelize();
 
-// Expose both CLI config & runtime helpers
+/* ---------- exports ---------- */
 module.exports = {
   development,
   test,
   production,
-  createSequelize,
-  sequelize,
+  createSequelize, // optional for app
+  sequelize,       // optional for app
 };
