@@ -1,4 +1,4 @@
-jest.mock('../../../../rdbms/entities/OrderItem', () => {
+jest.mock('../../../../main/rdbms/entities/OrderItem', () => {
   class OrderItem {
     static findAll = jest.fn();
     static bulkCreate = jest.fn();
@@ -6,7 +6,7 @@ jest.mock('../../../../rdbms/entities/OrderItem', () => {
   return { OrderItem };
 });
 
-jest.mock('../../../../rdbms/entities/Product', () => {
+jest.mock('../../../../main/rdbms/entities/Product', () => {
   class Product {}
   return { Product };
 });

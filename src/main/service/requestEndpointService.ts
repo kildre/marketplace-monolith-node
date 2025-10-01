@@ -152,7 +152,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       StatusEnum.PENDING.id
     );
 
-    return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
+    return { requests: rows.map((r) => this._toUseCaseRequestDto(r))};
   }
 
   // ---------- viewAllRequests ----------
@@ -171,7 +171,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       order: [["id", "DESC"]],
     } as any);
 
-    return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
+    return { requests: rows.map((r) => this._toUseCaseRequestDto(r))};
   }
 
   // ---------- viewRequestsForRequestor ----------
@@ -194,7 +194,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       } as any
     );
 
-    return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
+    return { requests: rows.map((r) => this._toUseCaseRequestDto(r))};
   }
 
   // ---------- helpers ----------
@@ -214,7 +214,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       },
       {
         model: CartItem,
-        as: "cart_items",
+        as: "cartItems",
         include: [{ model: Product, as: "product" }],
       },
     ];
@@ -294,15 +294,6 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       ) as any) ?? undefined,
 
       comments: row.comments,
-
-      // optional business fields if your DTO includes them
-      ticketType: pick<string>(row.ticketType, row.ticket_type),
-      asset: row.asset,
-      quantity: row.quantity,
-      estimatedPrice: pick<number | string>(
-        row.estimatedPrice,
-        row.estimated_price
-      ) as any,
     };
   }
 

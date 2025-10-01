@@ -1,7 +1,7 @@
 // src/test/unit/rdbms/dao/user-role.dao.unit.test.ts
 
 // ---- Mocks ----
-jest.mock('../../../../rdbms/entities/UserRole', () => {
+jest.mock('../../../../main/rdbms/entities/UserRole', () => {
   class UserRole {
     static create = jest.fn();
     static destroy = jest.fn();

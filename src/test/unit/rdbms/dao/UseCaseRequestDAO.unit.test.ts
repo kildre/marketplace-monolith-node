@@ -1,7 +1,7 @@
 // src/test/unit/rdbms/dao/UseCaseRequestDAO.unit.test.ts
 
 // ---- Mocks ----
-jest.mock("../../../../rdbms/entities/UseCaseRequest", () => {
+jest.mock("../../../../main/rdbms/entities/UseCaseRequest", () => {
   class UseCaseRequest {
     static findAll = jest.fn();
     static findOne = jest.fn();

@@ -1,5 +1,5 @@
 // ---- Mocks ----
-jest.mock('../../../../rdbms/entities/MarketplaceUser', () => {
+jest.mock('../../../../main/rdbms/entities/MarketplaceUser', () => {
   class MarketplaceUser {
     static create = jest.fn();
     static findByPk = jest.fn();
@@ -11,7 +11,7 @@ jest.mock('../../../../rdbms/entities/MarketplaceUser', () => {
   return { MarketplaceUser };
 });
 
-jest.mock('../../../../rdbms/entities/Role', () => {
+jest.mock('../../../../main/rdbms/entities/Role', () => {
   class Role {
     static findAll = jest.fn();
     static findByPk = jest.fn();

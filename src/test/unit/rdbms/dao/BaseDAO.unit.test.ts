@@ -63,8 +63,13 @@ describe('BaseDAO', () => {
   test('deleteById destroys when found', async () => {
     const instance: any = { destroy: jest.fn().mockResolvedValue(null) };
     (DummyModel.findByPk as any).mockResolvedValue(instance);
+
     const ok = await dao.deleteById(5);
-    expect(instance.destroy).toHaveBeenCalledWith({ transaction: undefined });
+
+    expect(instance.destroy).toHaveBeenCalledWith({
+      transaction: undefined,
+      force: false,
+    });
     expect(ok).toBe(true);
   });
 

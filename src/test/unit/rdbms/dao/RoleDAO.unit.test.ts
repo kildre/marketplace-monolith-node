@@ -1,4 +1,4 @@
-jest.mock('../../../../rdbms/entities/Role', () => {
+jest.mock('../../../../main/rdbms/entities/Role', () => {
   class Role {
     static create = jest.fn();
     static findByPk = jest.fn();

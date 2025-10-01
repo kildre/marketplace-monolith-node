@@ -1,7 +1,7 @@
 // src/test/unit/rdbms/dao/MarketplaceOrderDAO.unit.test.ts
 
 // ---- Mocks ----
-jest.mock('../../../../rdbms/entities/MarketplaceOrder', () => {
+jest.mock('../../../../main/rdbms/entities/MarketplaceOrder', () => {
   class MarketplaceOrder {
     static create = jest.fn();
     static findByPk = jest.fn();
@@ -14,18 +14,18 @@ jest.mock('../../../../rdbms/entities/MarketplaceOrder', () => {
   return { MarketplaceOrder };
 });
 
-jest.mock('../../../../rdbms/entities/OrderItem', () => {
+jest.mock('../../../../main/rdbms/entities/OrderItem', () => {
   class OrderItem {
     static bulkCreate = jest.fn();
   }
   return { OrderItem };
 });
 
-jest.mock('../../../../rdbms/entities/MarketplaceUser', () => ({
+jest.mock('../../../../main/rdbms/entities/MarketplaceUser', () => ({
   MarketplaceUser: class MarketplaceUser {}
 }));
 
-jest.mock('../../../../rdbms/entities/Status', () => ({
+jest.mock('../../../../main/rdbms/entities/Status', () => ({
   Status: class Status {}
 }));
 

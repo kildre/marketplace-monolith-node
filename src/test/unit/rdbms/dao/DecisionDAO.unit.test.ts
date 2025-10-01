@@ -9,19 +9,19 @@ jest.mock('../../../../rdbms/entities/Decision', () => {
   return { Decision };
 });
 
-jest.mock('../../../../rdbms/entities/MarketplaceUser', () => ({
+jest.mock('../../../../main/rdbms/entities/MarketplaceUser', () => ({
   MarketplaceUser: class MarketplaceUser {}
 }));
 
-jest.mock('../../../../rdbms/entities/UseCaseRequest', () => ({
+jest.mock('../../../../main/rdbms/entities/UseCaseRequest', () => ({
   UseCaseRequest: class UseCaseRequest {}
 }));
 
-jest.mock('../../../../rdbms/entities/MarketplaceOrder', () => ({
+jest.mock('../../../../main/rdbms/entities/MarketplaceOrder', () => ({
   MarketplaceOrder: class MarketplaceOrder {}
 }));
 
-jest.mock('../../../../rdbms/entities/Status', () => ({
+jest.mock('../../../../main/rdbms/entities/Status', () => ({
   Status: class Status {}
 }));
 

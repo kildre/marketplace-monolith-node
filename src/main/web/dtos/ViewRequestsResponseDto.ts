@@ -5,15 +5,11 @@ import UseCaseRequestDto from "./UseCaseRequestDto";
 
 interface PropsI {
   requests: UseCaseRequestDto[];
-  errMsg: string;
 }
 
 class Props {
   @IsArray()
   requests!: UseCaseRequestDto[];
-
-  @IsString()
-  errMsg!: string;
 
   constructor(data: PropsI) {
     Object.assign(this, data);
@@ -22,7 +18,6 @@ class Props {
 
 export default class ViewRequestsResponseDto {
   public readonly requests!: UseCaseRequestDto[];
-  public readonly errMsg!: string;
 
   constructor(data: PropsI) {
     const props = new Props(data);
@@ -31,6 +26,5 @@ export default class ViewRequestsResponseDto {
       throw new ConstraintError(errors);
     }
     this.requests = props.requests;
-    this.errMsg = props.errMsg;
   }
 }

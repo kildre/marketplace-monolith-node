@@ -1,4 +1,4 @@
-jest.mock('../../../../rdbms/entities/Status', () => {
+jest.mock('../../../../main/rdbms/entities/Status', () => {
   class Status {
     static findOne = jest.fn();
   }
