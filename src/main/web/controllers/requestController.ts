@@ -31,7 +31,7 @@ export async function submit(
     // Domain errors
     if (e instanceof UnauthorizedRequestorException) {
       return res
-        .status(403)
+        .status(404)
         .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: e.message }));
     }
     if (e instanceof UseCaseRequestNotFoundException) {
@@ -70,9 +70,9 @@ async function viewPendingRequests(
       // Return a fallback DTO with an empty requests array
       return res
         .status(403)
-        .json(new ViewRequestsResponseDto({ requests: [] }));
+        .json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
     }
-    return res.status(500).json(new ViewRequestsResponseDto({ requests: [] }));
+    return res.status(500).json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
   }
 }
 
@@ -88,9 +88,9 @@ async function viewAllRequests(
     if (e instanceof UnauthorizedAdjudicatorException) {
       return res
         .status(403)
-        .json(new ViewRequestsResponseDto({ requests: [] }));
+        .json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
     }
-    return res.status(500).json(new ViewRequestsResponseDto({ requests: [] }));
+    return res.status(500).json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
   }
 }
 
@@ -106,9 +106,9 @@ async function viewRequestsForRequestor(
     if (e instanceof UnauthorizedRequestorException) {
       return res
         .status(403)
-        .json(new ViewRequestsResponseDto({ requests: [] }));
+        .json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
     }
-    return res.status(500).json(new ViewRequestsResponseDto({ requests: [] }));
+    return res.status(500).json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
   }
 }
 

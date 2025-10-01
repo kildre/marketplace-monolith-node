@@ -63,7 +63,10 @@ export class RequestEndpointService implements RequestEndpointServiceI {
 
     const dto = new RoleCheckRequestDto({ userEmail: requestorEmail });
 
-    await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    if (!roleCheckResponseDto.hasRole) {
+      throw new UnauthorizedAdjudicatorException(requestorEmail);
+    }
 
     const requestorUser = await this.userEndpointService.findByEmail(dto);
     if (!requestorUser) {
@@ -140,7 +143,10 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   ): Promise<ViewRequestsResponseDto> {
     const payload = { userEmail: String(req.userEmail || "").trim() };
     const dto = new RoleCheckRequestDto(payload);
-    await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    if (!roleCheckResponseDto.hasRole) {
+      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+    }
 
     const rows = await this.useCaseRequestDAO.findByStatusId(
       StatusEnum.PENDING.id
@@ -155,8 +161,11 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   ): Promise<ViewRequestsResponseDto> {
     const payload = { userEmail: String(req.userEmail || "").trim() };
     const dto = new RoleCheckRequestDto(payload);
-    await this.userEndpointService.isAuthorizedAdjudicator(dto);
-
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    console.log('roleCheckResponseDto.hasRole:', roleCheckResponseDto.hasRole);
+    if (!roleCheckResponseDto.hasRole) {
+      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+    }
     const rows = await this.useCaseRequestDAO.findAllRequests({
       include: this._minimalIncludes(),
       order: [["id", "DESC"]],
@@ -171,7 +180,10 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   ): Promise<ViewRequestsResponseDto> {
     const payload = { userEmail: String(req.userEmail || "").trim() };
     const dto = new RoleCheckRequestDto(payload);
-    await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    if (!roleCheckResponseDto.hasRole) {
+      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+    }
     const requestorUser = await this.userEndpointService.findByEmail(dto);
 
     const rows = await this.useCaseRequestDAO.findByRequestorId(
@@ -261,12 +273,12 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       vals.find(v => v !== undefined && v !== null);
 
     return {
-      decisionNumber: pick<string>(row.decisionNumber, row.decision_number),
+      decisionNumber: pick<string>(row.decisionNumber, row.decision_number) ?? '',
       adjudicatorEmail: pick<string>(
         row.adjudicator?.email,
         row.Adjudicator?.email
-      ),
-      statusId: pick<number>(row.statusId, row.status_id, row.status?.id),
+      ) ?? '',
+      statusId: pick<number>(row.statusId, row.status_id, row.status?.id) ?? 0,
 
       // dates: prefer decisionAt if present, else createdAt; include snake_case fallbacks
       createdAt: (pick<Date | string>(
