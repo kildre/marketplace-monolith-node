@@ -62,6 +62,43 @@ class Props {
   }
 }
 
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     SubmitDecisionRequestDto:
+ *       type: object
+ *       properties:
+ *         decisionNumber:
+ *           type: string
+ *           example: "DEC-123"
+ *         requestNumber:
+ *           type: string
+ *           example: "REQ-456"
+ *         adjudicatorEmail:
+ *           type: string
+ *           example: "adjudicator@example.com"
+ *         statusId:
+ *           type: integer
+ *           example: 2
+ *         comments:
+ *           type: string
+ *           example: "Decision comments here"
+ *         ticketType:
+ *           type: string
+ *           example: "Support"
+ *         asset:
+ *           type: string
+ *           example: "Laptop"
+ *         quantity:
+ *           type: integer
+ *           example: 5
+ *         estimatedPrice:
+ *           type: number
+ *           format: float
+ *           example: 1500.75
+ */
 export default class SubmitDecisionRequestDto {
   public readonly decisionNumber?: string;
   public readonly requestNumber?: string;

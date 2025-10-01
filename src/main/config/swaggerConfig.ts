@@ -13,7 +13,11 @@ const configureSwagger = (app: Application) => {
                 description: 'API documentation for the Advana Marketplace Monolith.',
             },
         },
-        apis: ['./src/main/web/routes/*.ts'], // Path to your route files
+        apis: [
+            './src/main/web/routes/*.ts', // Path to your route files
+            './src/main/web/dtos/*.ts', // Path to your DTO files
+        ], 
+
     };
 
     app.use('/swagger-ui', swaggerUi.serve, swaggerUi.setup(swaggerJsDoc(options)));

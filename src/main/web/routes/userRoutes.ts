@@ -7,34 +7,21 @@ const router = express.Router();
  * @swagger
  * /api/users/isAuthorizedAdjudicator:
  *   post:
- *     summary: Checks if the user is an authorized adjudicator
+ *     summary: Check if the user is an authorized adjudicator
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               userEmail:
- *                 type: string
- *                 example: user@example.com
- *             required:
- *               - userEmail
+ *             $ref: '#/components/schemas/RoleCheckRequestDto'
  *     responses:
  *       200:
- *         description: Role check result
+ *         description: Authorization result
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 hasRole:
- *                   type: boolean
- *                   nullable: false
- *                   example: true
+ *               $ref: '#/components/schemas/RoleCheckResponseDto'
  */
 router.post("/isAuthorizedAdjudicator", controller.isAuthorizedAdjudicator);
-
-
 
 export default router;
