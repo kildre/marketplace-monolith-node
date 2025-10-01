@@ -27,7 +27,6 @@ export async function submit(
     const response = await service.submit(payload);
     return res.status(200).json(response);
   } catch (e: any) {
-    console.error('Error in submit controller:', e);
     // Domain errors
     if (e instanceof UnauthorizedRequestorException) {
       return res
