@@ -20,6 +20,7 @@
   "dependencies": {
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "4.21.2",
     "express-actuator": "^1.8.4",
@@ -44,6 +45,7 @@
     "@babel/preset-typescript": "^7.27.1",
     "@swc/core": "^1.13.5",
     "@testcontainers/postgresql": "^11.6.0",
+    "@types/cors": "^2.8.19",
     "@types/express-actuator": "^1.8.3",
     "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.10",

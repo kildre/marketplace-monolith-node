@@ -13,8 +13,12 @@ services:
       dockerfile: Dockerfile.local
     restart: always
     environment:
-      # Prefer a single URL env
-      SECRET_ENV_POSTGRESQL: postgres://postgres:password@postgres:5432/advana-marketplace-monolith-db
+      # Main app uses this
+      SECRET_ENV_POSTGRESQL: "postgres://postgres:password@postgres:5432/advana-marketplace-monolith-db"
+      # Tests use this
+      DATABASE_URL: "postgres://postgres:password@postgres:5432/advana-marketplace-monolith-db"
+      SEQUELIZE_LOG_SQL: "true"
+      CORS_ORIGIN: "http://localhost:8080"
     depends_on:
       postgres:
         condition: service_healthy

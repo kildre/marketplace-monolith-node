@@ -12,6 +12,9 @@ if (RAW_DIALECT === 'sqlite3') console.warn('[sequelize] Normalized dialect "sql
 
 // Prefer your secret; fallback to DATABASE_URL
 const URL = process.env['secret-env-postgresql'] || process.env['SECRET_ENV_POSTGRESQL'] || null;
+console.log('[sequelize] Checking URL:', URL ? 'FOUND' : 'NOT FOUND');
+console.log('[sequelize] secret-env-postgresql:', process.env['secret-env-postgresql'] ? 'EXISTS' : 'MISSING');
+console.log('[sequelize] SECRET_ENV_POSTGRESQL:', process.env['SECRET_ENV_POSTGRESQL'] ? 'EXISTS' : 'MISSING');
 if (URL) process.env.SEQUELIZE_URL = URL; // single source for CLI
 
 /* ---------- shared options ---------- */
@@ -58,12 +61,16 @@ function createSequelize(envName) {
     seederStorageTableName,
     ...sequelizeOpts
   } = cfg;
-  if (URL) {
-    const url = URL;
-    if (!url) throw new Error(`Env var ${use_env_variable} not set`);
+  
+  // Check for the URL at runtime
+  const url = process.env.SEQUELIZE_URL || process.env['secret-env-postgresql'] || process.env['SECRET_ENV_POSTGRESQL'];
+  
+  if (url) {
     return new Sequelize(url, sequelizeOpts);
   }
-  console.log(`[sequelize] No connection URL for env "${env}"`);  
+  
+  console.log(`[sequelize] No connection URL for env "${env}"`);
+  throw new Error(`Database or username missing for non-URL config`);
 }
 
 const sequelize = createSequelize();

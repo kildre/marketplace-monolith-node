@@ -6,6 +6,7 @@ import { MarketplaceUser } from '../rdbms/entities/MarketplaceUser';
 
 interface UserEndpointServiceI {
   isAuthorizedAdjudicator(request: RoleCheckRequestDto): Promise<RoleCheckResponseDto>;
+  isAuthorizedRequestor(request: RoleCheckRequestDto): Promise<RoleCheckResponseDto>;
   findByEmail(request: RoleCheckRequestDto): Promise<MarketplaceUser>;
 }
 
@@ -17,6 +18,16 @@ const isAuthorizedAdjudicator = async (
   const hasRole = await userDao.existsByEmailAndRoleId(
     request.userEmail,
     RoleEnum.ADJUDICATOR.id
+  );
+  return new RoleCheckResponseDto({ hasRole });
+};
+
+const isAuthorizedRequestor = async (
+  request: RoleCheckRequestDto
+): Promise<RoleCheckResponseDto> => {
+  const hasRole = await userDao.existsByEmailAndRoleId(
+    request.userEmail,
+    RoleEnum.REQUESTOR.id
   );
   return new RoleCheckResponseDto({ hasRole });
 };
@@ -39,6 +50,7 @@ const findByEmail = async (request: RoleCheckRequestDto): Promise<MarketplaceUse
 
 const userEndpointService: UserEndpointServiceI = { 
   isAuthorizedAdjudicator,
+  isAuthorizedRequestor,
   findByEmail
 };
 export default userEndpointService;

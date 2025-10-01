@@ -101,7 +101,7 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     }
 
     return MarketplaceOrder.findAll({
-      where: { requestor_id: requestorId },
+      where: { requestorId },
       include,
       order: [['id', 'DESC']],
       // distinct: true, // safe for pagination with includes
@@ -120,7 +120,7 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     options: WithTx & { limit?: number; offset?: number } = {}
   ): Promise<MarketplaceOrder[]> {
     return MarketplaceOrder.findAll({
-      where: { status_id: statusId },
+      where: { statusId },
       include: [
         { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
         { model: Status, as: 'status', attributes: ['id', 'name'] },
