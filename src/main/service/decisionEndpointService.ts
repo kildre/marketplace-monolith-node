@@ -12,7 +12,7 @@ import { Decision } from "../rdbms/entities/Decision";
 
 import { UseCaseRequestDAO } from '../rdbms/dao/UseCaseRequestDAO';
 import userEndpointService from './userEndpointService';
-import { StatusEnum, fromId, fromCode } from '../web/dtos/StatusEnum';
+import { StatusEnum, fromId, fromCode } from '../domain/enumeration/StatusEnum';
 
 export interface DecisionEndpointServiceI {
   submit(req: SubmitDecisionRequestDto): Promise<SubmitDecisionResponseDto>;

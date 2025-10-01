@@ -1,6 +1,6 @@
 // src/services/requestEndpointServiceImpl.ts
 import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, ValidationError, Sequelize } from "sequelize";
-import { StatusEnum } from "../web/dtos/StatusEnum";
+import { StatusEnum } from "../domain/enumeration/StatusEnum";
 import { UseCaseRequestDAO } from "../rdbms/dao/UseCaseRequestDAO";
 import { ProductDAO } from "../rdbms/dao/ProductDAO";
 import { CartItemDAO } from "../rdbms/dao/CartItemDAO";
