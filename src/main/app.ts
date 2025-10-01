@@ -6,6 +6,7 @@ import { assertDatabaseConnectionOk, closeDatabase } from './service/sequelize';
 import { sequelize } from './config/sequelizeCLIConfig.cjs';
 import { makeMigrator } from './migrate';
 require('reflect-metadata');
+import { runMigrations } from './migrate';
 
 export default async function run() {
   log.info('Starting Advana Marketplace Monolith ...');
@@ -15,10 +16,16 @@ export default async function run() {
 
   // run migrations (and optionally seeders) at startup
   log.info('Running database migration ...');
-  const migrator = makeMigrator(sequelize);
+  (async () => {
+    try {
+      await runMigrations(sequelize);
+      // start your server...
+    } catch (e) {
+      console.error('[startup] Migration failure:', e);
+      process.exit(1);
+    }
+  })();
 
-  const pending = await migrator.pending();
-  await migrator.up(); // <-- actually run them
   // Build app
   const app = express();
   // If configureApp starts the server inside, await it if it returns a promise
