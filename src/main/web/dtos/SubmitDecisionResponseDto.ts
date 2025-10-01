@@ -4,11 +4,13 @@ import ConstraintError from "src/main/domain/errors/ConstraintError";
 
 interface PropsI {
   decisionNumber: string;
+  errMsg?: string;
 }
 
 class Props {
   @IsString()
   decisionNumber!: string;
+  errMsg?: string;
 
   constructor(data: PropsI) {
     Object.assign(this, data);
@@ -17,6 +19,7 @@ class Props {
 
 export default class SubmitDecisionResponseDto {
   public readonly decisionNumber!: string;
+  public readonly errMsg!: string;
 
   constructor(data: PropsI) {
     const props = new Props(data);
@@ -25,5 +28,6 @@ export default class SubmitDecisionResponseDto {
       throw new ConstraintError(errors);
     }
     this.decisionNumber = props.decisionNumber;
+    this.errMsg = props.errMsg ?? "";
   }
 }

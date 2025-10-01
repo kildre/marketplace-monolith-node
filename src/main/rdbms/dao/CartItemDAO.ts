@@ -63,7 +63,6 @@ export class CartItemDAO {
     },
     opts: WithTx = {}
   ): Promise<CartItem> {
-    console.log("Creating CartItem:", data);
     return this.model.create(
       {
         requestId: data.requestId,

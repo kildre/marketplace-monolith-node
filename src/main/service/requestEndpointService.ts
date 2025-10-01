@@ -17,14 +17,8 @@ import UseCaseRequestDto from "../web/dtos/UseCaseRequestDto";
 import ViewRequestsRequestDto from "../web/dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
 import SubmitRequestResponseDto from "../web/dtos/SubmitRequestResponseDto";
-
-// --- Domain Error ---
-export class ProductNotFoundException extends Error {
-  constructor(name: string) {
-    super(`Product not found: ${name}`);
-    this.name = "ProductNotFoundException";
-  }
-}
+import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
+import { ProductNotFoundException } from './errors/ProductNotFoundException';
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
@@ -59,7 +53,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
 
   // ---------- submit ----------
   async submit(request: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto> {
-    // 1) Normalize & validate email
+    //Normalize & validate email
     const requestorEmail = String(request.requestorEmail ?? '')
       .trim()
       .toLowerCase();
@@ -68,40 +62,41 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     }
 
     const dto = new RoleCheckRequestDto({ userEmail: requestorEmail });
+
+    await this.userEndpointService.isAuthorizedAdjudicator(dto);
+
     const requestorUser = await this.userEndpointService.findByEmail(dto);
     if (!requestorUser) {
       throw new Error(`User with email ${requestorEmail} not found.`);
     }
 
     try {
-      // 3) Transaction: create request + cart items
+      //Transaction: create request + cart items
       const useCaseReq = await this.sequelize.transaction(async (tx: Transaction) => {
-          const ucr = await this.useCaseRequestDAO.create(
-            {
-              requestNumber: request.requestNumber,
-              requestedToolName: request.requestedToolName,
-              description: request.description,
-              designation: request.designation,
-              agency: request.agency,
-              organization: request.organization,
-              otherOrganization: request.otherOrganization,
-              pointOfContact: request.pointOfContact,
-              email: request.email,
-              phoneNumber: request.phoneNumber,
-              estimatedRom: request.estimatedRom,
-              requestorId: requestorUser.id,
-              statusId: StatusEnum.PENDING.id,
-            } as any,
-            { transaction: tx }
-          );
-        console.log("Created UseCaseRequest:", ucr);
-        // 3b) Resolve products & create CartItems
+        const ucr = await this.useCaseRequestDAO.create(
+          {
+            requestNumber: request.requestNumber,
+            requestedToolName: request.requestedToolName,
+            description: request.description,
+            designation: request.designation,
+            agency: request.agency,
+            organization: request.organization,
+            otherOrganization: request.otherOrganization,
+            pointOfContact: request.pointOfContact,
+            email: request.email,
+            phoneNumber: request.phoneNumber,
+            estimatedRom: request.estimatedRom,
+            requestorId: requestorUser.id,
+            statusId: StatusEnum.PENDING.id,
+          } as any,
+          { transaction: tx }
+        );
+        // Resolve products & create CartItems
         for (const item of request.cartItems ?? []) {
           const product = await this.productDAO.findByName(item.name, { transaction: tx });
           if (!product) {
             throw new ProductNotFoundException(item.name);
           }
-          console.log("Found Product:", product.dataValues.id, ucr.dataValues.id);
           await this.cartItemDAO.create(
             {
               requestId: ucr.dataValues.id,
@@ -110,20 +105,19 @@ export class RequestEndpointService implements RequestEndpointServiceI {
             } as any,
             { transaction: tx }
           );
-          console.log("Created CartItem for product:", item.name);
         }
 
         return ucr; // return from the transaction callback
       });
 
-      // 4) Build response
+      //Build response
       const response = new SubmitRequestResponseDto({
         requestNumber: String(request.requestNumber ?? '').trim(),
         errMsg: '',
       });
       return response;
     } catch (err: any) {
-      // 5) Error mapping
+      //Error mapping
       if (err instanceof UniqueConstraintError) {
         throw new Error(
           `Duplicate value: ${err.errors?.[0]?.message ?? 'unique constraint violated'}`
@@ -214,45 +208,92 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     ];
   }
 
-  private _toUseCaseRequestDto(r: UseCaseRequest): UseCaseRequestDto {
-    const anyR = r.dataValues as any;
-    const cartItems: CartItemDto[] = (anyR.cart_items ?? []).map((ci: any) => ({
-      name: ci.product?.name ?? "UNKNOWN",
-      quantity: ci.quantity,
+  private _toUseCaseRequestDto(row: UseCaseRequest | any): UseCaseRequestDto {
+    // If it's a Sequelize model, get a plain clone (camelCase keys)
+    const r: any =
+      typeof row?.get === 'function' ? row.get({ plain: true, clone: true }) : row;
+
+    // Helper to pick the first defined value (handles camelCase or snake_case)
+    const pick = <T>(...vals: (T | undefined)[]) =>
+      vals.find(v => v !== undefined);
+
+    // cart items (expects include: { model: CartItem, as: 'cartItems', include: [{ model: Product, as: 'product' }] })
+    const cartItems: CartItemDto[] = (r.cartItems ?? r.cart_items ?? []).map((ci: any) => ({
+      name: pick(ci?.product?.name, ci?.Product?.name, 'UNKNOWN'),
+      quantity: pick<number>(ci?.quantity, 0)!,
     }));
 
+    // pick one decision if you need a single decision in DTO (or map all if your DTO supports an array)
+    const decisionSrc =
+      (Array.isArray(r.decisions) && r.decisions[0]) ||
+      r.decision ||
+      (Array.isArray(r?.Decisions) && r.Decisions[0]);
+
     return {
-      requestNumber: anyR.request_number,
-      statusId: anyR.status_id ?? anyR.status?.id,
-      requestorEmail: anyR.requestor?.email,
-      designation: anyR.designation,
-      agency: anyR.agency,
-      organization: anyR.organization,
-      otherOrganization: anyR.other_organization,
-      pointOfContact: anyR.point_of_contact,
-      email: anyR.email,
-      phoneNumber: anyR.phone_number,
-      requestedToolName: anyR.requested_tool_name,
-      description: anyR.description,
-      createdAt: anyR.createdAt,
-      updatedAt: anyR.updatedAt ?? anyR.updateAt,
-      decision: this._toDecisionDto(anyR.decision),
+      requestNumber: pick<string>(r.requestNumber, r.request_number)!,
+      statusId: pick<number>(r.statusId, r.status_id, r.status?.id),
+      requestorEmail: pick<string>(r.requestor?.email, r.Requestor?.email), // association 'requestor'
+      designation: pick<string>(r.designation, r.designation ?? undefined),
+      agency: pick<string>(r.agency, r.agency ?? undefined),
+      organization: pick<string>(r.organization, r.organization ?? undefined),
+      otherOrganization: pick<string>(r.otherOrganization, r.other_organization),
+      pointOfContact: pick<string>(r.pointOfContact, r.point_of_contact),
+      email: r.email,
+      phoneNumber: pick<string>(r.phoneNumber, r.phone_number),
+      requestedToolName: pick<string>(r.requestedToolName, r.requested_tool_name)!,
+      description: r.description,
+      createdAt: pick<Date>(r.createdAt, r.created_at),
+      updatedAt: pick<Date>(r.updatedAt, r.updated_at, r.updateAt), // covers past typo
+      decision: decisionSrc ? this._toDecisionDto(decisionSrc) : undefined,
       cartItems,
     };
   }
 
-  private _toDecisionDto(d?: Decision | null): DecisionDto | undefined {
+  private _toDecisionDto(d?: Decision | any): DecisionDto | undefined {
     if (!d) return undefined;
-    const anyD = d as any;
+
+    // If it's a Sequelize instance, clone to a plain object (camelCase keys)
+    const row: any =
+      typeof d?.get === 'function' ? d.get({ plain: true, clone: true }) : d;
+
+    // helper: first defined
+    const pick = <T>(...vals: (T | undefined | null)[]) =>
+      vals.find(v => v !== undefined && v !== null);
+
     return {
-      decisionNumber: anyD.decision_number ?? anyD.decisionNumber,
-      adjudicatorEmail: anyD.adjudicator?.email,
-      statusId: anyD.status_id ?? anyD.status?.id,
-      createdAt: anyD.createdAt,
-      updatedAt: anyD.updatedAt ?? anyD.updateAt,
-      comments: anyD.comments,
+      decisionNumber: pick<string>(row.decisionNumber, row.decision_number),
+      adjudicatorEmail: pick<string>(
+        row.adjudicator?.email,
+        row.Adjudicator?.email
+      ),
+      statusId: pick<number>(row.statusId, row.status_id, row.status?.id),
+
+      // dates: prefer decisionAt if present, else createdAt; include snake_case fallbacks
+      createdAt: (pick<Date | string>(
+        row.decisionAt,
+        row.decision_at,
+        row.createdAt,
+        row.created_at
+      ) as any) ?? undefined,
+      updatedAt: (pick<Date | string>(
+        row.updatedAt,
+        row.updated_at,
+        row.updateAt
+      ) as any) ?? undefined,
+
+      comments: row.comments,
+
+      // optional business fields if your DTO includes them
+      ticketType: pick<string>(row.ticketType, row.ticket_type),
+      asset: row.asset,
+      quantity: row.quantity,
+      estimatedPrice: pick<number | string>(
+        row.estimatedPrice,
+        row.estimated_price
+      ) as any,
     };
   }
+
 }
 
 export default new RequestEndpointService();

@@ -36,7 +36,7 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
     if (!s) {
       throw new Error(
         `Model ${this.model.name} is not bound to a Sequelize instance. ` +
-          'Did you call initModel(...) and initDb() before using the DAO?'
+        'Did you call initModel(...) and initDb() before using the DAO?'
       );
     }
     return s;
@@ -66,7 +66,7 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
     return include.length ? include : undefined;
   }
 
-    async findAllRequests(
+  async findAllRequests(
     options: CommonOpts & PageOpts = {}
   ): Promise<UseCaseRequest[]> {
     const include = this.buildIncludes(
@@ -135,18 +135,35 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
    */
   async findByRequestNumber(
     requestNumber: string,
-    options: CommonOpts = {}
+    options: CommonOpts & { throwIfMissing?: boolean } = {}
   ): Promise<UseCaseRequest | null> {
-    const include = this.buildIncludes(
-      options,
-      options.extraInclude
-    );
-
-    return this.model.findOne({
-      where: { request_number: requestNumber } as any,
+    const include = this.buildIncludes(options, options.extraInclude);
+    const row = await this.model.findOne({
+      where: { requestNumber },             // ✅ use attribute name; Sequelize maps to request_number
       include,
       transaction: options.transaction,
+      raw: false,                           // ✅ ensure Model instance
       ...(options.findOptions ?? {}),
     });
+
+    if (!row) {
+      if (options.throwIfMissing) {
+        throw new Error(`UseCaseRequest with requestNumber=${requestNumber} not found`);
+      }
+      return null;
+    }
+    // Runtime validation (defensive): make sure it's a Sequelize model instance of THIS model.
+    // Note: instanceof can be brittle if multiple copies of the class exist; this version is safer.
+    const looksLikeModel =
+      typeof (row as any).get === 'function' &&
+      (row as any).constructor === this.model;
+
+    if (!looksLikeModel) {
+      // Optionally log `row` here for diagnostics
+      throw new Error('Invariant violation: expected a UseCaseRequest model instance');
+    }
+
+    return row as UseCaseRequest;
   }
+
 }
