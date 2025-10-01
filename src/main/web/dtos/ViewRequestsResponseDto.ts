@@ -16,6 +16,20 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ViewRequestsResponseDto:
+ *       type: object
+ *       properties:
+ *         requests:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/UseCaseRequestDto'
+ *       required:
+ *         - requests
+ */
 export default class ViewRequestsResponseDto {
   public readonly requests!: UseCaseRequestDto[];
 

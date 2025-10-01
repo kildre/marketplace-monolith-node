@@ -86,6 +86,54 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     SubmitRequestRequestDto:
+ *       type: object
+ *       properties:
+ *         requestNumber:
+ *           type: string
+ *           example: "REQ-789"
+ *         requestorEmail:
+ *           type: string
+ *           example: "requestor@example.com"
+ *         designation:
+ *           type: string
+ *           example: "Analyst"
+ *         agency:
+ *           type: string
+ *           example: "Agency Name"
+ *         organization:
+ *           type: string
+ *           example: "Organization Name"
+ *         otherOrganization:
+ *           type: string
+ *           example: "Other Org"
+ *         pointOfContact:
+ *           type: string
+ *           example: "Jane Doe"
+ *         email:
+ *           type: string
+ *           example: "jane.doe@example.com"
+ *         phoneNumber:
+ *           type: string
+ *           example: "555-123-4567"
+ *         estimatedRom:
+ *           type: string
+ *           example: "10000"
+ *         requestedToolName:
+ *           type: string
+ *           example: "Tool X"
+ *         description:
+ *           type: string
+ *           example: "Requesting access to Tool X for project Y."
+ *         cartItems:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/CartItemDto'
+ */
 export default class SubmitRequestRequestDto {
   public readonly requestNumber?: string;
   public readonly requestorEmail?: string;

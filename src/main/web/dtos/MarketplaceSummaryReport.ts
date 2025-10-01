@@ -23,6 +23,27 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     MarketplaceSummaryReport:
+ *       type: object
+ *       properties:
+ *         totalUsers:
+ *           type: integer
+ *           example: 100
+ *         totalUseCases:
+ *           type: integer
+ *           example: 25
+ *         totalOrders:
+ *           type: integer
+ *           example: 50
+ *       required:
+ *         - totalUsers
+ *         - totalUseCases
+ *         - totalOrders
+ */
 export default class MarketplaceSummaryReport {
   public readonly totalUsers!: number;
   public readonly totalUseCases!: number;

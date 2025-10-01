@@ -15,6 +15,19 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     RoleCheckRequestDto:
+ *       type: object
+ *       properties:
+ *         userEmail:
+ *           type: string
+ *           example: "user@example.com"
+ *       required:
+ *         - userEmail
+ */
 export default class RoleCheckRequestDto {
   public readonly userEmail!: string;
 

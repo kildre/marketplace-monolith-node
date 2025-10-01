@@ -17,6 +17,22 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     SubmitDecisionResponseDto:
+ *       type: object
+ *       properties:
+ *         decisionNumber:
+ *           type: string
+ *           example: "DEC-123"
+ *         errMsg:
+ *           type: string
+ *           example: ""
+ *       required:
+ *         - decisionNumber
+ */
 export default class SubmitDecisionResponseDto {
   public readonly decisionNumber!: string;
   public readonly errMsg!: string;

@@ -110,6 +110,67 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     UseCaseRequestDto:
+ *       type: object
+ *       properties:
+ *         requestNumber:
+ *           type: string
+ *           example: "REQ-001"
+ *         statusId:
+ *           type: integer
+ *           example: 1
+ *         requestorEmail:
+ *           type: string
+ *           example: "user@example.com"
+ *         designation:
+ *           type: string
+ *           example: "Analyst"
+ *         agency:
+ *           type: string
+ *           example: "Agency Name"
+ *         organization:
+ *           type: string
+ *           example: "Organization Name"
+ *         otherOrganization:
+ *           type: string
+ *           example: "Other Org"
+ *         pointOfContact:
+ *           type: string
+ *           example: "Jane Doe"
+ *         email:
+ *           type: string
+ *           example: "jane.doe@example.com"
+ *         phoneNumber:
+ *           type: string
+ *           example: "555-123-4567"
+ *         estimatedRom:
+ *           type: string
+ *           example: "10000"
+ *         requestedToolName:
+ *           type: string
+ *           example: "Tool X"
+ *         description:
+ *           type: string
+ *           example: "Requesting access to Tool X for project Y."
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-10-01T12:00:00Z"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-10-01T12:30:00Z"
+ *         decision:
+ *           $ref: '#/components/schemas/DecisionDto'
+ *         cartItems:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/CartItemDto'
+ */
 export default class UseCaseRequestDto {
   public readonly requestNumber?: string;
   public readonly statusId?: number;

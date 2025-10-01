@@ -45,6 +45,41 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     DecisionDto:
+ *       type: object
+ *       properties:
+ *         decisionNumber:
+ *           type: string
+ *           example: "DEC-001"
+ *         statusId:
+ *           type: integer
+ *           example: 1
+ *         adjudicatorEmail:
+ *           type: string
+ *           example: "adjudicator@example.com"
+ *         comments:
+ *           type: string
+ *           example: "Approved after review"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-10-01T12:00:00Z"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-10-01T12:30:00Z"
+ *       required:
+ *         - decisionNumber
+ *         - statusId
+ *         - adjudicatorEmail
+ *         - comments
+ *         - createdAt
+ *         - updatedAt
+ */
 export default class DecisionDto {
   public readonly decisionNumber!: string;
   public readonly statusId!: number;

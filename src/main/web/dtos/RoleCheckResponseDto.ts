@@ -14,6 +14,19 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     RoleCheckResponseDto:
+ *       type: object
+ *       properties:
+ *         hasRole:
+ *           type: boolean
+ *           example: true
+ *       required:
+ *         - hasRole
+ */
 export default class RoleCheckResponseDto {
   public readonly hasRole!: boolean;
 

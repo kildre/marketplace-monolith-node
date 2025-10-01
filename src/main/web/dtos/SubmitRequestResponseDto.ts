@@ -19,6 +19,23 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     SubmitRequestResponseDto:
+ *       type: object
+ *       properties:
+ *         requestNumber:
+ *           type: string
+ *           example: "REQ-789"
+ *         errMsg:
+ *           type: string
+ *           example: ""
+ *       required:
+ *         - requestNumber
+ *         - errMsg
+ */
 export default class SubmitRequestResponseDto {
   public readonly requestNumber!: string;
   public readonly errMsg!: string;

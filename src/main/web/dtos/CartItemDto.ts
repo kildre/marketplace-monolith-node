@@ -19,6 +19,23 @@ class Props {
   }
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     CartItemDto:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: "Sample Product"
+ *         quantity:
+ *           type: integer
+ *           example: 2
+ *       required:
+ *         - name
+ *         - quantity
+ */
 export default class CartItemDto {
   public readonly name!: string;
   public readonly quantity!: number;
