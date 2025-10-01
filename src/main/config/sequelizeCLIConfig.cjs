@@ -11,7 +11,7 @@ const DIALECT = RAW_DIALECT === 'sqlite3' ? 'sqlite' : RAW_DIALECT;
 if (RAW_DIALECT === 'sqlite3') console.warn('[sequelize] Normalized dialect "sqlite3" -> "sqlite"');
 
 // Prefer your secret; fallback to DATABASE_URL
-const URL = process.env['secret-env-postgresql'] || process.env.DATABASE_URL || null;
+const URL = process.env['secret-env-postgresql'] || process.env['SECRET_ENV_POSTGRESQL'] || null;
 if (URL) process.env.SEQUELIZE_URL = URL; // single source for CLI
 
 /* ---------- shared options ---------- */
@@ -58,17 +58,12 @@ function createSequelize(envName) {
     seederStorageTableName,
     ...sequelizeOpts
   } = cfg;
-
-  if (use_env_variable) {
-    const url = process.env[use_env_variable];
+  if (URL) {
+    const url = URL;
     if (!url) throw new Error(`Env var ${use_env_variable} not set`);
     return new Sequelize(url, sequelizeOpts);
   }
-
-  // Only used if you decide to pass discrete creds instead of URL.
-  const { database, username, password } = process.env;
-  if (!database || !username) throw new Error('Database or username missing for non-URL config');
-  return new Sequelize(database, username, password, sequelizeOpts);
+  console.log(`[sequelize] No connection URL for env "${env}"`);  
 }
 
 const sequelize = createSequelize();

@@ -46,7 +46,10 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
     }
 
     const dto = new RoleCheckRequestDto({ userEmail: adjudicatorEmail });
-    await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    if (!roleCheckResponseDto.hasRole) {
+      throw new UnauthorizedAdjudicatorException(adjudicatorEmail);
+    }
 
     const adjudicatorUser = await this.userEndpointService.findByEmail(dto);
     if (!adjudicatorUser) {
