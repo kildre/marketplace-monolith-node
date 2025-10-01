@@ -11,7 +11,11 @@
     "db:seed:undo": "sequelize db:seed:undo:all",
     "test": "jest --testPathPatterns=\"src/test/.*\\.test\\.(ts|tsx)$\"",
     "unitTest": "jest --testPathPatterns=\"src/test/unit/.*\\.test\\.(ts|tsx)$\"",
-    "intTest": "jest --testPathPatterns=\"src/test/int/.*\\.test\\.(ts|tsx)$\""
+    "intTest": "jest --testPathPatterns=\"src/test/int/.*\\.test\\.(ts|tsx)$\"",
+    "docker:build": "docker-compose up --build",
+    "docker:prune": "docker system prune -af",
+    "docker:stop": "docker-compose stop",
+    "docker:kill": "docker-compose kill"
   },
   "dependencies": {
     "class-transformer": "^0.5.1",
