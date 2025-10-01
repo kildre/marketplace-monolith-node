@@ -1,217 +1,155 @@
-// Converted from Java: UseCaseRequestDto.java
+// src/main/web/dtos/UseCaseRequestDto.ts
 import {
   IsString,
   IsOptional,
   IsInt,
-  IsDate,
+  IsDateString,
   IsArray,
-  ValidateNested,
   validateSync,
-} from "class-validator";
-import { Type } from "class-transformer";
-import ConstraintError from "src/main/domain/errors/ConstraintError";
-import DecisionDto from "./DecisionDto";
-import CartItemDto from "./CartItemDto";
+  IsEmail,
+} from 'class-validator';
+import ConstraintError from 'src/main/domain/errors/ConstraintError';
+import DecisionDto from './DecisionDto';
+import CartItemDto from './CartItemDto';
 
-interface PropsI {
-  requestNumber?: string;
-  statusId?: number;
-  requestorEmail?: string;
-  designation?: string;
-  agency?: string;
-  organization?: string;
-  otherOrganization?: string;
-  pointOfContact?: string;
-  email?: string;
-  phoneNumber?: string;
-  estimatedRom?: string;
-  requestedToolName?: string;
-  description?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  decision?: DecisionDto;
-  cartItems?: CartItemDto[];
+// Incoming shape (plain JSON)
+export interface UseCaseRequestDtoInput {
+  requestNumber?: unknown;
+  statusId?: unknown;               // may be string/number
+  requestorEmail?: unknown;
+  designation?: unknown;
+  agency?: unknown;
+  organization?: unknown;
+  otherOrganization?: unknown;
+  pointOfContact?: unknown;
+  email?: unknown;
+  phoneNumber?: unknown;
+  estimatedRom?: unknown;
+  requestedToolName?: unknown;
+  description?: unknown;
+  createdAt?: unknown;              // expect ISO string
+  updatedAt?: unknown;              // expect ISO string
+  decision?: unknown;               // plain object -> DecisionDto
+  cartItems?: unknown;              // array of plain -> CartItemDto[]
 }
 
-class Props {
+function toStringOrUndef(v: unknown): string | undefined {
+  if (v === null || v === undefined) return undefined;
+  const s = String(v).trim();
+  return s.length ? s : undefined;
+}
+
+function toNumberOrUndef(v: unknown): number | undefined {
+  if (v === null || v === undefined || v === '') return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function toIsoOrUndef(v: unknown): string | undefined {
+  const s = toStringOrUndef(v);
+  if (!s) return undefined;
+  // light sanity check; the @IsDateString validator will enforce format
+  return s;
+}
+
+export default class UseCaseRequestDto {
   @IsOptional()
   @IsString()
-  requestNumber?: string;
+  public readonly requestNumber?: string;
 
   @IsOptional()
   @IsInt()
-  statusId?: number;
+  public readonly statusId?: number;
 
   @IsOptional()
   @IsString()
-  requestorEmail?: string;
+  public readonly requestorEmail?: string;
 
   @IsOptional()
   @IsString()
-  designation?: string;
+  public readonly designation?: string;
 
   @IsOptional()
   @IsString()
-  agency?: string;
+  public readonly agency?: string;
 
   @IsOptional()
   @IsString()
-  organization?: string;
+  public readonly organization?: string;
 
   @IsOptional()
   @IsString()
-  otherOrganization?: string;
+  public readonly otherOrganization?: string;
 
   @IsOptional()
   @IsString()
-  pointOfContact?: string;
+  public readonly pointOfContact?: string;
+
+  @IsOptional()
+  @IsEmail()
+  public readonly email?: string;
 
   @IsOptional()
   @IsString()
-  email?: string;
+  public readonly phoneNumber?: string;
 
   @IsOptional()
   @IsString()
-  phoneNumber?: string;
+  public readonly estimatedRom?: string;
 
   @IsOptional()
   @IsString()
-  estimatedRom?: string;
+  public readonly requestedToolName?: string;
 
   @IsOptional()
   @IsString()
-  requestedToolName?: string;
+  public readonly description?: string;
 
   @IsOptional()
-  @IsString()
-  description?: string;
+  @IsDateString()
+  public readonly createdAt?: string;      // ISO string
 
   @IsOptional()
-  @IsDate()
-  createdAt?: Date;
+  @IsDateString()
+  public readonly updatedAt?: string;      // ISO string
 
-  @IsOptional()
-  @IsDate()
-  updatedAt?: Date;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => DecisionDto)
-  decision?: DecisionDto;
+  // We skip @ValidateNested here; the child DTOs validate themselves.
+  public readonly decision?: DecisionDto;
 
   @IsOptional()
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CartItemDto)
-  cartItems?: CartItemDto[];
-
-  constructor(data: PropsI) {
-    Object.assign(this, data);
-  }
-}
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     UseCaseRequestDto:
- *       type: object
- *       properties:
- *         requestNumber:
- *           type: string
- *           example: "REQ-001"
- *         statusId:
- *           type: integer
- *           example: 1
- *         requestorEmail:
- *           type: string
- *           example: "user@example.com"
- *         designation:
- *           type: string
- *           example: "Analyst"
- *         agency:
- *           type: string
- *           example: "Agency Name"
- *         organization:
- *           type: string
- *           example: "Organization Name"
- *         otherOrganization:
- *           type: string
- *           example: "Other Org"
- *         pointOfContact:
- *           type: string
- *           example: "Jane Doe"
- *         email:
- *           type: string
- *           example: "jane.doe@example.com"
- *         phoneNumber:
- *           type: string
- *           example: "555-123-4567"
- *         estimatedRom:
- *           type: string
- *           example: "10000"
- *         requestedToolName:
- *           type: string
- *           example: "Tool X"
- *         description:
- *           type: string
- *           example: "Requesting access to Tool X for project Y."
- *         createdAt:
- *           type: string
- *           format: date-time
- *           example: "2025-10-01T12:00:00Z"
- *         updatedAt:
- *           type: string
- *           format: date-time
- *           example: "2025-10-01T12:30:00Z"
- *         decision:
- *           $ref: '#/components/schemas/DecisionDto'
- *         cartItems:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/CartItemDto'
- */
-export default class UseCaseRequestDto {
-  public readonly requestNumber?: string;
-  public readonly statusId?: number;
-  public readonly requestorEmail?: string;
-  public readonly designation?: string;
-  public readonly agency?: string;
-  public readonly organization?: string;
-  public readonly otherOrganization?: string;
-  public readonly pointOfContact?: string;
-  public readonly email?: string;
-  public readonly phoneNumber?: string;
-  public readonly estimatedRom?: string;
-  public readonly requestedToolName?: string;
-  public readonly description?: string;
-  public readonly createdAt?: Date;
-  public readonly updatedAt?: Date;
-  public readonly decision?: DecisionDto;
   public readonly cartItems?: CartItemDto[];
 
-  constructor(data: PropsI) {
-    const props = new Props(data);
-    const errors = validateSync(props);
+  constructor(input: UseCaseRequestDtoInput = {}) {
+    // Manual normalization/coercion
+    this.requestNumber   = toStringOrUndef(input.requestNumber);
+    this.statusId        = toNumberOrUndef(input.statusId);
+    this.requestorEmail  = toStringOrUndef(input.requestorEmail);
+    this.designation     = toStringOrUndef(input.designation);
+    this.agency          = toStringOrUndef(input.agency);
+    this.organization    = toStringOrUndef(input.organization);
+    this.otherOrganization = toStringOrUndef(input.otherOrganization);
+    this.pointOfContact  = toStringOrUndef(input.pointOfContact);
+    this.email           = toStringOrUndef(input.email);
+    this.phoneNumber     = toStringOrUndef(input.phoneNumber);
+    this.estimatedRom    = toStringOrUndef(input.estimatedRom);
+    this.requestedToolName = toStringOrUndef(input.requestedToolName);
+    this.description     = toStringOrUndef(input.description);
+    this.createdAt       = toIsoOrUndef(input.createdAt);
+    this.updatedAt       = toIsoOrUndef(input.updatedAt);
+
+    // Nested objects — construct DTOs so they run their own validation
+    this.decision = input.decision
+      ? new DecisionDto(input.decision as any)
+      : undefined;
+
+    const items = Array.isArray(input.cartItems) ? input.cartItems : undefined;
+    this.cartItems = items?.map((it) => new CartItemDto(it as any));
+
+    // Validate this object
+    const errors = validateSync(this, { whitelist: false, forbidUnknownValues: false });
     if (errors.length > 0) {
       throw new ConstraintError(errors);
     }
-    this.requestNumber = props.requestNumber;
-    this.statusId = props.statusId;
-    this.requestorEmail = props.requestorEmail;
-    this.designation = props.designation;
-    this.agency = props.agency;
-    this.organization = props.organization;
-    this.otherOrganization = props.otherOrganization;
-    this.pointOfContact = props.pointOfContact;
-    this.email = props.email;
-    this.phoneNumber = props.phoneNumber;
-    this.estimatedRom = props.estimatedRom;
-    this.requestedToolName = props.requestedToolName;
-    this.description = props.description;
-    this.createdAt = props.createdAt;
-    this.updatedAt = props.updatedAt;
-    this.decision = props.decision;
-    this.cartItems = props.cartItems;
   }
 }

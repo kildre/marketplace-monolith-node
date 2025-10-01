@@ -5,6 +5,7 @@ import log from './service/loggingService';
 import { assertDatabaseConnectionOk, closeDatabase } from './service/sequelize';
 import { sequelize } from './config/sequelizeCLIConfig.cjs';
 import { makeMigrator } from './migrate';
+require('reflect-metadata');
 
 export default async function run() {
   log.info('Starting Advana Marketplace Monolith ...');

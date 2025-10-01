@@ -120,4 +120,35 @@ router.post('/viewPending', controller.viewPendingRequests);
  */
 router.post('/viewForRequestor', controller.viewRequestsForRequestor);
 
+/**
+ * @swagger
+ * /api/requests/viewForRequestNumber:
+ *   post:
+ *     summary: View a request by its request number
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               requestNumber:
+ *                 type: string
+ *                 example: "REQ-12345"
+ *               userEmail:
+ *                 type: string
+ *                 example: "user@example.com"
+ *             required:
+ *               - requestNumber
+ *               - userEmail
+ *     responses:
+ *       200:
+ *         description: Request details for the given request number
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UseCaseRequestDto'
+ */
+router.post('/viewForRequestNumber', controller.viewRequestByRequestNumber);
+
 export default router;

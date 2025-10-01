@@ -136,34 +136,34 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
   async findByRequestNumber(
     requestNumber: string,
     options: CommonOpts & { throwIfMissing?: boolean } = {}
-  ): Promise<UseCaseRequest | null> {
-    const include = this.buildIncludes(options, options.extraInclude);
-    const row = await this.model.findOne({
-      where: { requestNumber },             // ✅ use attribute name; Sequelize maps to request_number
+  ) {
+    const include = this.fullIncludes(); // ← mutable array
+    return this.model.findOne({
+      where: { requestNumber },
       include,
       transaction: options.transaction,
-      raw: false,                           // ✅ ensure Model instance
+      raw: false,
       ...(options.findOptions ?? {}),
     });
-
-    if (!row) {
-      if (options.throwIfMissing) {
-        throw new Error(`UseCaseRequest with requestNumber=${requestNumber} not found`);
-      }
-      return null;
-    }
-    // Runtime validation (defensive): make sure it's a Sequelize model instance of THIS model.
-    // Note: instanceof can be brittle if multiple copies of the class exist; this version is safer.
-    const looksLikeModel =
-      typeof (row as any).get === 'function' &&
-      (row as any).constructor === this.model;
-
-    if (!looksLikeModel) {
-      // Optionally log `row` here for diagnostics
-      throw new Error('Invariant violation: expected a UseCaseRequest model instance');
-    }
-
-    return row as UseCaseRequest;
   }
 
+  private fullIncludes(): Includeable[] {
+    return [
+      { association: 'requestor' },
+      { association: 'status' },
+      {
+        association: 'cartItems',
+        required: false,
+        include: [{ association: 'product' }],
+      },
+      {
+        association: 'decisions',
+        required: false,
+        include: [
+          { association: 'status' },
+          { association: 'adjudicator' },
+        ],
+      },
+    ];
+  }
 }

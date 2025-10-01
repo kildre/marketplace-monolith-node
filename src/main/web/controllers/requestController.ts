@@ -4,6 +4,8 @@ import SubmitRequestRequestDto from "../dtos/SubmitRequestRequestDto";
 import SubmitRequestResponseDto from "../dtos/SubmitRequestResponseDto";
 import ViewRequestsRequestDto from "../dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../dtos/ViewRequestsResponseDto";
+import UseCaseRequestDto from "../dtos/UseCaseRequestDto";
+import ViewRequestByRequestNumDto from "../dtos/ViewRequestByRequestNumDto";
 
 import { RequestEndpointService } from "../../service/requestEndpointService";
 
@@ -31,19 +33,19 @@ export async function submit(
     if (e instanceof UnauthorizedRequestorException) {
       return res
         .status(404)
-        .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: e.message }));
+        .json(new SubmitRequestResponseDto({ requestNumber: ''}));
     }
     if (e instanceof UseCaseRequestNotFoundException) {
       return res
         .status(404)
-        .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: e.message }));
+        .json(new SubmitRequestResponseDto({ requestNumber: '' }));
     }
 
  // --- Wrapped generic Error messages thrown by the service ---
     if (typeof e?.message === 'string') {
       return res
         .status(400)
-        .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: e.message }));
+        .json(new SubmitRequestResponseDto({ requestNumber: '' }));
     }
 
     // Unknown error
@@ -69,9 +71,9 @@ async function viewPendingRequests(
       // Return a fallback DTO with an empty requests array
       return res
         .status(403)
-        .json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
+        .json(new ViewRequestsResponseDto({ requests: [] }));
     }
-    return res.status(500).json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
+    return res.status(500).json(new ViewRequestsResponseDto({ requests: [] }));
   }
 }
 
@@ -87,9 +89,9 @@ async function viewAllRequests(
     if (e instanceof UnauthorizedAdjudicatorException) {
       return res
         .status(403)
-        .json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
+        .json(new ViewRequestsResponseDto({ requests: [] }));
     }
-    return res.status(500).json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
+    return res.status(500).json(new ViewRequestsResponseDto({ requests: [] }));
   }
 }
 
@@ -105,9 +107,27 @@ async function viewRequestsForRequestor(
     if (e instanceof UnauthorizedRequestorException) {
       return res
         .status(403)
-        .json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
+        .json(new ViewRequestsResponseDto({ requests: [] }));
     }
-    return res.status(500).json(new ViewRequestsResponseDto({ requests: [], errMsg: e.message  }));
+    return res.status(500).json(new ViewRequestsResponseDto({ requests: [] }));
+  }
+}
+
+async function viewRequestByRequestNumber(
+  req: Request,
+  res: Response<UseCaseRequestDto>
+) {
+  try {
+    const payload = req.body as ViewRequestByRequestNumDto;
+    const response = await service.viewRequestForRequestNumber(payload);
+    return res.status(200).json(response);
+  } catch (e: any) {
+    if (e instanceof UnauthorizedRequestorException) {
+      return res
+        .status(403)
+        .json(new UseCaseRequestDto({}));
+    }
+    return res.status(500).json(new UseCaseRequestDto({}));
   }
 }
 
@@ -116,4 +136,5 @@ export default {
   viewPendingRequests,
   viewAllRequests,
   viewRequestsForRequestor,
+  viewRequestByRequestNumber
 };

@@ -1,24 +1,27 @@
 // src/services/requestEndpointServiceImpl.ts
-import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, ValidationError, Sequelize } from "sequelize";
-import { StatusEnum } from "../web/dtos/StatusEnum";
-import { UseCaseRequestDAO } from "../rdbms/dao/UseCaseRequestDAO";
-import { ProductDAO } from "../rdbms/dao/ProductDAO";
+import { ForeignKeyConstraintError, Sequelize, Transaction, UniqueConstraintError, ValidationError } from "sequelize";
 import { CartItemDAO } from "../rdbms/dao/CartItemDAO";
-import userEndpointService from "./userEndpointService";
+import { ProductDAO } from "../rdbms/dao/ProductDAO";
+import { UseCaseRequestDAO } from "../rdbms/dao/UseCaseRequestDAO";
+import { Decision } from "../rdbms/entities/Decision";
 import { UseCaseRequest } from "../rdbms/entities/UseCaseRequest";
 import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
-import { Decision } from "../rdbms/entities/Decision";
+import ViewRequestByRequestNumDto from "../web/dtos/ViewRequestByRequestNumDto";
+
+import { StatusEnum } from "../web/dtos/StatusEnum";
+import userEndpointService from "./userEndpointService";
 
 // --- DTOs (same shapes you use in your controllers) ---
 import CartItemDto from "../web/dtos/CartItemDto";
 import DecisionDto from "../web/dtos/DecisionDto";
 import SubmitRequestRequestDto from "../web/dtos/SubmitRequestRequestDto";
+import SubmitRequestResponseDto from "../web/dtos/SubmitRequestResponseDto";
 import UseCaseRequestDto from "../web/dtos/UseCaseRequestDto";
 import ViewRequestsRequestDto from "../web/dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
-import SubmitRequestResponseDto from "../web/dtos/SubmitRequestResponseDto";
-import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
 import { ProductNotFoundException } from './errors/ProductNotFoundException';
+import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
+import { UseCaseRequestNotFoundException } from './errors/UseCaseRequestNotFoundException';
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
@@ -116,7 +119,6 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       //Build response
       const response = new SubmitRequestResponseDto({
         requestNumber: String(request.requestNumber ?? '').trim(),
-        errMsg: '',
       });
       return response;
     } catch (err: any) {
@@ -152,7 +154,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       StatusEnum.PENDING.id
     );
 
-    return { requests: rows.map((r) => this._toUseCaseRequestDto(r))};
+    return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
   }
 
   // ---------- viewAllRequests ----------
@@ -171,7 +173,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       order: [["id", "DESC"]],
     } as any);
 
-    return { requests: rows.map((r) => this._toUseCaseRequestDto(r))};
+    return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
   }
 
   // ---------- viewRequestsForRequestor ----------
@@ -194,28 +196,50 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       } as any
     );
 
-    return { requests: rows.map((r) => this._toUseCaseRequestDto(r))};
+    return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
+  }
+
+  // ---------- viewRequestsForRequestor ----------
+  async viewRequestForRequestNumber(
+    req: ViewRequestByRequestNumDto
+  ): Promise<UseCaseRequestDto> {
+    const payload = { userEmail: String(req.userEmail || "").trim() };
+    const dto = new RoleCheckRequestDto(payload);
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    if (!roleCheckResponseDto.hasRole) {
+      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+    }
+
+    const row = await this.useCaseRequestDAO.findByRequestNumber(
+      req.requestNumber,
+      {
+        include: this._minimalIncludes(),
+        order: [["id", "DESC"]],
+      } as any
+    );
+
+    if (!row) {
+      throw new UseCaseRequestNotFoundException(String(req.requestNumber ?? '')); 
+    }
+    return this._toUseCaseRequestDto(row);
   }
 
   // ---------- helpers ----------
   /** Eager includes built from the **model-bound** sequelize instance. */
   private _minimalIncludes() {
-    const { MarketplaceUser, Status, Decision, CartItem, Product } = this
-      .sequelize.models as any;
-
+    // You can reference by association name (recommended):
     return [
-      { model: MarketplaceUser, as: "requestor" },
-      { model: Status, as: "status" },
+      { association: "requestor" },
+      { association: "status" },
       {
-        model: Decision,
-        as: "decision",
+        association: "decisions",       
         required: false,
-        include: [{ model: Status, as: "status" }],
+        include: [{ association: "status" }],
       },
       {
-        model: CartItem,
-        as: "cartItems",
-        include: [{ model: Product, as: "product" }],
+        association: "cartItems",       
+        required: false,                
+        include: [{ association: "product" }],
       },
     ];
   }
