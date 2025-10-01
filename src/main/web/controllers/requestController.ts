@@ -55,7 +55,7 @@ export async function submit(
         : 'Internal Server Error';
     return res
       .status(500)
-      .json(new SubmitRequestResponseDto({ requestNumber: '', errMsg: generic }));
+      .json(new SubmitRequestResponseDto({ requestNumber: ''}));
   }
 }
 async function viewPendingRequests(

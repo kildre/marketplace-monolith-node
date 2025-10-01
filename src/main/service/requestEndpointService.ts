@@ -1,14 +1,12 @@
 // src/services/requestEndpointServiceImpl.ts
-import { ForeignKeyConstraintError, Sequelize, Transaction, UniqueConstraintError, ValidationError } from "sequelize";
-import { CartItemDAO } from "../rdbms/dao/CartItemDAO";
-import { ProductDAO } from "../rdbms/dao/ProductDAO";
+import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, ValidationError, Sequelize } from "sequelize";
+import { StatusEnum } from "../domain/enumeration/StatusEnum";
 import { UseCaseRequestDAO } from "../rdbms/dao/UseCaseRequestDAO";
 import { Decision } from "../rdbms/entities/Decision";
 import { UseCaseRequest } from "../rdbms/entities/UseCaseRequest";
 import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
 import ViewRequestByRequestNumDto from "../web/dtos/ViewRequestByRequestNumDto";
 
-import { StatusEnum } from "../web/dtos/StatusEnum";
 import userEndpointService from "./userEndpointService";
 
 // --- DTOs (same shapes you use in your controllers) ---
@@ -22,6 +20,9 @@ import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
 import { ProductNotFoundException } from './errors/ProductNotFoundException';
 import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
 import { UseCaseRequestNotFoundException } from './errors/UseCaseRequestNotFoundException';
+
+import { ProductDAO } from '../rdbms/dao/ProductDAO';
+import { CartItemDAO } from '../rdbms/dao/CartItemDAO';
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
@@ -278,8 +279,14 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       phoneNumber: pick<string>(r.phoneNumber, r.phone_number),
       requestedToolName: pick<string>(r.requestedToolName, r.requested_tool_name)!,
       description: r.description,
-      createdAt: pick<Date>(r.createdAt, r.created_at),
-      updatedAt: pick<Date>(r.updatedAt, r.updated_at, r.updateAt), // covers past typo
+      createdAt: (() => {
+        const date = pick<Date>(r.createdAt, r.created_at);
+        return date ? date.toISOString() : undefined;
+      })(),
+      updatedAt: (() => {
+        const date = pick<Date | string>(r.updatedAt, r.updated_at, r.updateAt);
+        return date instanceof Date ? date.toISOString() : date;
+      })(), // covers past typo
       decision: decisionSrc ? this._toDecisionDto(decisionSrc) : undefined,
       cartItems,
     };

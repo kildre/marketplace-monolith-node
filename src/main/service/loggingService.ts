@@ -1,6 +1,6 @@
 import winston from "winston";
 import DailyRotateFile from 'winston-daily-rotate-file';
-import nodeEnvService from '../config/services/nodeEnvService'
+import nodeEnvService from './config/nodeEnvService'
 
 const getLogLevel = () => {
     if (nodeEnvService.isDev()) {

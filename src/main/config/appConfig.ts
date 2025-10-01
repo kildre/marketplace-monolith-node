@@ -9,7 +9,7 @@ import configureSwagger from "./swaggerConfig";
 import configureMorgan from "./morganConfig";
 
 import { initDb } from "../rdbms/entities"; // ⬅️ add
-import { appHost, appPort } from "./services/middlewareConfigService";
+import { appHost, appPort } from "../service/middlewareConfigService";
 
 const configureApp = async (app: Application) => {
   const port = Number(process.env.PORT) || 8082;

@@ -1,6 +1,6 @@
 import parseDatabaseUrl from 'ts-parse-database-url';
 
-const dbUrl = process.env['secret-env-postgresql'] || '';
+const dbUrl = process.env.SECRET_ENV_POSTGRESQL || '';
 
 const parsed = parseDatabaseUrl(dbUrl);
 

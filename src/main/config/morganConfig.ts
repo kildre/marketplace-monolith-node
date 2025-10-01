@@ -1,6 +1,6 @@
 import { Application,  Request, Response } from "express";
 import morgan, { StreamOptions } from "morgan";
-import nodeEnvService from "./services/nodeEnvService";
+import nodeEnvService from "../service/config/nodeEnvService";
 import log from "../service/loggingService";
 
 

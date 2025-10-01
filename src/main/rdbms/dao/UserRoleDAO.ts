@@ -12,6 +12,6 @@ export class UserRoleDAO extends BaseDAO<UserRole> {
   }
 
   async remove(userId: number, roleId: number, tx?: Transaction): Promise<number> {
-    return UserRole.destroy({ where: { user_id: userId, role_id: roleId }, transaction: tx });
+    return UserRole.destroy({ where: { userId: userId, roleId: roleId }, transaction: tx });
   }
 }
