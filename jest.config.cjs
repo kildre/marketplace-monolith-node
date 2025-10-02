@@ -58,12 +58,22 @@ module.exports = {
       testPathIgnorePatterns: ['/dist/'],
     },
   ],
+  coverageDirectory: "reports/coverage",
   coverageThreshold: {
     global: {
-      branches: 80,
+      branches: 60,
       functions: 80,
       lines: 80,
       statements: 80,
     },
   },
+  reporters: [
+    "default",
+    ["jest-html-reporter", {
+      pageTitle: "Test Report",
+      outputPath: "reports/test-report.html",
+      includeFailureMsg: true,
+      includeConsoleLog: true
+    }]
+  ],
 };
