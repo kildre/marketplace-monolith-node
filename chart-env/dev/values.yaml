@@ -67,6 +67,7 @@ secret:
       "public-env-web":
         data:
           APPROVED_API_CALLERS: "https://sso.{{ $.Values.global.baseDomain }} https://{{ $.Values.ingress.domain }} http://localhost:8080 http://localhost:3000"
+          CORS_ORIGIN: "https://advana-marketplace.dev.mtt.cdao.us,http://localhost:3000,http://localhost:8080"
   volume:
     secret:
       "secret-volume-ca-bundle-crt":
