@@ -151,7 +151,7 @@ describe('UserRoleDAO (integration)', () => {
     });
 
     const found = await UserRole.findOne({
-      where: { user_id: (user as any).id, role_id: (r1 as any).id },
+      where: { userId: (user as any).id, roleId: (r1 as any).id },
     });
     expect(found).not.toBeNull();
   });
@@ -169,7 +169,7 @@ describe('UserRoleDAO (integration)', () => {
     ).rejects.toThrow('force rollback');
 
     const found = await UserRole.findOne({
-      where: { user_id: (user as any).id, role_id: (r2 as any).id },
+      where: { userId: (user as any).id, roleId: (r2 as any).id },
     });
     expect(found).toBeNull();
   });
@@ -180,7 +180,7 @@ describe('UserRoleDAO (integration)', () => {
     const { user, r1 } = await seedBasics();
 
     // Pre-insert a link; if the join table has NOT NULL timestamps, use the helper
-    await UserRole.create(buildRequiredRow(UserRole, { user_id: (user as any).id, role_id: (r1 as any).id }));
+    await UserRole.create(buildRequiredRow(UserRole, { userId: (user as any).id, roleId: (r1 as any).id }));
 
     await sequelize!.transaction(async (tx: Transaction) => {
       const n = await dao.remove((user as any).id, (r1 as any).id, tx);
@@ -188,7 +188,7 @@ describe('UserRoleDAO (integration)', () => {
     });
 
     const found = await UserRole.findOne({
-      where: { user_id: (user as any).id, role_id: (r1 as any).id },
+      where: { userId: (user as any).id, roleId: (r1 as any).id },
     });
     expect(found).toBeNull();
   });
@@ -198,7 +198,7 @@ describe('UserRoleDAO (integration)', () => {
 
     const { user, r2 } = await seedBasics();
 
-    await UserRole.create(buildRequiredRow(UserRole, { user_id: (user as any).id, role_id: (r2 as any).id }));
+    await UserRole.create(buildRequiredRow(UserRole, { userId: (user as any).id, roleId: (r2 as any).id }));
 
     await expect(
       sequelize!.transaction(async (tx: Transaction) => {
@@ -210,7 +210,7 @@ describe('UserRoleDAO (integration)', () => {
 
     // Row should still be there
     const found = await UserRole.findOne({
-      where: { user_id: (user as any).id, role_id: (r2 as any).id },
+      where: { userId: (user as any).id, roleId: (r2 as any).id },
     });
     expect(found).not.toBeNull();
   });

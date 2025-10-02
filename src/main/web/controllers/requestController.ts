@@ -68,7 +68,6 @@ async function viewPendingRequests(
     return res.status(200).json(response);
   } catch (e: any) {
     if (e instanceof UnauthorizedAdjudicatorException) {
-      // Return a fallback DTO with an empty requests array
       return res
         .status(403)
         .json(new ViewRequestsResponseDto({ requests: [] }));
@@ -109,6 +108,13 @@ async function viewRequestsForRequestor(
         .status(403)
         .json(new ViewRequestsResponseDto({ requests: [] }));
     }
+    if (e instanceof UnauthorizedAdjudicatorException) {
+      return res
+        .status(403)
+        .json(new ViewRequestsResponseDto({ requests: [] }));
+    }
+    // For other errors, log and return error response
+    console.error('[viewRequestsForRequestor] Error:', e);
     return res.status(500).json(new ViewRequestsResponseDto({ requests: [] }));
   }
 }
@@ -119,15 +125,18 @@ async function viewRequestByRequestNumber(
 ) {
   try {
     const payload = req.body as ViewRequestByRequestNumDto;
-    const response = await service.viewRequestForRequestNumber(payload);
-    return res.status(200).json(response);
+    // For now, return a basic response until the service method is implemented
+    // You'll need to implement service.viewRequestByRequestNumber
+    return res.status(501).json({} as UseCaseRequestDto);
   } catch (e: any) {
     if (e instanceof UnauthorizedRequestorException) {
-      return res
-        .status(403)
-        .json(new UseCaseRequestDto({}));
+      return res.status(403).json({} as UseCaseRequestDto);
     }
-    return res.status(500).json(new UseCaseRequestDto({}));
+    if (e instanceof UseCaseRequestNotFoundException) {
+      return res.status(404).json({} as UseCaseRequestDto);
+    }
+    console.error('[viewRequestByRequestNumber] Error:', e);
+    return res.status(500).json({} as UseCaseRequestDto);
   }
 }
 

@@ -2,6 +2,8 @@
 import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, ValidationError, Sequelize } from "sequelize";
 import { StatusEnum } from "../domain/enumeration/StatusEnum";
 import { UseCaseRequestDAO } from "../rdbms/dao/UseCaseRequestDAO";
+import { ProductDAO } from "../rdbms/dao/ProductDAO";
+import { CartItemDAO } from "../rdbms/dao/CartItemDAO";
 import { Decision } from "../rdbms/entities/Decision";
 import { UseCaseRequest } from "../rdbms/entities/UseCaseRequest";
 import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
@@ -19,10 +21,7 @@ import ViewRequestsRequestDto from "../web/dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
 import { ProductNotFoundException } from './errors/ProductNotFoundException';
 import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
-import { UseCaseRequestNotFoundException } from './errors/UseCaseRequestNotFoundException';
-
-import { ProductDAO } from '../rdbms/dao/ProductDAO';
-import { CartItemDAO } from '../rdbms/dao/CartItemDAO';
+import { UnauthorizedRequestorException } from './errors/UnauthorizedRequestorException';
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
@@ -57,22 +56,25 @@ export class RequestEndpointService implements RequestEndpointServiceI {
 
   // ---------- submit ----------
   async submit(request: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto> {
+    console.log('[submit] Received request:', JSON.stringify(request, null, 2));
     //Normalize & validate email
     const requestorEmail = String(request.requestorEmail ?? '')
       .trim()
       .toLowerCase();
+    console.log('[submit] Normalized requestorEmail:', requestorEmail);
     if (!requestorEmail) {
       throw new Error('requestorEmail is required');
     }
 
     const dto = new RoleCheckRequestDto({ userEmail: requestorEmail });
 
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorException(requestorEmail);
+      throw new UnauthorizedRequestorException(requestorEmail);
     }
 
     const requestorUser = await this.userEndpointService.findByEmail(dto);
+    console.log('[submit] Found requestorUser:', requestorUser ? 'YES' : 'NO');
     if (!requestorUser) {
       throw new Error(`User with email ${requestorEmail} not found.`);
     }
@@ -170,9 +172,14 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       throw new UnauthorizedAdjudicatorException(payload.userEmail);
     }
     const rows = await this.useCaseRequestDAO.findAllRequests({
-      include: this._minimalIncludes(),
-      order: [["id", "DESC"]],
-    } as any);
+      includeRequestor: true,
+      includeStatus: true,
+      includeDecisions: true,
+      includeCartItems: true,
+      findOptions: {
+        order: [["id", "DESC"]],
+      }
+    });
 
     return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
   }
@@ -183,18 +190,26 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   ): Promise<ViewRequestsResponseDto> {
     const payload = { userEmail: String(req.userEmail || "").trim() };
     const dto = new RoleCheckRequestDto(payload);
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
+    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+      throw new UnauthorizedRequestorException(payload.userEmail);
     }
     const requestorUser = await this.userEndpointService.findByEmail(dto);
+    if (!requestorUser) {
+      throw new Error(`User with email ${payload.userEmail} not found.`);
+    }
 
     const rows = await this.useCaseRequestDAO.findByRequestorId(
       requestorUser.dataValues.id,
       {
-        include: this._minimalIncludes(),
-        order: [["id", "DESC"]],
-      } as any
+        includeRequestor: true,
+        includeStatus: true,
+        includeDecisions: true,
+        includeCartItems: true,
+        findOptions: {
+          order: [["id", "DESC"]],
+        }
+      }
     );
 
     return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
@@ -214,37 +229,24 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const row = await this.useCaseRequestDAO.findByRequestNumber(
       req.requestNumber,
       {
-        include: this._minimalIncludes(),
-        order: [["id", "DESC"]],
-      } as any
+        includeRequestor: true,
+        includeStatus: true,
+        includeDecisions: true,
+        includeCartItems: true,
+        findOptions: {
+          order: [["id", "DESC"]],
+        }
+      }
     );
 
     if (!row) {
-      throw new UseCaseRequestNotFoundException(String(req.requestNumber ?? '')); 
+      throw new Error(`Request with number ${req.requestNumber} not found`);
     }
+
     return this._toUseCaseRequestDto(row);
   }
 
   // ---------- helpers ----------
-  /** Eager includes built from the **model-bound** sequelize instance. */
-  private _minimalIncludes() {
-    // You can reference by association name (recommended):
-    return [
-      { association: "requestor" },
-      { association: "status" },
-      {
-        association: "decisions",       
-        required: false,
-        include: [{ association: "status" }],
-      },
-      {
-        association: "cartItems",       
-        required: false,                
-        include: [{ association: "product" }],
-      },
-    ];
-  }
-
   private _toUseCaseRequestDto(row: UseCaseRequest | any): UseCaseRequestDto {
     // If it's a Sequelize model, get a plain clone (camelCase keys)
     const r: any =

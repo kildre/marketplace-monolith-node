@@ -44,7 +44,7 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
 
   /** Build safe includes with the correct aliases */
   private buildIncludes(flags: IncludeFlags, extra?: Includeable[]): Includeable[] | undefined {
-    const { MarketplaceUser, Status, Decision, CartItem } = this.sequelize.models as any;
+    const { MarketplaceUser, Status, Decision, CartItem, Product } = this.sequelize.models as any;
 
     const include: Includeable[] = [];
 
@@ -55,10 +55,19 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
       include.push({ model: Status, as: 'status' });
     }
     if (flags.includeDecisions) {
-      include.push({ model: Decision, as: 'decisions' }); // <-- plural alias defined in your model
+      include.push({ 
+        model: Decision, 
+        as: 'decisions',
+        required: false,
+        include: [{ model: Status, as: 'status' }]
+      });
     }
     if (flags.includeCartItems) {
-      include.push({ model: CartItem, as: 'cartItems' });
+      include.push({ 
+        model: CartItem, 
+        as: 'cartItems',
+        include: [{ model: Product, as: 'product' }]
+      });
     }
 
     if (extra?.length) include.push(...extra);

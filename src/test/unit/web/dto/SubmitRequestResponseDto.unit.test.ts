@@ -5,6 +5,7 @@ import SubmitRequestResponseDto from "src/main/web/dtos/SubmitRequestResponseDto
 describe("SubmitRequestResponseDto", () => {
   const validData = {
     requestNumber: "REQ-123",
+    errMsg: "",
   };
 
   test("should create a valid SubmitRequestResponseDto", () => {
