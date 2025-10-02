@@ -1,47 +1,32 @@
-// src/rdbms/entities/UserRole.ts
-import {
-  DataTypes,
-  Model,
-  Sequelize,
-  InferAttributes,
-  InferCreationAttributes,
-} from 'sequelize';
+import { DataTypes, Model, Sequelize } from 'sequelize';
 
-export class UserRole
-  extends Model<InferAttributes<UserRole>, InferCreationAttributes<UserRole>> {
-
-  // type-only attribute declarations (no runtime fields)
-  declare userId: number; // maps to user_id
-  declare roleId: number; // maps to role_id
+export class UserRole extends Model {
+  // If you want typings:
+  // declare userId: number;
+  // declare roleId: number;
 
   static initModel(sequelize: Sequelize) {
     UserRole.init(
       {
-        // Composite PK so Sequelize won't add an 'id' column
+        // use camelCase attributes...
         userId: {
           type: DataTypes.INTEGER,
           allowNull: false,
-          field: 'user_id',
-          primaryKey: true,
+          field: 'user_id',     // ...mapped to snake_case column
         },
         roleId: {
           type: DataTypes.INTEGER,
           allowNull: false,
           field: 'role_id',
-          primaryKey: true,
         },
       },
       {
         sequelize,
-        tableName: 'user_roles',   
+        tableName: 'user_roles',
         underscored: true,
         timestamps: false,
-        indexes: [
-          // Ensures uniqueness and helps lookups
-          { unique: true, fields: ['user_id', 'role_id'] },
-          { fields: ['user_id'] },
-          { fields: ['role_id'] },
-        ],
+        // Optional: add a composite unique index to prevent duplicates
+        // indexes: [{ unique: true, fields: ['user_id', 'role_id'] }],
       }
     );
   }

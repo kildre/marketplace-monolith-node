@@ -27,22 +27,22 @@ describe('UserRoleDAO', () => {
     const ur = await dao.assign(1, 2, tx);
 
     expect(UserRole.create).toHaveBeenCalledWith(
-      { user_id: 1, role_id: 2 },
+      { userId: 1, roleId: 2 },
       { transaction: tx }
     );
     expect(ur).toEqual({ user_id: 1, role_id: 2 });
   });
 
   it('assign creates a user-role without tx (transaction: undefined)', async () => {
-    (UserRole.create as any).mockResolvedValue({ user_id: 3, role_id: 4 });
+    (UserRole.create as any).mockResolvedValue({ userId: 3, roleId: 4 });
 
     const ur = await dao.assign(3, 4);
 
     expect(UserRole.create).toHaveBeenCalledWith(
-      { user_id: 3, role_id: 4 },
+      { userId: 3, roleId: 4 },
       { transaction: undefined }
     );
-    expect(ur).toEqual({ user_id: 3, role_id: 4 });
+    expect(ur).toEqual({ userId: 3, roleId: 4 });
   });
 
   // ---------- remove ----------
@@ -52,7 +52,7 @@ describe('UserRoleDAO', () => {
     const n = await dao.remove(5, 6, tx);
 
     expect(UserRole.destroy).toHaveBeenCalledWith({
-      where: { user_id: 5, role_id: 6 },
+      where: { userId: 5, roleId: 6 },
       transaction: tx,
     });
     expect(n).toBe(1);
@@ -64,7 +64,7 @@ describe('UserRoleDAO', () => {
     const n = await dao.remove(7, 8);
 
     expect(UserRole.destroy).toHaveBeenCalledWith({
-      where: { user_id: 7, role_id: 8 },
+      where: { userId: 7, roleId: 8 },
       transaction: undefined,
     });
     expect(n).toBe(0);

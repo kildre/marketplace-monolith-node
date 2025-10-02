@@ -18,7 +18,8 @@ export class DecisionDAO extends BaseDAO<Decision> {
 
   async listForRequest(requestId: number): Promise<Decision[]> {
     return Decision.findAll({
-      where: { request_id: requestId } as any,
+      // ✅ attribute name
+      where: { requestId } as any,
       include: [
         { model: MarketplaceUser, as: 'adjudicator' },
         { model: Status, as: 'status' },
@@ -29,7 +30,8 @@ export class DecisionDAO extends BaseDAO<Decision> {
 
   async listForOrder(orderId: number): Promise<Decision[]> {
     return Decision.findAll({
-      where: { order_id: orderId } as any,
+      // ✅ attribute name
+      where: { orderId } as any,
       include: [
         { model: MarketplaceUser, as: 'adjudicator' },
         { model: Status, as: 'status' },
@@ -38,10 +40,15 @@ export class DecisionDAO extends BaseDAO<Decision> {
     });
   }
 
+  // src/rdbms/dao/DecisionDAO.ts
   async updateStatus(decisionId: number, statusId: number, tx?: Transaction): Promise<Decision | null> {
     const decision = await Decision.findByPk(decisionId, { transaction: tx });
     if (!decision) return null;
-    await decision.update({ status_id: statusId } as any, { transaction: tx });
+
+    await decision.update({ statusId }, { transaction: tx });
+
+    // optional but safer for callers that expect fresh values (and eager loads later)
+    await decision.reload({ transaction: tx });
     return decision;
   }
 }

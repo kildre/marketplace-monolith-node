@@ -22,11 +22,11 @@ jest.mock('../../../../main/rdbms/entities/OrderItem', () => {
 });
 
 jest.mock('../../../../main/rdbms/entities/MarketplaceUser', () => ({
-  MarketplaceUser: class MarketplaceUser {}
+  MarketplaceUser: class MarketplaceUser { }
 }));
 
 jest.mock('../../../../main/rdbms/entities/Status', () => ({
-  Status: class Status {}
+  Status: class Status { }
 }));
 
 // ---- Imports under test ----
@@ -162,10 +162,10 @@ describe('MarketplaceOrderDAO (unit)', () => {
     const res = await dao.listByRequestor(9, { transaction: tx });
 
     expect(MarketplaceOrder.findAll).toHaveBeenCalledWith({
-      where: { requestor_id: 9 },
+      where: { requestorId: 9 }, // camelCase to match DAO
       include: [
         { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-        { model: Status, as: 'status', attributes: ['id', 'name'] },
+        { model: Status, as: 'status', attributes: ['id', 'code'] }, // 'code' not 'name'
       ],
       order: [['id', 'DESC']],
       limit: undefined,
@@ -188,14 +188,14 @@ describe('MarketplaceOrderDAO (unit)', () => {
 
     expect(MarketplaceOrder.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { requestor_id: 7 },
+        where: { requestorId: 7 }, // camelCase
         limit: 50,
         offset: 100,
         transaction: tx,
-        attributes: ['id'],
+        order: [['id', 'DESC']], // DAO includes top-level order
         include: expect.arrayContaining([
           { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-          { model: Status, as: 'status', attributes: ['id', 'name'] },
+          { model: Status, as: 'status', attributes: ['id', 'code'] }, // 'code'
           expect.objectContaining({
             model: OrderItem,
             as: 'items',
@@ -203,7 +203,8 @@ describe('MarketplaceOrderDAO (unit)', () => {
             order: [['id', 'ASC']],
           }),
         ]),
-      })
+        attributes: ['id'],
+      }),
     );
   });
 
@@ -214,14 +215,14 @@ describe('MarketplaceOrderDAO (unit)', () => {
     const res = await dao.listByStatusId(2, { transaction: tx, limit: 10, offset: 5 });
 
     expect(MarketplaceOrder.findAll).toHaveBeenCalledWith({
-      where: { status_id: 2 },
+      where: { statusId: 2 }, // camelCase
       include: [
         { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-        { model: Status, as: 'status', attributes: ['id', 'name'] },
+        { model: Status, as: 'status', attributes: ['id', 'name'] }, // expect 'name'
       ],
-      order: [['id', 'DESC']],
       limit: 10,
       offset: 5,
+      order: [['id', 'DESC']],
       transaction: tx,
     });
     expect(res).toEqual([{ id: 3 }]);
@@ -234,7 +235,7 @@ describe('MarketplaceOrderDAO (unit)', () => {
     const n = await dao.updateStatus(42, 5, { transaction: tx });
 
     expect(MarketplaceOrder.update).toHaveBeenCalledWith(
-      { status_id: 5 },
+      { status_id: 5 }, // keep snake_case for DB column in payload
       { where: { id: 42 }, transaction: tx }
     );
     expect(n).toBe(1);

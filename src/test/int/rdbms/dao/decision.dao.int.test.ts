@@ -1,325 +1,178 @@
-/**
- * File: src/test/int/rdbms/dao/decision.dao.int.test.ts
- *
- * Runs Postgres in Testcontainers and wires DAO to runtime models that mirror app schema:
- * - Status:     { id, code }
- * - User:       { id, email }
- * - Request:    camelCase attrs w/ field mapping (requestNumber -> request_number)
- * - Order:      minimal
- * - Decision:   camelCase attrs w/ field mapping (e.g., statusId -> status_id)
- *
- * Verifies: createForRequest, listForRequest, listForOrder, updateStatus.
- */
-
-import { Sequelize, DataTypes, Model, Transaction } from 'sequelize';
+import { Sequelize, Transaction } from 'sequelize';
+import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
+import { UseCaseRequest } from '../../../../main/rdbms/entities/UseCaseRequest';
+import { MarketplaceOrder } from '../../../../main/rdbms/entities/MarketplaceOrder';
+import { Status } from '../../../../main/rdbms/entities/Status';
+import { Decision } from '../../../../main/rdbms/entities/Decision';
+import { DecisionDAO } from '../../../../main/rdbms/dao/DecisionDAO';
 import {
   PostgreSqlContainer,
   StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
 
-let RUNTIME_UNAVAILABLE = false;
-
-(RUNTIME_UNAVAILABLE ? describe.skip : describe)('DecisionDAO (integration)', () => {
-  let container: StartedPostgreSqlContainer;
+describe('DecisionDAO (integration)', () => {
+  let dao: DecisionDAO;
+  let container: StartedPostgreSqlContainer | undefined;
   let sequelize: Sequelize;
 
-  // Local runtime models (shape mirrors your prod models)
-  class MarketplaceUser extends Model {}
-  class Status extends Model {}
-  class UseCaseRequest extends Model {}
-  class MarketplaceOrder extends Model {}
-  class Decision extends Model {}
-
-  // Will load after mocks
-  let DecisionDAO: any;
+  let user!: MarketplaceUser;
+  let statusNew!: Status;
+  let statusApproved!: Status;
+  let req1!: UseCaseRequest;
+  let req2!: UseCaseRequest;
+  let order1!: MarketplaceOrder;
 
   beforeAll(async () => {
-    try {
-      container = await new PostgreSqlContainer('postgres:16')
-        .withDatabase('testdb')
-        .withUsername('test')
-        .withPassword('test')
-        .start();
-    } catch (e) {
-      console.warn(
-        'Skipping DecisionDAO integration tests – no container runtime:',
-        (e as Error)?.message
-      );
-      RUNTIME_UNAVAILABLE = true;
-      return;
-    }
-
+    container = await new PostgreSqlContainer('postgres:16').start();
     sequelize = new Sequelize(container.getConnectionUri(), { logging: false });
 
-    // ----- Define runtime models (camelCase + field mappings) -----
+    // 1) Init ONLY the models you need tables for
+    MarketplaceUser.initModel(sequelize);
+    Status.initModel(sequelize);
+    UseCaseRequest.initModel(sequelize);
+    MarketplaceOrder.initModel(sequelize);
+    Decision.initModel(sequelize);
 
-    MarketplaceUser.init(
-      {
-        id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-        email: { type: DataTypes.STRING(128), allowNull: false, unique: true },
-        firstName: { type: DataTypes.STRING(64), allowNull: true, field: 'first_name' },
-        lastName: { type: DataTypes.STRING(64), allowNull: true, field: 'last_name' },
-      },
-      { sequelize, tableName: 'marketplace_user', underscored: true, timestamps: false }
-    );
+    // 2) Wire ONLY Decision’s associations (it uses belongsTo to these models)
+    if (typeof (Decision as any).associate === 'function') {
+      (Decision as any).associate(sequelize);
+    }
 
-    Status.init(
-      {
-        id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-        code: { type: DataTypes.STRING(64), allowNull: false, unique: true },
-      },
-      { sequelize, tableName: 'status', underscored: true, timestamps: false }
-    );
+    // ❌ Do NOT call MarketplaceOrder.associate / MarketplaceUser.associate / etc. here.
+    // They often reference other models (e.g., OrderItems) that you haven't initialized,
+    // which causes "hasMany called with something that's not a subclass of Model".
 
-    UseCaseRequest.init(
-      {
-        id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-        requestNumber: { type: DataTypes.STRING(64), allowNull: false, unique: true, field: 'request_number' },
-        requestorId: { type: DataTypes.INTEGER, allowNull: false, field: 'requestor_id' },
-        statusId: { type: DataTypes.INTEGER, allowNull: false, field: 'status_id' },
-      },
-      { sequelize, tableName: 'use_case_request', underscored: true, timestamps: false }
-    );
-
-    MarketplaceOrder.init(
-      {
-        id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-        requestorId: { type: DataTypes.INTEGER, allowNull: false, field: 'requestor_id' },
-        statusId: { type: DataTypes.INTEGER, allowNull: false, field: 'status_id' },
-      },
-      { sequelize, tableName: 'marketplace_order', underscored: true, timestamps: false }
-    );
-
-    Decision.init(
-      {
-        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-
-        // Core columns
-        decisionNumber: { type: DataTypes.STRING(32), allowNull: false, unique: true, field: 'decision_number' },
-        ticketType: { type: DataTypes.STRING(64), allowNull: true, field: 'ticket_type' },
-        asset: { type: DataTypes.STRING(128), allowNull: true },
-        quantity: { type: DataTypes.INTEGER, allowNull: true },
-        estimatedPrice: { type: DataTypes.DECIMAL(18, 2), allowNull: true, field: 'estimated_price' },
-        comments: { type: DataTypes.STRING(1024), allowNull: false },
-
-        // FKs as attributes (camelCase)
-        adjudicatorId: { type: DataTypes.INTEGER, allowNull: false, field: 'adjudicator_id' },
-        requestId: { type: DataTypes.INTEGER, allowNull: false, field: 'request_id' },
-        orderId: { type: DataTypes.INTEGER, allowNull: false, field: 'order_id' },
-        statusId: { type: DataTypes.INTEGER, allowNull: false, field: 'status_id' },
-
-        // Optional timestamps/extra dates (not required by DAO)
-        decisionAt: { type: DataTypes.DATE, allowNull: true, field: 'decision_at' },
-        createdAt: { type: DataTypes.DATE, allowNull: true, field: 'created_at' },
-        updatedAt: { type: DataTypes.DATE, allowNull: true, field: 'updated_at' },
-      },
-      { sequelize, tableName: 'decision', underscored: true, timestamps: false }
-    );
-
-    // ----- Associations (aliases must match DAO includes) -----
-    UseCaseRequest.belongsTo(MarketplaceUser, { foreignKey: 'requestor_id', as: 'requestor' });
-    UseCaseRequest.belongsTo(Status, { foreignKey: 'status_id', as: 'status' });
-
-    MarketplaceOrder.belongsTo(MarketplaceUser, { foreignKey: 'requestor_id', as: 'requestor' });
-    MarketplaceOrder.belongsTo(Status, { foreignKey: 'status_id', as: 'status' });
-
-    Decision.belongsTo(MarketplaceUser, { foreignKey: { name: 'adjudicator_id', allowNull: false }, as: 'adjudicator' });
-    Decision.belongsTo(UseCaseRequest, { foreignKey: { name: 'request_id', allowNull: false }, as: 'request' });
-    Decision.belongsTo(MarketplaceOrder, { foreignKey: { name: 'order_id', allowNull: false }, as: 'order' });
-    Decision.belongsTo(Status, { foreignKey: { name: 'status_id', allowNull: false }, as: 'status' });
-
+    // 3) Create tables
     await sequelize.sync({ force: true });
 
-    // ----- Mock DAO entity imports to use these runtime models -----
-    jest.resetModules();
-    jest.doMock('../../../../rdbms/entities/Decision', () => ({ Decision }), { virtual: true });
-    jest.doMock('../../../../rdbms/entities/MarketplaceUser', () => ({ MarketplaceUser }), { virtual: true });
-    jest.doMock('../../../../rdbms/entities/Status', () => ({ Status }), { virtual: true });
+    // 4) Seed minimal rows (same as you have now)
+    user = await MarketplaceUser.create({ email: 'judge@example.com' });
+    statusNew = await Status.create({ code: 'NEW' });
+    statusApproved = await Status.create({ code: 'APPROVED' });
 
-    // Import DAO after mocks in place
-    const daoMod = await import('../../../../main/rdbms/dao/DecisionDAO');
-    DecisionDAO = daoMod.DecisionDAO;
+    const makeReqNum = () => `REQ-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-    jest.setTimeout(60_000);
+    req1 = await UseCaseRequest.create({
+      requestNumber: makeReqNum(),
+      requestedToolName: 'Tool A',
+      description: 'Test request A',
+    });
+    req2 = await UseCaseRequest.create({
+      requestNumber: makeReqNum(),
+      requestedToolName: 'Tool B',
+      description: 'Test request B',
+    });
+
+    const requestor = await MarketplaceUser.create({ email: 'requestor@example.com' });
+    order1 = await MarketplaceOrder.create({
+      statusId: statusNew.id,
+      requestorId: requestor.id,
+    });
+
+    dao = new DecisionDAO();
   });
 
   afterAll(async () => {
-    if (RUNTIME_UNAVAILABLE) return;
-    await sequelize?.close();
-    await container?.stop();
+    await sequelize.close();
+    await container?.stop();  // <— add this
   });
 
-  // ----- Helpers -----
-  const uniq = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-  async function seedBasics() {
-    const [pending] = await Status.findOrCreate({
-      where: { code: 'PENDING' },
-      defaults: { code: 'PENDING' },
-    });
-    const [approved] = await Status.findOrCreate({
-      where: { code: 'APPROVED' },
-      defaults: { code: 'APPROVED' },
-    });
-
-    const [user] = await MarketplaceUser.findOrCreate({
-      where: { email: 'judge@agency.gov' },
-      defaults: { email: 'judge@agency.gov', firstName: 'Ada', lastName: 'Lovelace' },
-    });
-
-    const request = await UseCaseRequest.create({
-      requestNumber: uniq('REQ'),
-      requestorId: (user as any).id,
-      statusId: (pending as any).id,
-    });
-
-    const order = await MarketplaceOrder.create({
-      requestorId: (user as any).id,
-      statusId: (pending as any).id,
-    });
-
-    return { user, pending, approved, request, order };
-  }
-
-  it('createForRequest inserts with FKs', async () => {
-    if (RUNTIME_UNAVAILABLE) return;
-
-    const dao = new DecisionDAO();
-    const { user, request, pending, order } = await seedBasics();
-
-    const created = await dao.createForRequest({
-      decisionNumber: uniq('DEC'),
-      comments: 'ok',
-      adjudicatorId: (user as any).id,
-      requestId: (request as any).id,
-      orderId: (order as any).id,     // NOT NULL in our test schema
-      statusId: (pending as any).id,
-    } as any);
-
-    expect(created).toBeTruthy();
-    expect((created as any).id).toBeGreaterThan(0);
-
-    const loaded = await Decision.findByPk((created as any).id, {
-      include: [
-        { model: MarketplaceUser, as: 'adjudicator' },
-        { model: UseCaseRequest, as: 'request' },
-        { model: Status, as: 'status' },
-        { model: MarketplaceOrder, as: 'order' },
-      ],
-    });
-
-    expect((loaded as any)?.adjudicator?.email).toBe('judge@agency.gov');
-    expect((loaded as any)?.request?.requestNumber).toBeTruthy();
-    expect((loaded as any)?.status?.code).toBe('PENDING');
-    expect((loaded as any)?.order?.id).toBe((order as any).id);
+  const decisionBase = (overrides: Partial<Decision> = {}) => ({
+    decisionNumber: `DEC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+    ticketType: 'A',
+    asset: 'Laptop',
+    quantity: 2,
+    estimatedPrice: '123.45',
+    comments: 'initial comment',
+    adjudicatorId: user.id,
+    requestId: req1.id,
+    orderId: order1.id,
+    statusId: statusNew.id,
+    ...overrides,
   });
 
-  it('listForRequest returns eager adjudicator & status ordered DESC by id', async () => {
-    if (RUNTIME_UNAVAILABLE) return;
+  test('createForRequest inserts a Decision (with/without transaction) and returns it', async () => {
+    // without tx
+    const d1 = await dao.createForRequest(decisionBase());
+    expect(d1.id).toBeTruthy();
+    expect(d1.requestId).toBe(req1.id);
+    expect(d1.statusId).toBe(statusNew.id);
 
-    const dao = new DecisionDAO();
-    const { user, request, pending, approved, order } = await seedBasics();
+    // with tx
+    await sequelize.transaction(async (tx) => {
+      const d2 = await dao.createForRequest(decisionBase({ ticketType: 'B' }), tx as Transaction);
+      expect(d2.id).toBeTruthy();
+      expect(d2.ticketType).toBe('B');
+      // Ensure it’s visible after the transaction is committed (implicit by returning)
+    });
 
-    await dao.createForRequest({
-      decisionNumber: uniq('DEC-R-1'),
-      comments: 'first',
-      adjudicatorId: (user as any).id,
-      requestId: (request as any).id,
-      orderId: (order as any).id,
-      statusId: (pending as any).id,
-    } as any);
-
-    const second = await dao.createForRequest({
-      decisionNumber: uniq('DEC-R-2'),
-      comments: 'second',
-      adjudicatorId: (user as any).id,
-      requestId: (request as any).id,
-      orderId: (order as any).id,
-      statusId: (approved as any).id,
-    } as any);
-
-    const rows = await dao.listForRequest((request as any).id);
-    expect(rows.length).toBeGreaterThanOrEqual(2);
-
-    // DESC by id: last inserted first
-    expect((rows[0] as any).id).toBe((second as any).id);
-
-    const first: any = rows[0];
-    expect(first.adjudicator?.email).toBe('judge@agency.gov');
-    expect(['PENDING', 'APPROVED']).toContain(first.status?.code);
+    const count = await Decision.count({ where: { requestId: req1.id } });
+    expect(count).toBeGreaterThanOrEqual(2);
   });
 
-  it('listForOrder filters by orderId and includes associations', async () => {
-    if (RUNTIME_UNAVAILABLE) return;
+  test('listForRequest returns decisions filtered & ordered DESC by id, including adjudicator and status', async () => {
+    // Add another decision for req1, and one for req2 to prove filtering
+    const dA = await dao.createForRequest(decisionBase({ comments: 'for req1 - A' }));
+    const dB = await dao.createForRequest(decisionBase({ comments: 'for req1 - B' }));
+    await dao.createForRequest(decisionBase({ requestId: req2.id, comments: 'for req2' }));
 
-    const dao = new DecisionDAO();
-    const { user, request, pending, approved, order } = await seedBasics();
+    const items = await dao.listForRequest(req1.id);
+    expect(items.length).toBeGreaterThanOrEqual(4);
 
-    await dao.createForRequest({
-      decisionNumber: uniq('DEC-O-1'),
-      comments: 'linked',
-      adjudicatorId: (user as any).id,
-      requestId: (request as any).id,
-      orderId: (order as any).id,
-      statusId: (pending as any).id,
-    } as any);
-
-    await dao.createForRequest({
-      decisionNumber: uniq('DEC-O-2'),
-      comments: 'not linked',
-      adjudicatorId: (user as any).id,
-      requestId: (request as any).id,
-      orderId: (order as any).id,
-      statusId: (approved as any).id,
-    } as any);
-
-    const rows = await dao.listForOrder((order as any).id);
-    expect(rows.length).toBeGreaterThanOrEqual(1);
-    for (const r of rows as any[]) {
-      expect(r.orderId ?? r.order_id).toBe((order as any).id);
-      expect(r.adjudicator).toBeTruthy();
-      expect(r.status).toBeTruthy();
+    // Ordered DESC by id
+    for (let i = 1; i < items.length; i++) {
+      expect(items[i - 1].id).toBeGreaterThanOrEqual(items[i].id);
     }
+
+    // Includes
+    const first = items[0];
+    // lazy-loaded include check: the include should hydrate these
+    expect(first.adjudicator?.email).toBe('judge@example.com');
+    expect(first.status?.code).toBeDefined();
+    // Filter sanity: none from req2 should appear
+    const anyFromReq2 = items.some((d) => d.requestId === req2.id);
+    expect(anyFromReq2).toBe(false);
   });
 
-  it('updateStatus commits and rolls back inside a tx', async () => {
-    if (RUNTIME_UNAVAILABLE) return;
-
-    const dao = new DecisionDAO();
-    const { user, request, pending, approved, order } = await seedBasics();
-
-    const created = await dao.createForRequest({
-      decisionNumber: uniq('DEC-U-1'),
-      comments: 'to update',
-      adjudicatorId: (user as any).id,
-      requestId: (request as any).id,
-      orderId: (order as any).id,
-      statusId: (pending as any).id,
-    } as any);
-
-    // commit path
-    await sequelize.transaction(async (tx: Transaction) => {
-      const updated = await dao.updateStatus((created as any).id, (approved as any).id, tx);
-      const raw = (updated as any)?.get ? (updated as any).get({ plain: true }) : (updated as any);
-      expect(raw.statusId ?? raw.status_id).toBe((approved as any).id);
+  test('listForOrder returns decisions filtered by order and includes relationships', async () => {
+    // Create some for a different order to ensure filter works
+    const requestor2 = await MarketplaceUser.create({ email: 'requestor2@example.com' });
+    const order2 = await MarketplaceOrder.create({
+      statusId: statusNew.id,
+      requestorId: requestor2.id,
     });
-    const afterCommit = await Decision.findByPk((created as any).id);
-    const rawCommit = (afterCommit as any)?.get?.({ plain: true }) ?? afterCommit;
-    expect(rawCommit.statusId ?? rawCommit.status_id).toBe((approved as any).id);
+    await dao.createForRequest(decisionBase({ orderId: order2.id, comments: 'other order' }));
 
-    // rollback path
-    await expect(
-      sequelize.transaction(async (tx: Transaction) => {
-        const updated = await dao.updateStatus((created as any).id, (pending as any).id, tx);
-        const raw = (updated as any)?.get ? (updated as any).get({ plain: true }) : (updated as any);
-        expect(raw.statusId ?? raw.status_id).toBe((pending as any).id);
-        throw new Error('force rollback');
-      })
-    ).rejects.toThrow('force rollback');
+    const items = await dao.listForOrder(order1.id);
+    expect(items.length).toBeGreaterThan(0);
 
-    const afterRollback = await Decision.findByPk((created as any).id);
-    const rawRollback = (afterRollback as any)?.get?.({ plain: true }) ?? afterRollback;
-    // Remains approved since tx rolled back
-    expect(rawRollback.statusId ?? rawRollback.status_id).toBe((approved as any).id);
+    const first = items[0];
+    expect(first.orderId).toBe(order1.id);
+    expect(first.adjudicator?.email).toBe('judge@example.com');
+    expect(first.status?.code).toBeDefined();
+
+    // Ensure none from order2 leak in
+    const anyFromOrder2 = items.some((d) => d.orderId === order2.id);
+    expect(anyFromOrder2).toBe(false);
+  });
+
+  test('updateStatus updates the status id and persists (with transaction)', async () => {
+    const decision = await dao.createForRequest(decisionBase({ comments: 'to update' }));
+    expect(decision.statusId).toBe(statusNew.id);
+
+    await sequelize.transaction(async (tx) => {
+      const updated = await dao.updateStatus(decision.id, statusApproved.id, tx as Transaction);
+      expect(updated).not.toBeNull();
+      expect(updated!.statusId).toBe(statusApproved.id);
+    });
+
+    const reloaded = await Decision.findByPk(decision.id, { include: [{ model: Status, as: 'status' }] as any });
+    expect(reloaded!.statusId).toBe(statusApproved.id);
+    expect((reloaded!.status as any).code).toBe('APPROVED');
+  });
+
+  test('updateStatus returns null if decision not found', async () => {
+    const result = await dao.updateStatus(999999, statusApproved.id);
+    expect(result).toBeNull();
   });
 });

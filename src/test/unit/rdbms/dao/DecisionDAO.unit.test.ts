@@ -1,5 +1,5 @@
 // ---- Mocks ----
-jest.mock('../../../../rdbms/entities/Decision', () => {
+jest.mock('../../../../main/rdbms/entities/Decision', () => {
   class Decision {
     static create = jest.fn();
     static findAll = jest.fn();
@@ -10,19 +10,19 @@ jest.mock('../../../../rdbms/entities/Decision', () => {
 });
 
 jest.mock('../../../../main/rdbms/entities/MarketplaceUser', () => ({
-  MarketplaceUser: class MarketplaceUser {}
+  MarketplaceUser: class MarketplaceUser { }
 }));
 
 jest.mock('../../../../main/rdbms/entities/UseCaseRequest', () => ({
-  UseCaseRequest: class UseCaseRequest {}
+  UseCaseRequest: class UseCaseRequest { }
 }));
 
 jest.mock('../../../../main/rdbms/entities/MarketplaceOrder', () => ({
-  MarketplaceOrder: class MarketplaceOrder {}
+  MarketplaceOrder: class MarketplaceOrder { }
 }));
 
 jest.mock('../../../../main/rdbms/entities/Status', () => ({
-  Status: class Status {}
+  Status: class Status { }
 }));
 
 // ---- Imports ----
@@ -52,7 +52,7 @@ describe('DecisionDAO', () => {
     (Decision.findAll as any).mockResolvedValue([{ id: 2 }]);
     const res = await dao.listForRequest(22);
     expect(Decision.findAll).toHaveBeenCalledWith({
-      where: { request_id: 22 } as any,
+      where: { requestId: 22 } as any,
       include: [
         { model: MarketplaceUser, as: 'adjudicator' },
         { model: Status, as: 'status' },
@@ -66,7 +66,7 @@ describe('DecisionDAO', () => {
     (Decision.findAll as any).mockResolvedValue([{ id: 3 }]);
     const res = await dao.listForOrder(9);
     expect(Decision.findAll).toHaveBeenCalledWith({
-      where: { order_id: 9 } as any,
+      where: { orderId: 9 } as any,
       include: [
         { model: MarketplaceUser, as: 'adjudicator' },
         { model: Status, as: 'status' },
@@ -76,15 +76,28 @@ describe('DecisionDAO', () => {
     expect(res).toEqual([{ id: 3 }]);
   });
 
-  test('updateStatus updates when found', async () => {
-    const instance: any = new (Decision as any)();
-    instance.update = jest.fn().mockResolvedValue(null);
-    (Decision.findByPk as any).mockResolvedValue(instance);
+  it('updateStatus updates when found', async () => {
+    const instance: any = {
+      id: 123,
+      statusId: 1, // NEW
+      update: jest.fn(function (values, _opts) {
+        if (values && typeof values.statusId !== 'undefined') {
+          this.statusId = values.statusId;
+        }
+        return Promise.resolve(this);
+      }),
+      reload: jest.fn().mockResolvedValue(undefined),
+    };
 
-    const updated = await dao.updateStatus(9, 3);
-    expect(Decision.findByPk).toHaveBeenCalledWith(9, { transaction: undefined });
-    expect(instance.update).toHaveBeenCalledWith({ status_id: 3 }, { transaction: undefined });
-    expect(updated).toBe(instance);
+    jest.spyOn(Decision, 'findByPk').mockResolvedValue(instance);
+
+    const res = await dao.updateStatus(123, 2); // 2 = APPROVED
+
+    expect(Decision.findByPk).toHaveBeenCalledWith(123, { transaction: undefined });
+    expect(instance.update).toHaveBeenCalledWith({ statusId: 2 }, { transaction: undefined });
+    expect(instance.reload).toHaveBeenCalledWith({ transaction: undefined });
+    expect(res).toBe(instance);
+    expect(res!.statusId).toBe(2);
   });
 
   test('updateStatus returns null if not found', async () => {

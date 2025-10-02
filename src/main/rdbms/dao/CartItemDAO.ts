@@ -117,20 +117,6 @@ export class CartItemDAO {
     });
   }
 
-  async findByRequestAndProduct(
-    requestId: number,
-    productId: number,
-    options: CommonOpts = {}
-  ): Promise<CartItem | null> {
-    const include = this.buildIncludes(options, options.extraInclude);
-    return this.model.findOne({
-      where: { requestId, productId } as any,
-      include,
-      transaction: options.transaction,
-      ...(options.findOptions ?? {}),
-    });
-  }
-
   async updateQuantity(
     id: number,
     quantity: number,
@@ -146,69 +132,6 @@ export class CartItemDAO {
   async deleteById(id: number, opts: WithTx = {}): Promise<number> {
     return this.model.destroy({
       where: { id } as any,
-      transaction: opts.transaction,
-    });
-  }
-
-  async deleteAllForRequest(requestId: number, opts: WithTx = {}): Promise<number> {
-    return this.model.destroy({
-      where: { requestId } as any,
-      transaction: opts.transaction,
-    });
-  }
-
-  // ---------- Utilities ----------
-
-  /** Returns a map of productId -> quantity for a request. */
-  async getQuantitiesForRequest(
-    requestId: number,
-    opts: WithTx = {}
-  ): Promise<Record<number, number>> {
-    const rows = await this.model.findAll({
-      attributes: ['productId', 'quantity'],
-      where: { requestId } as any,
-      transaction: opts.transaction,
-    });
-
-    const out: Record<number, number> = {};
-    for (const r of rows) out[r.productId] = r.quantity;
-    return out;
-  }
-
-  /** Upsert by (requestId, productId) — increments or sets quantity. */
-  async upsertItem(
-    params: { requestId: number; productId: number; quantity: number },
-    opts: WithTx & { increment?: boolean } = {}
-  ): Promise<CartItem> {
-    const tx = opts.transaction;
-    const existing = await this.findByRequestAndProduct(
-      params.requestId,
-      params.productId,
-      { transaction: tx }
-    );
-
-    if (!existing) {
-      return this.create(params, { transaction: tx });
-    }
-
-    const nextQty = opts.increment
-      ? (existing.quantity ?? 0) + params.quantity
-      : params.quantity;
-
-    await this.updateQuantity(existing.id, nextQty, { transaction: tx });
-    // Refresh row
-    return (await this.findById(existing.id, { transaction: tx })) as CartItem;
-  }
-
-  /** Remove multiple items by productIds for a request */
-  async deleteByProductIds(
-    requestId: number,
-    productIds: number[],
-    opts: WithTx = {}
-  ): Promise<number> {
-    if (!productIds.length) return 0;
-    return this.model.destroy({
-      where: { requestId, productId: { [Op.in]: productIds } } as any,
       transaction: opts.transaction,
     });
   }

@@ -1,3 +1,5 @@
+// src/test/unit/rdbms/dao/MarketplaceUserDAO.unit.test.ts
+
 // ---- Mocks ----
 jest.mock('../../../../main/rdbms/entities/MarketplaceUser', () => {
   class MarketplaceUser {
@@ -19,6 +21,11 @@ jest.mock('../../../../main/rdbms/entities/Role', () => {
   return { Role };
 });
 
+// Optional: silence noisy console logs from sequelize config (if imported anywhere)
+beforeAll(() => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+});
+
 // ---- Imports ----
 import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
 import { Role } from '../../../../main/rdbms/entities/Role';
@@ -26,7 +33,7 @@ import { MarketplaceUserDAO } from '../../../../main/rdbms/dao/MarketplaceUserDA
 
 describe('MarketplaceUserDAO', () => {
   const dao = new MarketplaceUserDAO();
-  const tx = Symbol('tx') as any; // distinct sentinel for easier call assertions
+  const tx = Symbol('tx') as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,7 +44,20 @@ describe('MarketplaceUserDAO', () => {
 
     const user = await dao.findByEmail('a@b.com');
 
-    expect(MarketplaceUser.findOne).toHaveBeenCalledWith({ where: { email: 'a@b.com' } });
+    // Inspect the actual argument to avoid brittle deep-equality on Sequelize internals
+    const callArg = (MarketplaceUser.findOne as jest.Mock).mock.calls[0][0];
+
+    // transaction is optional/undefined by default
+    expect(callArg.transaction).toBeUndefined();
+
+    // Assert key pieces of the case-insensitive where:
+    expect(callArg.where).toBeDefined();
+    expect(callArg.where.comparator).toBe('=');
+    expect(callArg.where.logic).toBe('a@b.com');
+    // left-hand side should be lower(col('email'))
+    expect(callArg.where.attribute.fn).toBe('lower');
+    expect(callArg.where.attribute.args[0].col).toBe('email');
+
     expect(user).toEqual({ id: 1, email: 'a@b.com' });
   });
 
