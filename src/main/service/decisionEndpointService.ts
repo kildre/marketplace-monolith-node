@@ -92,7 +92,6 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
       // 4) Build response
       const response = new SubmitDecisionResponseDto({
         decisionNumber: String(request.decisionNumber ?? '').trim(),
-        errMsg: '',
       });
       return response;
     } catch (err: any) {

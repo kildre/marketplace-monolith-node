@@ -69,6 +69,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const dto = new RoleCheckRequestDto({ userEmail: requestorEmail });
 
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
+    console.log('[submit] Role check response:', roleCheckResponseDto);
     if (!roleCheckResponseDto.hasRole) {
       throw new UnauthorizedRequestorException(requestorEmail);
     }

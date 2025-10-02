@@ -19,6 +19,7 @@ const isAuthorizedAdjudicator = async (
     request.userEmail,
     RoleEnum.ADJUDICATOR.id
   );
+  console.log('[isAuthorizedAdjudicator] userEmail:', request.userEmail, 'hasRole:', hasRole);
   return new RoleCheckResponseDto({ hasRole });
 };
 

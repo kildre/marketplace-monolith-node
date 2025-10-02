@@ -18,9 +18,9 @@ async function submit(req: Request, res: Response<SubmitDecisionResponseDto>) {
     return res.status(200).json(response);
   } catch (e: any) {
     if (e instanceof UnauthorizedAdjudicatorException) {
-      return res.status(403).json({ decisionNumber: '', errMsg: e.message });
+      return res.status(403).json({ decisionNumber: '' });
     }
-    return res.status(500).json({ decisionNumber: '', errMsg: e?.message || 'Internal Server Error' });
+    return res.status(400).json({ decisionNumber: ''});
   }
 }
 
