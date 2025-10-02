@@ -244,7 +244,7 @@ secret:
           #TLS_CERT_CA_FILEPATH: '/etc/ssl/certs/ca-bundle.crt'
           #TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
           #TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
-
+          CORS_ORIGIN: "https://advana-marketplace.dev.mtt.cdao.us,http://localhost:3000,http://localhost:8080"
           APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} https://advana-marketplace.dev.mtt.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
           REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
