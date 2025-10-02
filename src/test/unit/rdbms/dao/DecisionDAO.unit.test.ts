@@ -1,5 +1,5 @@
 // ---- Mocks ----
-jest.mock('../../../../rdbms/entities/Decision', () => {
+jest.mock('../../../../main/rdbms/entities/Decision', () => {
   class Decision {
     static create = jest.fn();
     static findAll = jest.fn();

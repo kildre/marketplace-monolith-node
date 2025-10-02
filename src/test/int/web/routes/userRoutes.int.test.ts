@@ -3,7 +3,7 @@ import express from 'express';
 import userRoutes from 'src/main/web/routes/userRoutes';
 import endpointService from '../../../../main/service/userEndpointService';
 
-jest.mock('src/service/userEndpointService', () => ({
+jest.mock('src/main/service/userEndpointService', () => ({
   __esModule: true, // 👈 This is critical for default exports
   default: {
     isAuthorizedAdjudicator: jest.fn(() => ({
