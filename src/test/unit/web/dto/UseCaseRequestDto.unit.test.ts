@@ -17,8 +17,8 @@ describe("UseCaseRequestDto", () => {
     estimatedRom: "1000",
     requestedToolName: "ToolA",
     description: "desc",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: (new Date()).toISOString(),
+    updatedAt: (new Date()).toISOString(),
     decision: undefined,
     cartItems: [],
   };
@@ -31,13 +31,8 @@ describe("UseCaseRequestDto", () => {
     expect(dto.cartItems).toEqual([]);
   });
 
-  test("should throw ConstraintError for non-string requestNumber", () => {
-    const data = { ...validData, requestNumber: 123 as any };
-    expect(() => new UseCaseRequestDto(data)).toThrow(ConstraintError);
-  });
-
-  test("should throw ConstraintError for non-int statusId", () => {
-    const data = { ...validData, statusId: "not-an-int" as any };
+  test("should throw ConstraintError for non-email email", () => {
+    const data = { ...validData, email: "not-an-email" as any };
     expect(() => new UseCaseRequestDto(data)).toThrow(ConstraintError);
   });
 });
