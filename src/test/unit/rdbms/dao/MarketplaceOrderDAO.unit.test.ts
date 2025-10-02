@@ -7,7 +7,7 @@ jest.mock('../../../../main/rdbms/entities/MarketplaceOrder', () => {
     static findByPk = jest.fn();
     static findAll = jest.fn();
     static update = jest.fn();
-    // NOTE: we won't rely on typing of .sequelize; we'll assign it as any in tests
+    // NOTE: we'll assign a fake sequelize in tests when needed
     static sequelize?: any;
     id!: number;
   }
@@ -22,11 +22,11 @@ jest.mock('../../../../main/rdbms/entities/OrderItem', () => {
 });
 
 jest.mock('../../../../main/rdbms/entities/MarketplaceUser', () => ({
-  MarketplaceUser: class MarketplaceUser { }
+  MarketplaceUser: class MarketplaceUser {}
 }));
 
 jest.mock('../../../../main/rdbms/entities/Status', () => ({
-  Status: class Status { }
+  Status: class Status {}
 }));
 
 // ---- Imports under test ----
@@ -45,24 +45,24 @@ describe('MarketplaceOrderDAO (unit)', () => {
   });
 
   // -------- createWithItems --------
-  it('createWithItems uses provided transaction and creates items with order_id', async () => {
+  it('createWithItems uses provided transaction and creates items with orderId', async () => {
     (MarketplaceOrder.create as any).mockResolvedValue({ id: 123 });
     (OrderItem.bulkCreate as any).mockResolvedValue(undefined);
 
     const order = await dao.createWithItems(
-      { requestor_id: 9 } as any,
-      [{ product_id: 7, qty: 2 } as any, { product_id: 8, qty: 1 } as any],
+      { requestorId: 9 } as any,
+      [{ productId: 7, qty: 2 } as any, { productId: 8, qty: 1 } as any],
       { transaction: tx }
     );
 
     expect(MarketplaceOrder.create).toHaveBeenCalledWith(
-      { requestor_id: 9 },
+      { requestorId: 9 },
       { transaction: tx }
     );
     expect(OrderItem.bulkCreate).toHaveBeenCalledWith(
       [
-        { product_id: 7, qty: 2, order_id: 123 },
-        { product_id: 8, qty: 1, order_id: 123 },
+        { productId: 7, qty: 2, orderId: 123 }, // attribute names
+        { productId: 8, qty: 1, orderId: 123 },
       ],
       { transaction: tx }
     );
@@ -70,18 +70,17 @@ describe('MarketplaceOrderDAO (unit)', () => {
   });
 
   it('createWithItems opens a managed transaction when none provided', async () => {
-    // assign a mock sequelize to the model (cast to any to avoid TS18048)
     const sequelizeMock = { transaction: jest.fn(async (fn) => fn({ __tx: true })) };
     (MarketplaceOrder as any).sequelize = sequelizeMock;
 
     (MarketplaceOrder.create as any).mockResolvedValue({ id: 1 });
     (OrderItem.bulkCreate as any).mockResolvedValue(undefined);
 
-    await dao.createWithItems({ requestor_id: 1 } as any, [] as any[]);
+    await dao.createWithItems({ requestorId: 1 } as any, [] as any[]);
 
     expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
     expect(MarketplaceOrder.create).toHaveBeenCalledWith(
-      { requestor_id: 1 },
+      { requestorId: 1 },
       { transaction: expect.objectContaining({ __tx: true }) }
     );
     expect(OrderItem.bulkCreate).not.toHaveBeenCalled();
@@ -94,8 +93,8 @@ describe('MarketplaceOrderDAO (unit)', () => {
     (MarketplaceOrder.findByPk as any).mockResolvedValue(reloaded);
 
     const result = await dao.createWithItems(
-      { requestor_id: 9 } as any,
-      [{ product_id: 1 } as any],
+      { requestorId: 9 } as any,
+      [{ productId: 1 } as any],
       { transaction: tx, reloadWithItems: true }
     );
 
@@ -162,10 +161,10 @@ describe('MarketplaceOrderDAO (unit)', () => {
     const res = await dao.listByRequestor(9, { transaction: tx });
 
     expect(MarketplaceOrder.findAll).toHaveBeenCalledWith({
-      where: { requestorId: 9 }, // camelCase to match DAO
+      where: { requestorId: 9 },
       include: [
-        { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-        { model: Status, as: 'status', attributes: ['id', 'code'] }, // 'code' not 'name'
+        { model: MarketplaceUser, as: 'requestor' }, // no attributes list (matches DAO)
+        { model: Status, as: 'status' },
       ],
       order: [['id', 'DESC']],
       limit: undefined,
@@ -188,14 +187,14 @@ describe('MarketplaceOrderDAO (unit)', () => {
 
     expect(MarketplaceOrder.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { requestorId: 7 }, // camelCase
+        where: { requestorId: 7 },
         limit: 50,
         offset: 100,
         transaction: tx,
-        order: [['id', 'DESC']], // DAO includes top-level order
+        order: [['id', 'DESC']],
         include: expect.arrayContaining([
-          { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-          { model: Status, as: 'status', attributes: ['id', 'code'] }, // 'code'
+          { model: MarketplaceUser, as: 'requestor' },
+          { model: Status, as: 'status' },
           expect.objectContaining({
             model: OrderItem,
             as: 'items',
@@ -203,7 +202,7 @@ describe('MarketplaceOrderDAO (unit)', () => {
             order: [['id', 'ASC']],
           }),
         ]),
-        attributes: ['id'],
+        attributes: ['id'], // passed through from findOptions
       }),
     );
   });
@@ -215,10 +214,10 @@ describe('MarketplaceOrderDAO (unit)', () => {
     const res = await dao.listByStatusId(2, { transaction: tx, limit: 10, offset: 5 });
 
     expect(MarketplaceOrder.findAll).toHaveBeenCalledWith({
-      where: { statusId: 2 }, // camelCase
+      where: { statusId: 2 },
       include: [
-        { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-        { model: Status, as: 'status', attributes: ['id', 'name'] }, // expect 'name'
+        { model: MarketplaceUser, as: 'requestor' },
+        { model: Status, as: 'status' },
       ],
       limit: 10,
       offset: 5,
@@ -235,7 +234,7 @@ describe('MarketplaceOrderDAO (unit)', () => {
     const n = await dao.updateStatus(42, 5, { transaction: tx });
 
     expect(MarketplaceOrder.update).toHaveBeenCalledWith(
-      { status_id: 5 }, // keep snake_case for DB column in payload
+      { statusId: 5 }, // attribute name
       { where: { id: 42 }, transaction: tx }
     );
     expect(n).toBe(1);

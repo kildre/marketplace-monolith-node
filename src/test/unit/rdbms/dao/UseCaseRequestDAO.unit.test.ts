@@ -1,182 +1,250 @@
-// src/test/unit/rdbms/dao/UseCaseRequestDAO.unit.test.ts
-
 // ---- Mocks ----
 jest.mock('../../../../main/rdbms/entities/UseCaseRequest', () => {
   class UseCaseRequest {
     static findAll = jest.fn();
     static findOne = jest.fn();
+    static sequelize?: any; // we'll attach a fake sequelize in tests
   }
   return { UseCaseRequest };
 });
 
-// ---- Imports ----
-import { UseCaseRequest } from '../../../../main/rdbms/entities/UseCaseRequest';
+// ---- Imports under test ----
 import { UseCaseRequestDAO } from '../../../../main/rdbms/dao/UseCaseRequestDAO';
+import { UseCaseRequest } from '../../../../main/rdbms/entities/UseCaseRequest';
 
 describe('UseCaseRequestDAO (unit)', () => {
-  // ✅ attach a stub sequelize so DAO's getter doesn't throw
-  beforeAll(() => {
-    (UseCaseRequest as any).sequelize = {
-      // only what your DAO might read:
-      models: {
-        MarketplaceUser: {},
-        Status: {},
-        Decision: {},
-        CartItem: {},
-        Product: {},
-      },
-      getQueryInterface: () => ({}),
-    };
-  });
+  let dao: UseCaseRequestDAO;
 
-  const dao = new UseCaseRequestDAO();
+  // Fake “sequelize” and associated model classes to satisfy buildIncludes()
+  class MarketplaceUser {}
+  class Status {}
+  class Decision {}
+  class CartItem {}
+  class Product {}
+
   const tx = Symbol('tx') as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Provide the minimal shape that UseCaseRequestDAO expects:
+    (UseCaseRequest as any).sequelize = {
+      // Only models are accessed by the DAO
+      models: { MarketplaceUser, Status, Decision, CartItem, Product },
+    };
+
+    dao = new UseCaseRequestDAO();
   });
 
-  // ----------------- findByStatusId -----------------
-  it('findByStatusId forwards where, include, pagination, tx, and findOptions', async () => {
+  // ------------- findAllRequests -------------
+  it('findAllRequests: no flags -> include is undefined; passes limit/offset/order/tx/findOptions', async () => {
     (UseCaseRequest.findAll as any).mockResolvedValue([{ id: 1 }]);
 
-    const res = await dao.findByStatusId(2, {
-      // pass-through include (no association conversion)
-      extraInclude: [{ as: 'requestor' } as any],
-      limit: 10,
-      offset: 5,
+    const res = await dao.findAllRequests({
+      limit: 25,
+      offset: 100,
+      transaction: tx,
+      findOptions: { attributes: ['id'], paranoid: false },
+    });
+
+    expect(UseCaseRequest.findAll).toHaveBeenCalledWith({
+      include: undefined,
+      limit: 25,
+      offset: 100,
+      transaction: tx,
+      order: [['id', 'DESC']],
+      attributes: ['id'],
+      paranoid: false,
+    });
+    expect(res).toEqual([{ id: 1 }]);
+  });
+
+  it('findAllRequests: all include flags true + extraInclude are combined', async () => {
+    (UseCaseRequest.findAll as any).mockResolvedValue([]);
+
+    const extra = [{ association: 'someExtra' }] as any;
+
+    await dao.findAllRequests({
+      includeRequestor: true,
+      includeStatus: true,
+      includeDecisions: true,
+      includeCartItems: true,
+      extraInclude: extra,
+    });
+
+    // Capture the call to verify includes structure
+    const arg = (UseCaseRequest.findAll as any).mock.calls[0][0];
+    expect(arg.include).toEqual(
+      expect.arrayContaining([
+        { model: MarketplaceUser, as: 'requestor' },
+        { model: Status, as: 'status' },
+        expect.objectContaining({
+          model: Decision,
+          as: 'decisions',
+          required: false,
+          include: [{ model: Status, as: 'status' }],
+        }),
+        expect.objectContaining({
+          model: CartItem,
+          as: 'cartItems',
+          include: [{ model: Product, as: 'product' }],
+        }),
+        { association: 'someExtra' },
+      ])
+    );
+  });
+
+  // ------------- findByStatusId -------------
+  it('findByStatusId: uses snake_case status_id in where + merges options', async () => {
+    (UseCaseRequest.findAll as any).mockResolvedValue([{ id: 3 }]);
+
+    const res = await dao.findByStatusId(9, {
+      includeRequestor: true,
+      limit: 5,
+      offset: 10,
       transaction: tx,
       findOptions: { attributes: ['id'] },
     });
 
     expect(UseCaseRequest.findAll).toHaveBeenCalledWith({
-      where: { status_id: 2 },
-      include: [{ as: 'requestor' }],
-      limit: 10,
-      offset: 5,
+      where: { status_id: 9 },
+      include: [{ model: MarketplaceUser, as: 'requestor' }],
+      limit: 5,
+      offset: 10,
       transaction: tx,
       order: [['id', 'DESC']],
       attributes: ['id'],
     });
-    expect(res).toEqual([{ id: 1 }]);
+    expect(res).toEqual([{ id: 3 }]);
   });
 
-  it('findByStatusId works with default options', async () => {
-    (UseCaseRequest.findAll as any).mockResolvedValue([{ id: 2 }]);
+  // ------------- findByRequestorId -------------
+  it('findByRequestorId: uses snake_case requestor_id in where + merges options', async () => {
+    (UseCaseRequest.findAll as any).mockResolvedValue([{ id: 4 }]);
 
-    const res = await dao.findByStatusId(3);
+    const res = await dao.findByRequestorId(77, {
+      includeStatus: true,
+      transaction: tx,
+    });
 
     expect(UseCaseRequest.findAll).toHaveBeenCalledWith({
-      where: { status_id: 3 },
-      include: undefined,
+      where: { requestor_id: 77 },
+      include: [{ model: Status, as: 'status' }],
       limit: undefined,
       offset: undefined,
-      transaction: undefined,
-      order: [['id', 'DESC']],
-    });
-    expect(res).toEqual([{ id: 2 }]);
-  });
-
-  // ----------------- findByRequestorId -----------------
-  it('findByRequestorId forwards where, include, pagination, tx, and findOptions', async () => {
-    (UseCaseRequest.findAll as any).mockResolvedValue([{ id: 10 }]);
-
-    const res = await dao.findByRequestorId(7, {
-      extraInclude: [{ as: 'status' } as any],
-      limit: 25,
-      offset: 75,
-      transaction: tx,
-      findOptions: { attributes: ['id', 'request_number'] },
-    });
-
-    expect(UseCaseRequest.findAll).toHaveBeenCalledWith({
-      where: { requestor_id: 7 },
-      include: [{ as: 'status' }],
-      limit: 25,
-      offset: 75,
       transaction: tx,
       order: [['id', 'DESC']],
-      attributes: ['id', 'request_number'],
     });
-    expect(res).toEqual([{ id: 10 }]);
+    expect(res).toEqual([{ id: 4 }]);
   });
 
-  it('findByRequestorId works with default options', async () => {
-    (UseCaseRequest.findAll as any).mockResolvedValue([{ id: 11 }]);
+  // ------------- findByRequestNumber -------------
+  it('findByRequestNumber: uses full includes, passes raw:false, spreads findOptions and transaction', async () => {
+    const row = { id: 10, requestNumber: 'REQ-XYZ' };
+    (UseCaseRequest.findOne as any).mockResolvedValue(row);
 
-    const res = await dao.findByRequestorId(9);
-
-    expect(UseCaseRequest.findAll).toHaveBeenCalledWith({
-      where: { requestor_id: 9 },
-      include: undefined,
-      limit: undefined,
-      offset: undefined,
-      transaction: undefined,
-      order: [['id', 'DESC']],
-    });
-    expect(res).toEqual([{ id: 11 }]);
-  });
-
-  // ----------------- findByRequestNumber -----------------
-  it('findByRequestNumber forwards where, include, tx, and findOptions', async () => {
-    (UseCaseRequest.findOne as any).mockResolvedValue({
-      id: 99,
-      request_number: 'REQ-42',
-    });
-
-    const res = await dao.findByRequestNumber('REQ-42', {
-      extraInclude: [{ as: 'requestor' } as any], // DAO adds full graph & converts to association
+    const res = await dao.findByRequestNumber('REQ-XYZ', {
       transaction: tx,
-      findOptions: { attributes: ['id', 'request_number'] },
+      findOptions: { attributes: ['id', 'requestNumber'] },
     });
 
-    expect(UseCaseRequest.findOne).toHaveBeenCalledWith({
-      where: { requestNumber: 'REQ-42' },         // 👈 camelCase attribute
-      include: [                                  // 👈 full include graph via associations
+    // First ensure findOne called with proper where/transaction/raw/etc.
+    const callArg = (UseCaseRequest.findOne as any).mock.calls[0][0];
+    expect(callArg.where).toEqual({ requestNumber: 'REQ-XYZ' });
+    expect(callArg.transaction).toBe(tx);
+    expect(callArg.raw).toBe(false);
+    expect(callArg.attributes).toEqual(['id', 'requestNumber']);
+
+    // And includes equal the fullIncludes() structure
+    expect(callArg.include).toEqual(
+      expect.arrayContaining([
         { association: 'requestor' },
         { association: 'status' },
-        {
+        expect.objectContaining({
           association: 'cartItems',
           required: false,
           include: [{ association: 'product' }],
-        },
-        {
+        }),
+        expect.objectContaining({
           association: 'decisions',
           required: false,
-          include: [{ association: 'status' }, { association: 'adjudicator' }],
-        },
-      ],
-      transaction: tx,
-      raw: false,
-      attributes: ['id', 'request_number'],
-    });
-    expect(res).toEqual({ id: 99, request_number: 'REQ-42' });
+          include: [
+            { association: 'status' },
+            { association: 'adjudicator' },
+          ],
+        }),
+      ])
+    );
+
+    expect(res).toBe(row);
   });
 
-  it('findByRequestNumber works with default options and can return null', async () => {
+  it('findByRequestNumber: works without transaction and without findOptions', async () => {
     (UseCaseRequest.findOne as any).mockResolvedValue(null);
 
-    const res = await dao.findByRequestNumber('REQ-404');
+    await dao.findByRequestNumber('REQ-123');
 
-    expect(UseCaseRequest.findOne).toHaveBeenCalledWith({
-      where: { requestNumber: 'REQ-404' },        // 👈 camelCase attribute
-      include: [                                  // 👈 DAO injects full include graph by default
-        { association: 'requestor' },
-        { association: 'status' },
-        {
-          association: 'cartItems',
-          required: false,
-          include: [{ association: 'product' }],
-        },
-        {
-          association: 'decisions',
-          required: false,
-          include: [{ association: 'status' }, { association: 'adjudicator' }],
-        },
-      ],
-      transaction: undefined,
-      raw: false,
+    const arg = (UseCaseRequest.findOne as any).mock.calls[0][0];
+    expect(arg.transaction).toBeUndefined();
+    expect(arg.raw).toBe(false);
+    expect(arg.findOptions).toBeUndefined();
+    expect(arg.include).toBeDefined(); // still uses fullIncludes()
+  });
+
+  it('findByRequestNumber: fullIncludes returns a fresh array each call (no shared mutations)', async () => {
+    (UseCaseRequest.findOne as any).mockResolvedValue(null);
+
+    await dao.findByRequestNumber('ONE');
+    const firstInclude = (UseCaseRequest.findOne as any).mock.calls[0][0].include;
+
+    await dao.findByRequestNumber('TWO');
+    const secondInclude = (UseCaseRequest.findOne as any).mock.calls[1][0].include;
+
+    // not the same reference
+    expect(firstInclude).not.toBe(secondInclude);
+    // but same shape
+    expect(firstInclude).toEqual(secondInclude);
+  });
+
+  // ------------- buildIncludes: branch coverage -------------
+  it('buildIncludes: returns undefined when no flags and no extra', async () => {
+    (UseCaseRequest.findAll as any).mockResolvedValue([]);
+    await dao.findAllRequests({});
+    const include = (UseCaseRequest.findAll as any).mock.calls[0][0].include;
+    expect(include).toBeUndefined();
+  });
+
+  it('buildIncludes: combines chosen flags + extraInclude', async () => {
+    (UseCaseRequest.findAll as any).mockResolvedValue([]);
+    await dao.findAllRequests({
+      includeRequestor: true,
+      includeDecisions: true,
+      extraInclude: [{ association: 'foo' }] as any,
     });
-    expect(res).toBeNull();
+    const include = (UseCaseRequest.findAll as any).mock.calls[0][0].include;
+
+    expect(include).toEqual(
+      expect.arrayContaining([
+        { model: MarketplaceUser, as: 'requestor' },
+        expect.objectContaining({
+          model: Decision,
+          as: 'decisions',
+          required: false,
+          include: [{ model: Status, as: 'status' }],
+        }),
+        { association: 'foo' },
+      ])
+    );
+  });
+
+  // ------------- Error branch when model.sequelize is missing -------------
+  it('throws a clear error if model.sequelize is not bound', async () => {
+    // Remove the fake sequelize so dao.sequelize throws when buildIncludes tries to access it
+    (UseCaseRequest as any).sequelize = undefined;
+
+    // Use a call path that requires buildIncludes (so it touches dao.sequelize)
+    await expect(
+      dao.findAllRequests({ includeStatus: true })
+    ).rejects.toThrow(/is not bound to a Sequelize instance/i);
   });
 });

@@ -3,7 +3,6 @@ import {
   Transaction,
   CreationAttributes,
   FindOptions,
-  Op,
 } from 'sequelize';
 import { BaseDAO } from './BaseDAO';
 import { MarketplaceOrder } from '../entities/MarketplaceOrder';
@@ -18,11 +17,6 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     super(MarketplaceOrder);
   }
 
-  /**
-   * Create an order and its items atomically.
-   * If `tx` not provided, a transaction is created for you.
-   * Set `reloadWithItems=true` to return the order with items eagerly loaded.
-   */
   async createWithItems(
     orderData: CreationAttributes<MarketplaceOrder>,
     items: CreationAttributes<OrderItem>[],
@@ -35,18 +29,16 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
       if (items?.length) {
         const rows = items.map((i) => ({
           ...i,
-          order_id: order.id, // FK
+          orderId: order.id, // ✅ attribute name
         })) as CreationAttributes<OrderItem>[];
         await OrderItem.bulkCreate(rows, { transaction: t });
       }
 
       if (opts.reloadWithItems) {
-        // eager-load items only (others stay lazy)
         const reloaded = await MarketplaceOrder.findByPk(order.id, {
           transaction: t,
           include: [{ model: OrderItem, as: 'items', separate: true, order: [['id', 'ASC']] }],
         });
-        // `reloaded` will exist since we just created it
         return reloaded!;
       }
       return order;
@@ -56,10 +48,6 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     return await sequelize.transaction(run);
   }
 
-  /**
-   * Fetch order with items eagerly (items only).
-   * Use `separate: true` to avoid join bloat on big hasMany.
-   */
   async getWithItems(
     orderId: number,
     options: WithTx & { itemLimit?: number } = {}
@@ -78,22 +66,19 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     });
   }
 
-  /**
-   * List orders by requestor with optional eager includes.
-   * By default includes requestor & status; items stay lazy.
-   */
   async listByRequestor(
     requestorId: number,
     options: WithTx & {
       limit?: number;
       offset?: number;
-      includeItems?: boolean; // set true to also include items
+      includeItems?: boolean;
       findOptions?: Omit<FindOptions, 'where' | 'include' | 'limit' | 'offset'>;
     } = {}
   ): Promise<MarketplaceOrder[]> {
     const include: Array<import('sequelize').Includeable> = [
-      { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-      { model: Status, as: 'status', attributes: ['id', 'code'] },
+      // ✅ no attributes list — avoid schema mismatches
+      { model: MarketplaceUser, as: 'requestor' },
+      { model: Status, as: 'status' },
     ];
 
     if (options.includeItems) {
@@ -104,7 +89,6 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
       where: { requestorId },
       include,
       order: [['id', 'DESC']],
-      // distinct: true, // safe for pagination with includes
       limit: options.limit,
       offset: options.offset,
       transaction: options.transaction,
@@ -112,9 +96,6 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     });
   }
 
-  /**
-   * Convenience: list by status id (eager requestor+status).
-   */
   async listByStatusId(
     statusId: number,
     options: WithTx & { limit?: number; offset?: number } = {}
@@ -122,8 +103,9 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     return MarketplaceOrder.findAll({
       where: { statusId },
       include: [
-        { model: MarketplaceUser, as: 'requestor', attributes: ['id', 'first_name', 'last_name'] },
-        { model: Status, as: 'status', attributes: ['id', 'name'] },
+        // ✅ no attributes list
+        { model: MarketplaceUser, as: 'requestor' },
+        { model: Status, as: 'status' },
       ],
       order: [['id', 'DESC']],
       limit: options.limit,
@@ -132,16 +114,13 @@ export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
     });
   }
 
-  /**
-   * Optional helper: update status (atomic).
-   */
   async updateStatus(
     orderId: number,
     statusId: number,
     opts: WithTx = {}
   ): Promise<number> {
     const [count] = await MarketplaceOrder.update(
-      { status_id: statusId } as Partial<MarketplaceOrder>,
+      { statusId }, // ✅ attribute name
       { where: { id: orderId }, transaction: opts.transaction }
     );
     return count;
