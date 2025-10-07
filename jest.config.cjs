@@ -67,6 +67,15 @@ module.exports = {
       statements: 80,
     },
   },
+  collectCoverageFrom: [
+    "src/main/domain/**/*.{ts,tsx,js,jsx}",
+    "src/main/middleware/**/*.{ts,tsx,js,jsx}",
+    "src/main/rdbms/dao/**/*.{ts,tsx,js,jsx}",
+    "src/main/rdbms/entities/**/*.{ts,tsx,js,jsx}",
+    "src/main/web/controllers/**/*.{ts,tsx,js,jsx}",
+    "src/main/web/dtos/**/*.{ts,tsx,js,jsx}",
+    "src/main/service/**/*.{ts,tsx,js,jsx}"
+  ],
   reporters: [
     "default",
     ["jest-html-reporter", {
