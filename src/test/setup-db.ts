@@ -41,8 +41,6 @@ beforeAll(async () => {
 
   // 2) Set env BEFORE importing your entities/index.ts
   process.env.DATABASE_URL = container.getConnectionUri();
-  process.env.DIALECT = 'postgres';
-  process.env.DB_DIALECT = 'postgres';
   process.env.NODE_ENV = 'test';
 
   // 3) Import your entities (this file initializes models & associations)

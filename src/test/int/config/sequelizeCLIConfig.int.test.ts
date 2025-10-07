@@ -38,7 +38,6 @@ describe('sequelizeCLIConfig.cjs (integration with Postgres container)', () => {
   it('development + URL + DB_SSL=false → use_env_variable present, authenticate ok', async () => {
     // Force all known URL env vars to the container URI to avoid host env leakage
     process.env.NODE_ENV = 'development';
-    process.env.DB_DIALECT = 'postgres';
     process.env.DB_SSL = '0';
     process.env['secret-env-postgresql'] = pgUri;
     process.env['SECRET_ENV_POSTGRESQL'] = pgUri;
@@ -69,7 +68,6 @@ describe('sequelizeCLIConfig.cjs (integration with Postgres container)', () => {
 
   it('test + URL + DB_SSL=false → test logging forced false, authenticate ok', async () => {
     process.env.NODE_ENV = 'test';
-    process.env.DB_DIALECT = 'postgres';
     process.env.DB_SSL = '0';
     // Force URLs to container (override any host env)
     process.env['secret-env-postgresql'] = pgUri;
@@ -93,7 +91,6 @@ describe('sequelizeCLIConfig.cjs (integration with Postgres container)', () => {
 
   it('development + DB_SSL=true → dialectOptions contains ssl subset (skip authenticate)', async () => {
     process.env.NODE_ENV = 'development';
-    process.env.DB_DIALECT = 'postgres';
     process.env.DB_SSL = 'true'; // enable SSL branch
     // Ensure URL is the container’s (avoid host env)
     process.env['secret-env-postgresql'] = pgUri;
