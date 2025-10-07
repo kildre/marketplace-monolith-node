@@ -19,9 +19,9 @@ import SubmitRequestResponseDto from "../web/dtos/SubmitRequestResponseDto";
 import UseCaseRequestDto from "../web/dtos/UseCaseRequestDto";
 import ViewRequestsRequestDto from "../web/dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
-import { ProductNotFoundException } from './errors/ProductNotFoundException';
-import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
-import { UnauthorizedRequestorException } from './errors/UnauthorizedRequestorException';
+import { ProductNotFoundException } from '../domain/errors/ProductNotFoundError';
+import { UnauthorizedAdjudicatorException } from '../domain/errors/UnauthorizedAdjudicatorError';
+import { UnauthorizedRequestorException } from '../domain/errors/UnauthorizedRequestorError';
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;

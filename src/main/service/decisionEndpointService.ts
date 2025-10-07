@@ -3,8 +3,8 @@ import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, Validati
 import SubmitDecisionRequestDto from '../web/dtos/SubmitDecisionRequestDto';
 import SubmitDecisionResponseDto from '../web/dtos/SubmitDecisionResponseDto';
 import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
-import { UseCaseRequestNotFoundException } from './errors/UseCaseRequestNotFoundException';
-import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
+import { UseCaseRequestNotFoundException } from '../domain/errors/UseCaseRequestNotFoundError';
+import { UnauthorizedAdjudicatorException } from '../domain/errors/UnauthorizedAdjudicatorError';
 import { DecisionDAO } from "../rdbms/dao/DecisionDAO";
 import { Decision } from "../rdbms/entities/Decision";
 

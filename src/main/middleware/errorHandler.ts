@@ -9,7 +9,7 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  const statusCode = (err as any).statusCode || 500;
+  const statusCode = (err as any).status || 500;
   const errorClass = err.name || "Error";
   const errMsg = `${errorClass}: ${err.message}`;
 
