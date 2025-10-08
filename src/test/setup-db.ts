@@ -55,7 +55,7 @@ beforeAll(async () => {
   const umzug = new Umzug({
     migrations: {
       // glob your TS/JS migrations
-      glob: path.join(process.cwd(), 'src/rdbms/migrations/*.{ts,js}'),
+      glob: path.join(process.cwd(), 'src/main/rdbms/migrations/**/*.{ts,js}'),
 
       // map loaded modules to the Sequelize-CLI signature
       resolve: ({ name, path, context }) => {
