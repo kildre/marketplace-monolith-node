@@ -26,7 +26,7 @@ export async function submit(
   next: NextFunction
 ) {
   try {
-    const payload = req.body as SubmitRequestRequestDto;
+    const payload = new SubmitRequestRequestDto(req.body);
     const response = await service.submit(payload);
     return res.status(200).json(response);
   } catch (e: any) {
@@ -39,7 +39,7 @@ async function viewPendingRequests(
   next: NextFunction
 ) {
   try {
-    const payload = req.body as ViewRequestsRequestDto;
+    const payload = new ViewRequestsRequestDto(req.body);
     const response = await service.viewPendingRequests(payload);
     return res.status(200).json(response);
   } catch (e: any) {
@@ -53,7 +53,7 @@ async function viewAllRequests(
   next: NextFunction
 ) {
   try {
-    const payload = req.body as ViewRequestsRequestDto;
+    const payload = new ViewRequestsRequestDto(req.body);
     const response = await service.viewAllRequests(payload);
     return res.status(200).json(response);
   } catch (e: any) {
@@ -67,7 +67,7 @@ async function viewRequestsForRequestor(
   next: NextFunction
 ) {
   try {
-    const payload = req.body as ViewRequestsRequestDto;
+    const payload = new ViewRequestsRequestDto(req.body);
     const response = await service.viewRequestsForRequestor(payload);
     return res.status(200).json(response);
   } catch (e: any) {
@@ -81,7 +81,7 @@ async function viewRequestByRequestNumber(
   next: NextFunction
 ) {
   try {
-    const payload = req.body as ViewRequestByRequestNumDto;
+    const payload = new ViewRequestByRequestNumDto(req.body);
     const response = await service.viewRequestForRequestNumber(payload);
     return res.status(200).json(response);
   } catch (e: any) {

@@ -14,7 +14,7 @@ async function submit(
   next: NextFunction
 ) {
   try {
-    const payload = req.body as SubmitDecisionRequestDto;
+    const payload = new SubmitDecisionRequestDto(req.body);
     const response = await service.submit(payload);
     return res.status(200).json(response);
   } catch (e: any) {
