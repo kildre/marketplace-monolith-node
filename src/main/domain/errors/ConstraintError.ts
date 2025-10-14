@@ -1,5 +1,5 @@
 import { ValidationError } from "class-validator";
-import MarketplaceError from "./MarketPlaceError";
+import MarketplaceError from "./MarketplaceError";
 
 export default class ConstraintError extends MarketplaceError {
 

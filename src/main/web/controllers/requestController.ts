@@ -9,15 +9,6 @@ import ViewRequestByRequestNumDto from "../dtos/ViewRequestByRequestNumDto";
 
 import { RequestEndpointService } from "../../service/requestEndpointService";
 
-import { UnauthorizedRequestorException } from "../../domain/errors/UnauthorizedRequestorError";
-import { UnauthorizedAdjudicatorException } from "../../domain/errors/UnauthorizedAdjudicatorError";
-
-// use the stub by default; swap in your real implementation via DI if desired
-import userEndpointService from "../../service/userEndpointService";
-import { ValidationError } from "class-validator";
-import { UniqueConstraintError, ForeignKeyConstraintError } from "sequelize";
-import { UseCaseRequestNotFoundException } from "../../domain/errors/UseCaseRequestNotFoundError";
-
 const service: RequestEndpointService = new RequestEndpointService();
 
 export async function submit(
