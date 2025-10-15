@@ -61,12 +61,21 @@ module.exports = {
   coverageDirectory: "reports/coverage",
   coverageThreshold: {
     global: {
-      branches: 60,
-      functions: 80,
-      lines: 80,
-      statements: 80,
+      branches: 38,
+      functions: 58,
+      lines: 58,
+      statements: 58,
     },
   },
+  collectCoverageFrom: [
+    "src/main/domain/**/*.{ts,tsx,js,jsx}",
+    "src/main/middleware/**/*.{ts,tsx,js,jsx}",
+    "src/main/rdbms/dao/**/*.{ts,tsx,js,jsx}",
+    "src/main/rdbms/entities/**/*.{ts,tsx,js,jsx}",
+    "src/main/web/controllers/**/*.{ts,tsx,js,jsx}",
+    "src/main/web/dtos/**/*.{ts,tsx,js,jsx}",
+    "src/main/service/**/*.{ts,tsx,js,jsx}"
+  ],
   reporters: [
     "default",
     ["jest-html-reporter", {

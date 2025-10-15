@@ -19,9 +19,9 @@ import SubmitRequestResponseDto from "../web/dtos/SubmitRequestResponseDto";
 import UseCaseRequestDto from "../web/dtos/UseCaseRequestDto";
 import ViewRequestsRequestDto from "../web/dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
-import { ProductNotFoundException } from './errors/ProductNotFoundException';
-import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
-import { UnauthorizedRequestorException } from './errors/UnauthorizedRequestorException';
+import { ProductNotFoundError } from '../domain/errors/ProductNotFoundError';
+import { UnauthorizedAdjudicatorError } from '../domain/errors/UnauthorizedAdjudicatorError';
+import { UnauthorizedRequestorError } from '../domain/errors/UnauthorizedRequestorError';
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
@@ -71,7 +71,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
     console.log('[submit] Role check response:', roleCheckResponseDto);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedRequestorException(requestorEmail);
+      throw new UnauthorizedRequestorError(requestorEmail);
     }
 
     const requestorUser = await this.userEndpointService.findByEmail(dto);
@@ -105,7 +105,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
         for (const item of request.cartItems ?? []) {
           const product = await this.productDAO.findByName(item.name, { transaction: tx });
           if (!product) {
-            throw new ProductNotFoundException(item.name);
+            throw new ProductNotFoundError(item.name);
           }
           await this.cartItemDAO.create(
             {
@@ -151,7 +151,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const dto = new RoleCheckRequestDto(payload);
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+      throw new UnauthorizedAdjudicatorError(payload.userEmail);
     }
 
     const rows = await this.useCaseRequestDAO.findByStatusId(
@@ -170,7 +170,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
     console.log('roleCheckResponseDto.hasRole:', roleCheckResponseDto.hasRole);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+      throw new UnauthorizedAdjudicatorError(payload.userEmail);
     }
     const rows = await this.useCaseRequestDAO.findAllRequests({
       includeRequestor: true,
@@ -193,7 +193,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const dto = new RoleCheckRequestDto(payload);
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedRequestorException(payload.userEmail);
+      throw new UnauthorizedRequestorError(payload.userEmail);
     }
     const requestorUser = await this.userEndpointService.findByEmail(dto);
     if (!requestorUser) {
@@ -224,7 +224,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const dto = new RoleCheckRequestDto(payload);
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorException(payload.userEmail);
+      throw new UnauthorizedAdjudicatorError(payload.userEmail);
     }
 
     const row = await this.useCaseRequestDAO.findByRequestNumber(

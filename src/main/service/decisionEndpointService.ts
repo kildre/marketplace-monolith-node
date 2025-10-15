@@ -3,8 +3,8 @@ import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, Validati
 import SubmitDecisionRequestDto from '../web/dtos/SubmitDecisionRequestDto';
 import SubmitDecisionResponseDto from '../web/dtos/SubmitDecisionResponseDto';
 import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
-import { UseCaseRequestNotFoundException } from './errors/UseCaseRequestNotFoundException';
-import { UnauthorizedAdjudicatorException } from './errors/UnauthorizedAdjudicatorException';
+import { UseCaseRequestNotFoundError } from '../domain/errors/UseCaseRequestNotFoundError';
+import { UnauthorizedAdjudicatorError } from '../domain/errors/UnauthorizedAdjudicatorError';
 import { DecisionDAO } from "../rdbms/dao/DecisionDAO";
 import { Decision } from "../rdbms/entities/Decision";
 
@@ -48,7 +48,7 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
     const dto = new RoleCheckRequestDto({ userEmail: adjudicatorEmail });
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
     if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorException(adjudicatorEmail);
+      throw new UnauthorizedAdjudicatorError(adjudicatorEmail);
     }
 
     const adjudicatorUser = await this.userEndpointService.findByEmail(dto);
@@ -68,7 +68,7 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
 
     const useCaseRequest = await this.usecaseDao.findByRequestNumber(request.requestNumber);
     if(!useCaseRequest) {
-      throw new UseCaseRequestNotFoundException(String(request.requestNumber ?? ''));
+      throw new UseCaseRequestNotFoundError(String(request.requestNumber ?? ''));
     }
 
     try {
