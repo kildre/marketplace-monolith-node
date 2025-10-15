@@ -1,11 +1,10 @@
+import 'reflect-metadata'
 import express from 'express';
 import 'dotenv/config';
 import configureApp from './config/appConfig';
 import log from './service/loggingService';
 import { assertDatabaseConnectionOk, closeDatabase } from './service/sequelize';
 import { sequelize } from './config/sequelizeCLIConfig.cjs';
-import { makeMigrator } from './migrate';
-require('reflect-metadata');
 import { runMigrations } from './migrate';
 
 export default async function run() {
