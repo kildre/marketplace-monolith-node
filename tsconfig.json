@@ -36,7 +36,7 @@
     "next-env.d.ts",
     "index.ts",
     "src/**/*.ts",
-    "src/main/rdbms/migrations/*.ts",
+    "src/main/rdbms/migrations/**/*.ts",
     "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],

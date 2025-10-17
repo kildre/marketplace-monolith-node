@@ -1,26 +1,24 @@
 // src/decisions/decisions.router.ts
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 import SubmitDecisionRequestDto from "../dtos/SubmitDecisionRequestDto";
 import SubmitDecisionResponseDto from "../dtos/SubmitDecisionResponseDto";
 
 import { DecisionEndpointService } from '../../service/decisionEndpointService';
 
-import { UseCaseRequestNotFoundException } from '../../service/errors/UseCaseRequestNotFoundException';
-import { UnauthorizedAdjudicatorException } from '../../service/errors/UnauthorizedAdjudicatorException';
-
 const service: DecisionEndpointService = new DecisionEndpointService();
 
-async function submit(req: Request, res: Response<SubmitDecisionResponseDto>) {
+async function submit(
+  req: Request, 
+  res: Response<SubmitDecisionResponseDto>,
+  next: NextFunction
+) {
   try {
-    const payload = req.body as SubmitDecisionRequestDto;
+    const payload = new SubmitDecisionRequestDto(req.body);
     const response = await service.submit(payload);
     return res.status(200).json(response);
   } catch (e: any) {
-    if (e instanceof UnauthorizedAdjudicatorException) {
-      return res.status(403).json({ decisionNumber: '' });
-    }
-    return res.status(400).json({ decisionNumber: ''});
+    next(e);
   }
 }
 

@@ -1,15 +1,16 @@
 // src/main/config/sequelizeCLIConfig.cjs
 require('dotenv/config');
 const { Sequelize } = require('sequelize');
+const { rdbmsUrl, rdbmsDriver } = require('../service/config/rdbmsConfigService');
 
 /* ---------- helpers ---------- */
 const isTrue = (v, d = false) => (v ? /^(1|true)$/i.test(String(v)) : d);
 
 /* ---------- env -> connection ---------- */
-const DIALECT = (process.env.DB_DIALECT || process.env.DIALECT || 'postgres').toLowerCase();
+const DIALECT = (rdbmsDriver).toLowerCase();
 
 // Prefer your secret; fallback to DATABASE_URL
-const URL = process.env['secret-env-postgresql'] || process.env['SECRET_ENV_POSTGRESQL'] || null;
+const URL = rdbmsUrl;;
 console.log('[sequelize] Checking URL:', URL ? 'FOUND' : 'NOT FOUND');
 console.log('[sequelize] secret-env-postgresql:', URL ? 'EXISTS' : 'MISSING');
 console.log('[sequelize] SECRET_ENV_POSTGRESQL:', URL ? 'EXISTS' : 'MISSING');
