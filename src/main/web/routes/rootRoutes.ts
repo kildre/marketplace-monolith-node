@@ -5,7 +5,7 @@ import {
   throwConstraintError,
 } from "../controllers/errorTestController";
 
-const router = express.Router();
+const rootRouter = express.Router();
 
 /**
  * @swagger
@@ -17,9 +17,9 @@ const router = express.Router();
  *         description: Returns the index.html file
  */
 
-router.get("/", renderIndex);
+rootRouter.get("/", renderIndex);
 // Test error routes
-router.get("/test-error", throwTestError);
-router.get("/test-constraint-error", throwConstraintError);
+rootRouter.get("/test-error", throwTestError);
+rootRouter.get("/test-constraint-error", throwConstraintError);
 
-export default router;
+export default rootRouter;

@@ -24,9 +24,9 @@ export class MarketplaceReportService {
 
       // Fallback: do three counts (still inside one transaction)
       const [totalUsers, totalUseCases, totalOrders] = await Promise.all([
-        MarketplaceSummaryReportDAO.countTotalUsers({ transaction: t }),
-        MarketplaceSummaryReportDAO.countTotalUseCases({ transaction: t }),
-        MarketplaceSummaryReportDAO.countTotalOrders({ transaction: t }),
+        (await MarketplaceSummaryReportDAO.getSummary({ transaction: t })).totalUsers,
+        (await MarketplaceSummaryReportDAO.getSummary({ transaction: t })).totalUseCases,
+        (await MarketplaceSummaryReportDAO.getSummary({ transaction: t })).totalOrders,
       ]);
 
       return { totalUsers, totalUseCases, totalOrders };

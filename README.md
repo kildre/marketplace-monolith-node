@@ -36,9 +36,49 @@ It will prompt you for your custom CN once you execute the above script.
 - Create your application's project repository, if not done so already, in https://code.cdao.us/tenant/. You will want your GitLab project name to match the application name you use in your Helm charts and templates, as that is the default value used to publish.
 - Add your project's path to the [D.R.A.G.O.N. project's CI/CD Token Access](https://code.cdao.us/tenant/tekton-promotion-gitlab/-/settings/ci_cd)
 - Copy the template files to your repository.
-- Prepare the templates by replacing instances of the `node-example` application name with your own. These will be in the various helm charts/templates, as well as `package.json`.
-- Replace `index.js` with your application.
-- Un-comment the initContainers as needed in `chart/values.yaml`
+
+## Running Tests
+
+This project uses Jest for both unit and integration testing.
+
+### Test Commands
+
+```sh
+# Run all tests with coverage
+npm test
+
+# Run only unit tests
+npm run test:unit
+# or
+npm run unitTest
+
+# Run only integration tests
+npm run test:int
+# or
+npm run intTest
+
+# Run a specific test file
+npm test -- src/test/int/service/requestEndpointService.int.test.ts
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests matching a pattern
+npm test -- --testNamePattern="submit"
+```
+
+### Test Structure
+
+- **Unit tests**: Located in `src/test/unit/` - Fast, isolated tests with mocked dependencies
+- **Integration tests**: Located in `src/test/int/` - Full stack tests using Testcontainers with real Postgres DB
+
+### Integration Test Notes
+
+- Integration tests use [@testcontainers/postgresql](https://node.testcontainers.org/) to spin up isolated Postgres instances
+- Tests are run serially (maxWorkers: 1) to ensure database isolation
+- Each test suite gets a fresh database instance
+- Reference data (roles, statuses) is seeded once per suite in `beforeAll`
+- Test data is cleaned up between tests in `beforeEach`
 
 ## Platform reqs
 

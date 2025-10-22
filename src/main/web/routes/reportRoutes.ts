@@ -1,37 +1,30 @@
 import express from 'express';
 import controller from '../controllers/marketplaceReportController';
 
-const router = express.Router();
+const reportRouter = express.Router();
 
 /**
  * @swagger
- * /summary:
+ * /api/report/summary:
  *   get:
- *     summary: Retrieve the marketplace summary.
+ *     summary: Retrieve the marketplace summary
  *     description: Returns key marketplace totals. No parameters are required.
- *     tags:
- *       - Reports
+ *     tags: [Reports]
  *     operationId: getMarketplaceSummary
  *     responses:
  *       200:
- *         description: Successfully retrieved the summary.
+ *         description: Successfully retrieved the summary
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 totalUsers:
- *                   type: integer
- *                   example: 5
- *                 totalUseCases:
- *                   type: integer
- *                   example: 12
- *                 totalOrders:
- *                   type: integer
- *                   example: 7
+ *               $ref: '#/components/schemas/MarketplaceSummaryReport'
  *       500:
- *         description: Internal server error.
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorDto'
  */
-router.get('/summary', controller.report);
+reportRouter.get('/summary', controller.report);
 
-export default router;
+export default reportRouter;
