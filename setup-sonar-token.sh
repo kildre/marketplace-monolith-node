@@ -15,13 +15,13 @@ echo "Choose how to configure:"
 echo ""
 echo "Option 1 - Environment File (Recommended):"
 echo "  Create a .env.sonar file with:"
-echo "  SONAR_TOKEN=squ_b06266f008f69291bb783aeb0d2bc4235cc9e5ca"
+echo "  export SONAR_TOKEN=your_actual_token_here"
 echo ""
 echo "Option 2 - Export for Current Session:"
-echo "  export SONAR_TOKEN=squ_b06266f008f69291bb783aeb0d2bc4235cc9e5ca"
+echo "  export SONAR_TOKEN=your_actual_token_here"
 echo ""
 echo "Option 3 - Add to Shell Profile (Persistent):"
-echo "  echo 'export SONAR_TOKEN=squ_b06266f008f69291bb783aeb0d2bc4235cc9e5ca' >> ~/.zshrc"
+echo "  echo 'export SONAR_TOKEN=your_actual_token_here' >> ~/.zshrc"
 echo "  source ~/.zshrc"
 echo ""
 
@@ -38,7 +38,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         export SONAR_TOKEN="$SONAR_TOKEN_INPUT"
         
         # Save to .env.sonar
-        echo "SONAR_TOKEN=$SONAR_TOKEN_INPUT" > .env.sonar
+        echo "export SONAR_TOKEN=$SONAR_TOKEN_INPUT" > .env.sonar
+        echo "export SONAR_HOST_URL=https://sonarqube.cdao.us" >> .env.sonar
         
         echo ""
         echo "✅ Token configured!"
