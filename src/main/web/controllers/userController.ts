@@ -10,7 +10,6 @@ interface UserControllerI {
 
 const isAuthorizedAdjudicator = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        log.info('Checking if user is an authorized adjudicator ...');
         const result = await endpointService.isAuthorizedAdjudicator(new RoleCheckRequestDto(req.body)); // <-- await
         res.status(200).json(result);
     } catch (e: any) {

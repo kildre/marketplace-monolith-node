@@ -6,9 +6,9 @@ import {
   ValidateNested,
   validateSync,
 } from "class-validator";
-import { Type } from "class-transformer";
+import { Type, plainToInstance } from "class-transformer";
 import ConstraintError from "src/main/domain/errors/ConstraintError";
-import CartItemDto from "./CartItemDto";
+import CartItemDto, { CartItemProps } from "./CartItemDto";
 
 interface PropsI {
   requestNumber?: string;
@@ -78,8 +78,8 @@ class Props {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CartItemDto)
-  cartItems?: CartItemDto[];
+  @Type(() => CartItemProps)
+  cartItems?: CartItemProps[];
 
   constructor(data: PropsI) {
     Object.assign(this, data);
@@ -150,7 +150,7 @@ export default class SubmitRequestRequestDto {
   public readonly cartItems?: CartItemDto[];
 
   constructor(data: PropsI) {
-    const props = new Props(data);
+    const props = plainToInstance(Props, data);
     const errors = validateSync(props);
     if (errors.length > 0) {
       throw new ConstraintError(errors);
@@ -167,6 +167,7 @@ export default class SubmitRequestRequestDto {
     this.estimatedRom = props.estimatedRom;
     this.requestedToolName = props.requestedToolName;
     this.description = props.description;
-    this.cartItems = props.cartItems;
+    // Map to validated DTO instances (redundant validation should be no-op)
+    this.cartItems = props.cartItems?.map((ci) => new CartItemDto(ci));
   }
 }
