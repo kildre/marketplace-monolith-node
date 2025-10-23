@@ -3,12 +3,15 @@
 ## ✅ What Was Installed
 
 ### 1. Dependencies Added
+
 - `sonarqube-scanner` - Added as dev dependency for local scanning
 
 ### 2. Configuration Files Created
 
 #### `sonar-project.properties`
+
 Main SonarQube configuration matching your pipeline:
+
 - Project Key: `tenant-metrostar-advana-marketplace-monolith-node`
 - Server: `https://sonarqube.cdao.us`
 - Source scanning with proper exclusions
@@ -16,16 +19,20 @@ Main SonarQube configuration matching your pipeline:
 - Test file identification
 
 #### `.env.sonar.example`
+
 Template for storing SonarQube authentication token safely
 
 #### `SONARQUBE.md`
+
 Complete documentation for:
+
 - Setup instructions
 - Running local scans
 - Understanding results
 - Troubleshooting
 
 ### 3. NPM Scripts Added
+
 ```json
 "sonar": "sonar-scanner"
 "sonar:check": "Check if SONAR_TOKEN is set"
@@ -37,6 +44,7 @@ Complete documentation for:
 ```
 
 Available commands:
+
 ```bash
 # Check if token is configured
 npm run sonar:check
@@ -53,18 +61,30 @@ npm run sonar:report
 # Complete workflow: test → scan → report
 npm run sonar:full
 ```
-### Since your integration tests need Docker/TestContainers run the following:
+
+**Note:** Since your integration tests need Docker/TestContainers, you can use these alternatives:
+
+```bash
 # For local development (no Docker needed)
 npm run sonar:full:unit
 
 # Or just scan without tests
 npm run sonar:local
 npm run sonar:report
+```
+
+## 📋 Usage Examples
+
 ### Basic Scan (Fastest)
+
+```bash
 # Just scan the code
 npm run sonar:local
+```
 
 ### Scan with Coverage (Recommended)
+
+```bash
 # 1. Run tests and generate coverage
 npm run test:coverage
 
@@ -73,30 +93,37 @@ npm run sonar:local
 
 # 3. (Optional) Generate HTML report
 npm run sonar:report
+```
 
 ### Complete Workflow (All-in-One)
+
+```bash
 # Does everything: test → scan → report
 npm run sonar:full
+```
 
 ### Quick Reference
-# Command	What It Does
-npm run sonar:check	 //Verify token is configured
-npm run sonar:local	 //Run scan only
-npm run sonar:branch	//Scan with branch name
-npm run sonar:report	//Generate HTML report
-npm run sonar:full	//Complete workflow
+
+| Command | What It Does |
+|---------|--------------|
+| `npm run sonar:check` | Verify token is configured |
+| `npm run sonar:local` | Run scan only |
+| `npm run sonar:branch` | Scan with branch name |
+| `npm run sonar:report` | Generate HTML report |
+| `npm run sonar:full` | Complete workflow |
 
 ### View Results
+
+```bash
 # View in web dashboard
 open https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-monolith-node
 
 # Or view local HTML report
 open reports/sonarqube-report.html
-
-
-
+```
 
 ### 4. `.gitignore` Updated
+
 Added `.env.sonar` to prevent accidentally committing authentication tokens
 
 ## 🔍 Pipeline Analysis Summary
@@ -104,16 +131,19 @@ Added `.env.sonar` to prevent accidentally committing authentication tokens
 Your pipeline scan found the following issues:
 
 ### Critical Issues (OWASP 2021)
+
 - ❌ **Identification and Authentication Failures** (Vulnerability)
 - ⚠️ **Cryptographic Failures** (Security Hotspot)
 - ⚠️ **Injection** (Security Hotspot)
 - ⚠️ **Security Misconfiguration** (Security Hotspot)
 
 ### Legacy Issues (OWASP 2017)
+
 - ❌ **Sensitive Data Exposure** (Vulnerability)
 - ⚠️ **Injection** (Security Hotspot)
 
 ### Files Analyzed
+
 - 161 total files scanned
 - 122 TypeScript/JavaScript files
 - 17 Kubernetes/YAML files
@@ -123,15 +153,20 @@ Your pipeline scan found the following issues:
 ## 🚀 Quick Start
 
 ### Step 1: Get Your SonarQube Token
+
 ```bash
 # Visit https://sonarqube.cdao.us/account/security
 # Generate a token and copy it
 ```
 
 ### Step 2: Set Up Authentication
+
 ```bash
 ### 2. Configure Authentication
-**Option 1: Use .env.sonar file (Recommended)**
+```
+
+#### Option 1: Use .env.sonar file (Recommended)
+
 ```bash
 # Copy the example file
 cp .env.sonar.example .env.sonar
@@ -145,19 +180,21 @@ export SONAR_HOST_URL=https://sonarqube.cdao.us
 npm run sonar:local
 ```
 
-**Option 2: Manual export**
+#### Option 2: Manual export
+
 ```bash
 export SONAR_TOKEN=your-token-here
 npm run sonar:local
 ```
 
-**Security Note**: 
+**Security Note:**
+
 - `.env.sonar` is git-ignored and will NOT be committed
 - `.env.sonar.example` is a template (safe to commit)
 - Never hardcode tokens in scripts or commit them to git
-```
 
 ### Step 3: Run Your First Scan
+
 ```bash
 # Option 1: Complete workflow with report
 npm run sonar:full
@@ -172,6 +209,7 @@ npm run sonar:report
 ```
 
 ### Step 4: View Results
+
 ```bash
 # View in web dashboard
 open https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-monolith-node
@@ -183,6 +221,7 @@ open reports/sonarqube-report.html
 ## 📊 What to Expect
 
 When you run the scan locally, you'll see the same issues the pipeline found:
+
 1. Analysis of ~161 files
 2. Quality gate status (currently FAILING)
 3. Security vulnerabilities and hotspots
@@ -200,6 +239,7 @@ When you run the scan locally, you'll see the same issues the pipeline found:
 ## 📝 Common Workflows
 
 ### Complete Analysis with Report
+
 ```bash
 # Run everything: tests, scan, and generate report
 npm run sonar:full
@@ -209,6 +249,7 @@ npm run sonar:full
 ```
 
 ### Quick Iteration While Fixing Issues
+
 ```bash
 # Fast scan without tests or reports
 npm run sonar:local
@@ -217,6 +258,7 @@ npm run sonar:local
 ```
 
 ### Before Pushing Code
+
 ```bash
 # Run tests with coverage and scan with branch info
 npm run test:coverage
@@ -230,6 +272,7 @@ open reports/sonarqube-report.html
 ```
 
 ### Debugging Pipeline Failures
+
 ```bash
 # Run the same scan locally
 npm run sonar:branch
@@ -241,6 +284,7 @@ npm run sonar:report
 ```
 
 ### Generate Report After Existing Scan
+
 ```bash
 # If you already ran a scan and just need the report
 npm run sonar:report
@@ -251,12 +295,15 @@ npm run sonar:report
 ## ⚙️ Configuration Details
 
 ### Coverage Integration
+
 - Jest generates coverage in LCOV format
 - Coverage file: `coverage/lcov.info`
 - Automatically picked up by SonarQube
 
 ### Exclusions
+
 The following are excluded from analysis:
+
 - `node_modules/`
 - `dist/`, `build/`
 - `coverage/`
@@ -264,7 +311,9 @@ The following are excluded from analysis:
 - Test files (`*.test.ts`, `*.spec.ts`)
 
 ### Test Detection
+
 Files are identified as tests if:
+
 - Located in `src/test/` directory
 - Filename contains `.test.` or `.spec.`
 - Directory named `test` or `tests`
@@ -278,6 +327,6 @@ Files are identified as tests if:
 
 ## 📖 Additional Resources
 
-- SonarQube Dashboard: https://sonarqube.cdao.us
+- [SonarQube Dashboard](https://sonarqube.cdao.us)
 - Full Documentation: See `SONARQUBE.md`
 - Pipeline Configuration: `.gitlab-ci.yml` (if exists)

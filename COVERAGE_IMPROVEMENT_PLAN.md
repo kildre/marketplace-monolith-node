@@ -29,17 +29,19 @@ This document outlines a strategic plan to improve code coverage from 32.4% to 8
 
 Controllers handle business logic and HTTP routing. Testing them provides the most significant coverage boost.
 
-#### Files to Test (Priority Order):
+#### Files to Test (Priority Order)
+
 1. `src/main/web/controllers/userController.ts`
 2. `src/main/web/controllers/requestController.ts`
 3. `src/main/web/controllers/decisionController.ts`
 4. `src/main/web/controllers/rootController.ts`
 5. `src/main/web/controllers/errorTestController.ts`
 
-#### Test Location:
+#### Test Location
+
 Create tests in: `src/test/unit/web/controllers/`
 
-#### Example Controller Test Template:
+#### Example Controller Test Template
 
 ```typescript
 // src/test/unit/web/controllers/userController.unit.test.ts
@@ -122,7 +124,8 @@ describe('userController', () => {
 });
 ```
 
-#### What to Test in Controllers:
+#### What to Test in Controllers
+
 - ✅ **Happy path:** Valid inputs return expected responses
 - ✅ **Error handling:** Invalid inputs return appropriate error codes
 - ✅ **Validation:** Request validation works correctly
@@ -138,7 +141,8 @@ describe('userController', () => {
 
 Services contain core business logic and should be thoroughly tested.
 
-#### Files to Test (Priority Order):
+#### Service Files to Test
+
 1. `src/main/service/validatorService.ts` ← **Security critical**
 2. `src/main/service/securityService.ts` ← **Authentication/Authorization**
 3. `src/main/service/requestEndpointService.ts`
@@ -149,10 +153,11 @@ Services contain core business logic and should be thoroughly tested.
 
 **Note:** `userEndpointService.ts` already has tests (good example to follow!)
 
-#### Test Location:
+#### Service Test Location
+
 Create tests in: `src/test/unit/service/`
 
-#### Example Service Test Template:
+#### Example Service Test Template
 
 ```typescript
 // src/test/unit/service/validatorService.unit.test.ts
@@ -178,7 +183,8 @@ describe('validatorService', () => {
 });
 ```
 
-#### What to Test in Services:
+#### What to Test in Services
+
 - ✅ **Business logic:** Core functionality works correctly
 - ✅ **Edge cases:** Boundary conditions and unusual inputs
 - ✅ **Error handling:** Exceptions are caught and handled
@@ -193,7 +199,8 @@ describe('validatorService', () => {
 
 You already have DAO tests, but they may need expansion.
 
-#### Verify Coverage For:
+#### DAO Files to Verify Coverage
+
 - `BaseDAO.ts`
 - `MarketplaceUserDAO.ts`
 - `RoleDAO.ts`
@@ -205,12 +212,14 @@ You already have DAO tests, but they may need expansion.
 - `MarketplaceOrderDAO.ts`
 - `DecisionDAO.ts`
 
-#### Check Existing Tests:
+#### Check Existing Tests
+
 ```bash
 ls -la src/test/unit/rdbms/dao/
 ```
 
-#### What to Test in DAOs:
+#### What to Test in DAOs
+
 - ✅ **CRUD operations:** Create, Read, Update, Delete
 - ✅ **Query methods:** findById, findAll, findWhere, etc.
 - ✅ **Relationships:** Foreign key handling, joins
@@ -232,12 +241,14 @@ npm run test:unit -- --coverage --coverageReporters=html lcov text
 
 Then open: `reports/coverage/lcov-report/index.html`
 
-#### Look For:
+#### What to Look For
+
 - 🔴 **Files with 0% coverage** (red highlighting)
 - 🟡 **Files with < 50% coverage** (yellow highlighting)
 - 📊 **Uncovered lines** (specific line numbers)
 
-#### Common Gap Areas:
+#### Common Gap Areas
+
 1. **Middleware:** `src/main/middleware/errorHandler.ts`
 2. **Configuration:** `src/main/config/*.ts` files
 3. **Domain logic:** `src/main/domain/enumeration/`, `src/main/domain/errors/`
@@ -248,6 +259,7 @@ Then open: `reports/coverage/lcov-report/index.html`
 ## Recommended Test Writing Order
 
 ### **Priority 1 - Controllers** (5 files, ~500-1000 LOC)
+
 1. ✅ `userController.ts`
 2. ✅ `requestController.ts`
 3. ✅ `decisionController.ts`
@@ -255,6 +267,7 @@ Then open: `reports/coverage/lcov-report/index.html`
 5. ✅ `errorTestController.ts`
 
 ### **Priority 2 - Services** (7 files, untested)
+
 1. ✅ `validatorService.ts` ← Security critical
 2. ✅ `securityService.ts` ← Authentication
 3. ✅ `requestEndpointService.ts`
@@ -264,10 +277,12 @@ Then open: `reports/coverage/lcov-report/index.html`
 7. ✅ `sequelize.ts`
 
 ### **Priority 3 - Middleware**
+
 - ✅ Check if `errorHandler.ts` has adequate coverage
 - ✅ Add tests if coverage < 80%
 
 ### **Priority 4 - Utilities**
+
 - ✅ Any helper functions in `domain/enumeration/`
 - ✅ Config files in `src/main/config/`
 
@@ -315,6 +330,7 @@ open reports/sonarqube-report.html
 ## Testing Best Practices
 
 ### 1. **Test Structure (AAA Pattern)**
+
 ```typescript
 it('should do something', () => {
   // Arrange - Set up test data and mocks
@@ -329,16 +345,19 @@ it('should do something', () => {
 ```
 
 ### 2. **Mock External Dependencies**
+
 ```typescript
 jest.mock('../../../../main/service/userEndpointService');
 ```
 
 ### 3. **Test Both Success and Failure Cases**
+
 - Happy path (valid inputs)
 - Error cases (invalid inputs, exceptions)
 - Edge cases (null, undefined, empty strings)
 
 ### 4. **Use Descriptive Test Names**
+
 ```typescript
 // ✅ Good
 it('should return 404 when user does not exist')
@@ -348,6 +367,7 @@ it('test user endpoint')
 ```
 
 ### 5. **Clean Up After Tests**
+
 ```typescript
 afterEach(() => {
   jest.clearAllMocks();
@@ -358,7 +378,7 @@ afterEach(() => {
 
 ## Tracking Progress
 
-### Check Coverage After Each Phase:
+### Check Coverage After Each Phase
 
 ```bash
 # Run tests and generate report
@@ -369,7 +389,7 @@ npm run test:unit -- --coverage
 open reports/coverage/lcov-report/index.html
 ```
 
-### SonarQube Integration:
+### SonarQube Integration
 
 ```bash
 # Run full analysis with coverage
@@ -410,9 +430,9 @@ open https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-
 
 ## Resources
 
-- **Jest Documentation:** https://jestjs.io/docs/getting-started
-- **Testing Best Practices:** https://testingjavascript.com/
-- **SonarQube Coverage:** https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/test-coverage/overview/
+- [Jest Documentation](https://jestjs.io/docs/getting-started)
+- [Testing Best Practices](https://testingjavascript.com/)
+- [SonarQube Coverage](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/test-coverage/overview/)
 - **Existing Test Examples:** See `src/test/unit/rdbms/dao/` for patterns
 
 ---
