@@ -28,10 +28,73 @@ Complete documentation for:
 ### 3. NPM Scripts Added
 ```json
 "sonar": "sonar-scanner"
-"sonar:local": "sonar-scanner -Dsonar.login=${SONAR_TOKEN}"
-"sonar:branch": "sonar-scanner -Dsonar.branch.name=$(git branch --show-current) -Dsonar.login=${SONAR_TOKEN}"
-"test:coverage": "jest --coverage --testPathPatterns=\"src/test/.*\\.test\\.(ts|tsx)$\""
+"sonar:check": "Check if SONAR_TOKEN is set"
+"sonar:local": "Run SonarQube scan"
+"sonar:branch": "Run SonarQube scan with current branch"
+"sonar:report": "Generate HTML report from scan results"
+"sonar:full": "Run tests with coverage, scan, and generate report"
+"test:coverage": "Run tests with coverage report"
 ```
+
+Available commands:
+```bash
+# Check if token is configured
+npm run sonar:check
+
+# Run a basic scan
+npm run sonar:local
+
+# Run scan with branch info
+npm run sonar:branch
+
+# Generate HTML report after a scan
+npm run sonar:report
+
+# Complete workflow: test → scan → report
+npm run sonar:full
+```
+### Since your integration tests need Docker/TestContainers run the following:
+# For local development (no Docker needed)
+npm run sonar:full:unit
+
+# Or just scan without tests
+npm run sonar:local
+npm run sonar:report
+### Basic Scan (Fastest)
+# Just scan the code
+npm run sonar:local
+
+### Scan with Coverage (Recommended)
+# 1. Run tests and generate coverage
+npm run test:coverage
+
+# 2. Run SonarQube scan (includes coverage)
+npm run sonar:local
+
+# 3. (Optional) Generate HTML report
+npm run sonar:report
+
+### Complete Workflow (All-in-One)
+# Does everything: test → scan → report
+npm run sonar:full
+
+### Quick Reference
+# Command	What It Does
+npm run sonar:check	 //Verify token is configured
+npm run sonar:local	 //Run scan only
+npm run sonar:branch	//Scan with branch name
+npm run sonar:report	//Generate HTML report
+npm run sonar:full	//Complete workflow
+
+### View Results
+# View in web dashboard
+open https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-monolith-node
+
+# Or view local HTML report
+open reports/sonarqube-report.html
+
+
+
 
 ### 4. `.gitignore` Updated
 Added `.env.sonar` to prevent accidentally committing authentication tokens
@@ -67,25 +130,55 @@ Your pipeline scan found the following issues:
 
 ### Step 2: Set Up Authentication
 ```bash
-# Option A: Use environment file (recommended)
+### 2. Configure Authentication
+**Option 1: Use .env.sonar file (Recommended)**
+```bash
+# Copy the example file
 cp .env.sonar.example .env.sonar
-# Edit .env.sonar and paste your token
 
-# Option B: Export directly
+# Edit .env.sonar and add your token
+# The file should contain:
+export SONAR_TOKEN=your_actual_token_here
+export SONAR_HOST_URL=https://sonarqube.cdao.us
+
+# The npm scripts will automatically load this file
+npm run sonar:local
+```
+
+**Option 2: Manual export**
+```bash
 export SONAR_TOKEN=your-token-here
+npm run sonar:local
+```
+
+**Security Note**: 
+- `.env.sonar` is git-ignored and will NOT be committed
+- `.env.sonar.example` is a template (safe to commit)
+- Never hardcode tokens in scripts or commit them to git
 ```
 
 ### Step 3: Run Your First Scan
 ```bash
-# With coverage
-npm run test:coverage && npm run sonar:local
+# Option 1: Complete workflow with report
+npm run sonar:full
 
-# Without coverage (faster)
+# Option 2: Just scan (faster)
 npm run sonar:local
+
+# Option 3: Scan with coverage
+npm run test:coverage
+npm run sonar:local
+npm run sonar:report
 ```
 
 ### Step 4: View Results
-Open: https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-monolith-node
+```bash
+# View in web dashboard
+open https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-monolith-node
+
+# Or view local HTML report
+open reports/sonarqube-report.html
+```
 
 ## 📊 What to Expect
 
@@ -106,15 +199,34 @@ When you run the scan locally, you'll see the same issues the pipeline found:
 
 ## 📝 Common Workflows
 
+### Complete Analysis with Report
+```bash
+# Run everything: tests, scan, and generate report
+npm run sonar:full
+
+# Report opens automatically in your browser at:
+# reports/sonarqube-report.html
+```
+
+### Quick Iteration While Fixing Issues
+```bash
+# Fast scan without tests or reports
+npm run sonar:local
+
+# Then check dashboard for results
+```
+
 ### Before Pushing Code
 ```bash
-# Run tests with coverage
+# Run tests with coverage and scan with branch info
 npm run test:coverage
-
-# Run SonarQube scan
 npm run sonar:branch
 
-# Check results in dashboard before pushing
+# Generate report to review before pushing
+npm run sonar:report
+
+# Check results locally or in dashboard
+open reports/sonarqube-report.html
 ```
 
 ### Debugging Pipeline Failures
@@ -122,16 +234,18 @@ npm run sonar:branch
 # Run the same scan locally
 npm run sonar:branch
 
-# Compare local vs pipeline results
+# Generate report to compare with pipeline
+npm run sonar:report
+
 # Fix issues locally and verify
 ```
 
-### Working on Security Issues
+### Generate Report After Existing Scan
 ```bash
-# Scan frequently while fixing
-npm run sonar:local
+# If you already ran a scan and just need the report
+npm run sonar:report
 
-# No need to run tests each time for faster feedback
+# Report will be generated at reports/sonarqube-report.html
 ```
 
 ## ⚙️ Configuration Details

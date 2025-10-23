@@ -1,7 +1,6 @@
 projectKey=tenant-metrostar-advana-marketplace-monolith-node
 serverUrl=https://sonarqube.cdao.us
 serverVersion=10.8.0.100206
-branch=CA-606-sonar
-dashboardUrl=https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-monolith-node&branch=CA-606-sonar
-ceTaskId=cd2a3960-61df-42b3-9ec0-8b50dc81bd77
-ceTaskUrl=https://sonarqube.cdao.us/api/ce/task?id=cd2a3960-61df-42b3-9ec0-8b50dc81bd77
+dashboardUrl=https://sonarqube.cdao.us/dashboard?id=tenant-metrostar-advana-marketplace-monolith-node
+ceTaskId=1a3f8585-5baa-4a52-b032-dfff5322aa5d
+ceTaskUrl=https://sonarqube.cdao.us/api/ce/task?id=1a3f8585-5baa-4a52-b032-dfff5322aa5d
