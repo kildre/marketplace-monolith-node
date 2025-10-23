@@ -1,12 +1,12 @@
 import { IsInt, IsNotEmpty, IsString, validateSync } from "class-validator";
 import ConstraintError from "src/main/domain/errors/ConstraintError";
 
-interface PropsI {
+export interface CartItemPropsI {
   name: string;
   quantity: number;
 }
 
-class Props {
+export class CartItemProps {
   @IsString()
   @IsNotEmpty()
   name!: string;
@@ -14,7 +14,7 @@ class Props {
   @IsInt()
   quantity!: number;
 
-  constructor(data: PropsI) {
+  constructor(data?: CartItemPropsI) {
     Object.assign(this, data);
   }
 }
@@ -40,8 +40,8 @@ export default class CartItemDto {
   public readonly name!: string;
   public readonly quantity!: number;
 
-  constructor(data: PropsI) {
-    const props = new Props(data);
+  constructor(data: CartItemPropsI) {
+    const props = new CartItemProps(data);
     const errors = validateSync(props);
 
     if (errors.length > 0) {

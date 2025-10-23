@@ -56,12 +56,10 @@ export class RequestEndpointService implements RequestEndpointServiceI {
 
   // ---------- submit ----------
   async submit(request: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto> {
-    console.log('[submit] Received request:', JSON.stringify(request, null, 2));
     //Normalize & validate email
     const requestorEmail = String(request.requestorEmail ?? '')
       .trim()
       .toLowerCase();
-    console.log('[submit] Normalized requestorEmail:', requestorEmail);
     if (!requestorEmail) {
       throw new Error('requestorEmail is required');
     }
@@ -69,13 +67,12 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const dto = new RoleCheckRequestDto({ userEmail: requestorEmail });
 
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
-    console.log('[submit] Role check response:', roleCheckResponseDto);
+    //console.log('roleCheckResponseDto:', roleCheckResponseDto);
     if (!roleCheckResponseDto.hasRole) {
       throw new UnauthorizedRequestorError(requestorEmail);
     }
 
     const requestorUser = await this.userEndpointService.findByEmail(dto);
-    console.log('[submit] Found requestorUser:', requestorUser ? 'YES' : 'NO');
     if (!requestorUser) {
       throw new Error(`User with email ${requestorEmail} not found.`);
     }
@@ -85,7 +82,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       const useCaseReq = await this.sequelize.transaction(async (tx: Transaction) => {
         const ucr = await this.useCaseRequestDAO.create(
           {
-            requestNumber: request.requestNumber,
+            requestNumber: String(request.requestNumber ?? '').trim(),
             requestedToolName: request.requestedToolName,
             description: request.description,
             designation: request.designation,
@@ -155,7 +152,16 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     }
 
     const rows = await this.useCaseRequestDAO.findByStatusId(
-      StatusEnum.PENDING.id
+      StatusEnum.PENDING.id,
+      {
+        includeRequestor: true,
+        includeStatus: true,
+        includeDecisions: true,
+        includeCartItems: true,
+        findOptions: {
+          order: [["id", "DESC"]],
+        }
+      }
     );
 
     return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
@@ -168,7 +174,6 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     const payload = { userEmail: String(req.userEmail || "").trim() };
     const dto = new RoleCheckRequestDto(payload);
     const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
-    console.log('roleCheckResponseDto.hasRole:', roleCheckResponseDto.hasRole);
     if (!roleCheckResponseDto.hasRole) {
       throw new UnauthorizedAdjudicatorError(payload.userEmail);
     }

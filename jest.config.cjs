@@ -49,7 +49,7 @@ module.exports = {
       displayName: 'integration',
       ...baseConfig,
       // Keep DB tests isolated & predictable
-      runInBand: true,
+      //runInBand: true,
       // Give Testcontainers/DB time to start
       testTimeout: 30000,
       roots: ['<rootDir>/src'],
@@ -85,4 +85,6 @@ module.exports = {
       includeConsoleLog: true
     }]
   ],
+  testTimeout: 240000,
+  maxWorkers: 1,          // in-band for DB tests
 };

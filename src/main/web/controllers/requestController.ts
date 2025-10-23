@@ -17,7 +17,9 @@ export async function submit(
   next: NextFunction
 ) {
   try {
+    console.log('RequestController: submit called with body:', req.body);
     const payload = new SubmitRequestRequestDto(req.body);
+    console.log('RequestController: submit payload constructed:', payload);
     const response = await service.submit(payload);
     return res.status(200).json(response);
   } catch (e: any) {

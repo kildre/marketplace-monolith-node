@@ -11,9 +11,9 @@ const DIALECT = (rdbmsDriver).toLowerCase();
 
 // Prefer your secret; fallback to DATABASE_URL
 const URL = rdbmsUrl;;
-console.log('[sequelize] Checking URL:', URL ? 'FOUND' : 'NOT FOUND');
-console.log('[sequelize] secret-env-postgresql:', URL ? 'EXISTS' : 'MISSING');
-console.log('[sequelize] SECRET_ENV_POSTGRESQL:', URL ? 'EXISTS' : 'MISSING');
+//console.log('[sequelize] Checking URL:', URL ? 'FOUND' : 'NOT FOUND');
+//console.log('[sequelize] secret-env-postgresql:', URL ? 'EXISTS' : 'MISSING');
+//console.log('[sequelize] SECRET_ENV_POSTGRESQL:', URL ? 'EXISTS' : 'MISSING');
 process.env.SEQUELIZE_URL = URL; // single source for CLI
 
 /* ---------- shared options ---------- */
