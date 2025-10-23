@@ -1,8 +1,8 @@
 # Code Coverage Improvement Plan
 
+**Project:** advana-marketplace-monolith-node  
 **Current Coverage:** 32.4%  
-**Target Coverage:** 80%+  
-**Project:** advana-marketplace-monolith-node
+**Target Coverage:** 80%+
 
 ---
 
@@ -54,23 +54,17 @@ jest.mock('../../../../main/service/userEndpointService');
 describe('userController', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
-  let mockJson: jest.Mock;
   let mockStatus: jest.Mock;
+  let mockJson: jest.Mock;
 
   beforeEach(() => {
-    mockJson = jest.fn();
     mockStatus = jest.fn().mockReturnThis();
-    
-    req = { 
-      body: {}, 
-      params: {},
-      query: {} 
-    };
-    
+    mockJson = jest.fn().mockReturnThis();
     res = {
       status: mockStatus,
       json: mockJson
     };
+    req = { params: {} };
   });
 
   afterEach(() => {
@@ -81,8 +75,8 @@ describe('userController', () => {
     it('should return user when found', async () => {
       // Arrange
       const mockUser = { id: 1, name: 'Test User' };
-      (userEndpointService.getUser as jest.Mock).mockResolvedValue(mockUser);
       req.params = { id: '1' };
+      (userEndpointService.getUser as jest.Mock).mockResolvedValue(mockUser);
 
       // Act
       await userController.getUserById(req as Request, res as Response);
@@ -94,8 +88,8 @@ describe('userController', () => {
 
     it('should return 404 when user not found', async () => {
       // Arrange
-      (userEndpointService.getUser as jest.Mock).mockResolvedValue(null);
       req.params = { id: '999' };
+      (userEndpointService.getUser as jest.Mock).mockResolvedValue(null);
 
       // Act
       await userController.getUserById(req as Request, res as Response);
@@ -105,11 +99,11 @@ describe('userController', () => {
       expect(mockJson).toHaveBeenCalledWith({ error: 'User not found' });
     });
 
-    it('should handle errors gracefully', async () => {
+    it('should handle database errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (userEndpointService.getUser as jest.Mock).mockRejectedValue(error);
       req.params = { id: '1' };
+      (userEndpointService.getUser as jest.Mock).mockRejectedValue(error);
 
       // Act
       await userController.getUserById(req as Request, res as Response);
@@ -335,10 +329,10 @@ open reports/sonarqube-report.html
 it('should do something', () => {
   // Arrange - Set up test data and mocks
   const input = { id: 1 };
-  
+
   // Act - Execute the function under test
   const result = myFunction(input);
-  
+
   // Assert - Verify the results
   expect(result).toBe(expected);
 });
