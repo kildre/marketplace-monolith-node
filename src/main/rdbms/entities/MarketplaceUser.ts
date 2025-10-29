@@ -17,7 +17,6 @@ export class MarketplaceUser
   declare email: string;
 
   // association props (NonAttribute so Sequelize doesn't treat them as columns)
-  declare roles?: NonAttribute<any[]>;
   declare requests?: NonAttribute<any[]>;
   declare orders?: NonAttribute<any[]>;
   declare decisions?: NonAttribute<any[]>;
@@ -46,14 +45,7 @@ export class MarketplaceUser
   }
 
   static associate(sequelize: Sequelize) {
-    const { Role, UserRole, UseCaseRequest, MarketplaceOrder, Decision } = sequelize.models as any;
-
-    MarketplaceUser.belongsToMany(Role, {
-      through: UserRole,              
-      foreignKey: 'userId',
-      otherKey: 'roleId',
-      as: 'roles',
-    });
+    const { UseCaseRequest, MarketplaceOrder, Decision } = sequelize.models as any;
 
     MarketplaceUser.hasMany(UseCaseRequest, {
       foreignKey: 'requestorId',

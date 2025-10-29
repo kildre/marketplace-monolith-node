@@ -6,7 +6,7 @@ import { ProductDAO } from "../rdbms/dao/ProductDAO";
 import { CartItemDAO } from "../rdbms/dao/CartItemDAO";
 import { Decision } from "../rdbms/entities/Decision";
 import { UseCaseRequest } from "../rdbms/entities/UseCaseRequest";
-import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
+import EmailCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
 import ViewRequestByRequestNumDto from "../web/dtos/ViewRequestByRequestNumDto";
 
 import userEndpointService from "./userEndpointService";
@@ -22,6 +22,7 @@ import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
 import { ProductNotFoundError } from '../domain/errors/ProductNotFoundError';
 import { UnauthorizedAdjudicatorError } from '../domain/errors/UnauthorizedAdjudicatorError';
 import { UnauthorizedRequestorError } from '../domain/errors/UnauthorizedRequestorError';
+import { MarketplaceUser } from "../rdbms/entities";
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
@@ -54,28 +55,20 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     return s;
   }
 
+  /** Shared DAO query options for fetching complete request data */
+  private readonly REQUEST_QUERY_OPTIONS = {
+    includeRequestor: true,
+    includeStatus: true,
+    includeDecisions: true,
+    includeCartItems: true,
+    findOptions: {
+      order: [["id", "DESC"] as [string, string]],
+    }
+  };
+
   // ---------- submit ----------
   async submit(request: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto> {
-    //Normalize & validate email
-    const requestorEmail = String(request.requestorEmail ?? '')
-      .trim()
-      .toLowerCase();
-    if (!requestorEmail) {
-      throw new Error('requestorEmail is required');
-    }
-
-    const dto = new RoleCheckRequestDto({ userEmail: requestorEmail });
-
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
-    //console.log('roleCheckResponseDto:', roleCheckResponseDto);
-    if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedRequestorError(requestorEmail);
-    }
-
-    const requestorUser = await this.userEndpointService.findByEmail(dto);
-    if (!requestorUser) {
-      throw new Error(`User with email ${requestorEmail} not found.`);
-    }
+    const requestorUser = await this.validUserEmail(request.requestorEmail ?? '');
 
     try {
       //Transaction: create request + cart items
@@ -140,28 +133,25 @@ export class RequestEndpointService implements RequestEndpointServiceI {
     }
   }
 
+  /** Validates and retrieves user by email, throws if not found */
+  private async validUserEmail(email: string): Promise<MarketplaceUser> { 
+    const normalizedEmail = String(email || "").trim();
+    if (!normalizedEmail) {
+      throw new Error('User email is required');
+    }
+    const dto = new EmailCheckRequestDto({ userEmail: normalizedEmail });
+    return await this.userEndpointService.findByEmail(dto);
+  }
+
   // ---------- viewPendingRequests ----------
   async viewPendingRequests(
     req: ViewRequestsRequestDto
   ): Promise<ViewRequestsResponseDto> {
-    const payload = { userEmail: String(req.userEmail || "").trim() };
-    const dto = new RoleCheckRequestDto(payload);
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
-    if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorError(payload.userEmail);
-    }
+    await this.validUserEmail(req.userEmail);
 
     const rows = await this.useCaseRequestDAO.findByStatusId(
       StatusEnum.PENDING.id,
-      {
-        includeRequestor: true,
-        includeStatus: true,
-        includeDecisions: true,
-        includeCartItems: true,
-        findOptions: {
-          order: [["id", "DESC"]],
-        }
-      }
+      this.REQUEST_QUERY_OPTIONS
     );
 
     return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
@@ -171,21 +161,11 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   async viewAllRequests(
     req: ViewRequestsRequestDto
   ): Promise<ViewRequestsResponseDto> {
-    const payload = { userEmail: String(req.userEmail || "").trim() };
-    const dto = new RoleCheckRequestDto(payload);
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
-    if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorError(payload.userEmail);
-    }
-    const rows = await this.useCaseRequestDAO.findAllRequests({
-      includeRequestor: true,
-      includeStatus: true,
-      includeDecisions: true,
-      includeCartItems: true,
-      findOptions: {
-        order: [["id", "DESC"]],
-      }
-    });
+    await this.validUserEmail(req.userEmail);
+
+    const rows = await this.useCaseRequestDAO.findAllRequests(
+      this.REQUEST_QUERY_OPTIONS
+    );
 
     return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
   }
@@ -194,55 +174,25 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   async viewRequestsForRequestor(
     req: ViewRequestsRequestDto
   ): Promise<ViewRequestsResponseDto> {
-    const payload = { userEmail: String(req.userEmail || "").trim() };
-    const dto = new RoleCheckRequestDto(payload);
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedRequestor(dto);
-    if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedRequestorError(payload.userEmail);
-    }
-    const requestorUser = await this.userEndpointService.findByEmail(dto);
-    if (!requestorUser) {
-      throw new Error(`User with email ${payload.userEmail} not found.`);
-    }
+    const requestorUser = await this.validUserEmail(req.userEmail);
 
     const rows = await this.useCaseRequestDAO.findByRequestorId(
       requestorUser.dataValues.id,
-      {
-        includeRequestor: true,
-        includeStatus: true,
-        includeDecisions: true,
-        includeCartItems: true,
-        findOptions: {
-          order: [["id", "DESC"]],
-        }
-      }
+      this.REQUEST_QUERY_OPTIONS
     );
 
     return { requests: rows.map((r) => this._toUseCaseRequestDto(r)) };
   }
 
-  // ---------- viewRequestsForRequestor ----------
+  // ---------- viewRequestForRequestNumber ----------
   async viewRequestForRequestNumber(
     req: ViewRequestByRequestNumDto
   ): Promise<UseCaseRequestDto> {
-    const payload = { userEmail: String(req.userEmail || "").trim() };
-    const dto = new RoleCheckRequestDto(payload);
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
-    if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorError(payload.userEmail);
-    }
+    await this.validUserEmail(req.userEmail);
 
     const row = await this.useCaseRequestDAO.findByRequestNumber(
       req.requestNumber,
-      {
-        includeRequestor: true,
-        includeStatus: true,
-        includeDecisions: true,
-        includeCartItems: true,
-        findOptions: {
-          order: [["id", "DESC"]],
-        }
-      }
+      this.REQUEST_QUERY_OPTIONS
     );
 
     if (!row) {

@@ -1,12 +1,19 @@
+import type { Request } from 'express';
 import RoleCheckRequestDto from '../web/dtos/RoleCheckRequestDto';
-import RoleCheckResponseDto from '../web/dtos/RoleCheckResponseDto'; 
-import { RoleEnum } from '../domain/enumeration/RoleEnum';
+import RoleCheckResponseDto from '../web/dtos/RoleCheckResponseDto';
 import { MarketplaceUserDAO } from '../rdbms/dao/MarketplaceUserDAO';
 import { MarketplaceUser } from '../rdbms/entities/MarketplaceUser';
 
+// Use the auth utilities that read the token from the Express Request
+import {
+  getAuthToken, // (req: Request) => string | undefined
+  isAuthorizedAdjudicator as tokenHasAdjudicatorRole, // (token: string) => boolean
+  isAuthorizedRequestor as tokenHasRequestorRole,     // (token: string) => boolean
+} from '../config/authConfig';
+
 interface UserEndpointServiceI {
-  isAuthorizedAdjudicator(request: RoleCheckRequestDto): Promise<RoleCheckResponseDto>;
-  isAuthorizedRequestor(request: RoleCheckRequestDto): Promise<RoleCheckResponseDto>;
+  isAuthorizedAdjudicator(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
+  isAuthorizedRequestor(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
   findIdByEmail(request: RoleCheckRequestDto): Promise<number>;
   findByEmail(request: RoleCheckRequestDto): Promise<MarketplaceUser>;
 }
@@ -14,27 +21,41 @@ interface UserEndpointServiceI {
 const userDao = new MarketplaceUserDAO();
 
 const isAuthorizedAdjudicator = async (
-  request: RoleCheckRequestDto
+  request: RoleCheckRequestDto,
+  req: Request
 ): Promise<RoleCheckResponseDto> => {
-  // Normalize email to match database storage format (lowercase, trimmed)
+  // Normalize for logging or future use (not used for auth any more)
   const normalizedEmail = request.userEmail?.trim().toLowerCase() || '';
-  const hasRole = await userDao.existsByEmailAndRoleId(
-    normalizedEmail,
-    RoleEnum.ADJUDICATOR.id
-  );
-  return new RoleCheckResponseDto({ hasRole });
+
+  try {
+    const token = getAuthToken(req);
+    if (!token) {
+      return new RoleCheckResponseDto({ hasRole: false });
+    }
+    const hasRole = tokenHasAdjudicatorRole(token);
+    return new RoleCheckResponseDto({ hasRole });
+  } catch (e) {
+    // If anything goes wrong, default to not authorized
+    return new RoleCheckResponseDto({ hasRole: false });
+  }
 };
 
 const isAuthorizedRequestor = async (
-  request: RoleCheckRequestDto
+  request: RoleCheckRequestDto,
+  req: Request
 ): Promise<RoleCheckResponseDto> => {
-  // Normalize email to match database storage format (lowercase, trimmed)
   const normalizedEmail = request.userEmail?.trim().toLowerCase() || '';
-  const hasRole = await userDao.existsByEmailAndRoleId(
-    normalizedEmail,
-    RoleEnum.REQUESTOR.id
-  );
-  return new RoleCheckResponseDto({ hasRole });
+
+  try {
+    const token = getAuthToken(req);
+    if (!token) {
+      return new RoleCheckResponseDto({ hasRole: false });
+    }
+    const hasRole = tokenHasRequestorRole(token);
+    return new RoleCheckResponseDto({ hasRole });
+  } catch (e) {
+    return new RoleCheckResponseDto({ hasRole: false });
+  }
 };
 
 const findIdByEmail = async (request: RoleCheckRequestDto): Promise<number> => {
@@ -53,10 +74,11 @@ const findByEmail = async (request: RoleCheckRequestDto): Promise<MarketplaceUse
   return user;
 };
 
-const userEndpointService: UserEndpointServiceI = { 
+const userEndpointService: UserEndpointServiceI = {
   isAuthorizedAdjudicator,
   isAuthorizedRequestor,
   findIdByEmail,
-  findByEmail
+  findByEmail,
 };
+
 export default userEndpointService;

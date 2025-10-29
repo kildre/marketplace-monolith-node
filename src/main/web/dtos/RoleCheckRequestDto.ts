@@ -28,7 +28,7 @@ class Props {
  *       required:
  *         - userEmail
  */
-export default class RoleCheckRequestDto {
+export default class EmailCheckRequestDto {
   public readonly userEmail!: string;
 
   constructor(data: PropsI) {

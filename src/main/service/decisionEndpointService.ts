@@ -2,9 +2,8 @@
 import { Transaction, UniqueConstraintError, ForeignKeyConstraintError, ValidationError, Sequelize } from "sequelize";
 import SubmitDecisionRequestDto from '../web/dtos/SubmitDecisionRequestDto';
 import SubmitDecisionResponseDto from '../web/dtos/SubmitDecisionResponseDto';
-import RoleCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
+import EmailCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
 import { UseCaseRequestNotFoundError } from '../domain/errors/UseCaseRequestNotFoundError';
-import { UnauthorizedAdjudicatorError } from '../domain/errors/UnauthorizedAdjudicatorError';
 import { DecisionDAO } from "../rdbms/dao/DecisionDAO";
 import { Decision } from "../rdbms/entities/Decision";
 
@@ -45,11 +44,7 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
       throw new Error('adjudicatorEmail is required');
     }
 
-    const dto = new RoleCheckRequestDto({ userEmail: adjudicatorEmail });
-    const roleCheckResponseDto = await this.userEndpointService.isAuthorizedAdjudicator(dto);
-    if (!roleCheckResponseDto.hasRole) {
-      throw new UnauthorizedAdjudicatorError(adjudicatorEmail);
-    }
+    const dto = new EmailCheckRequestDto({ userEmail: adjudicatorEmail });
 
     const adjudicatorUser = await this.userEndpointService.findByEmail(dto);
     if (!adjudicatorUser) {

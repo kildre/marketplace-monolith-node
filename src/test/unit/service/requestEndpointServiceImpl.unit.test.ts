@@ -172,33 +172,19 @@ describe('RequestEndpointService (unit, mocked)', () => {
   // ---------- submit ----------
   it('submit → throws when requestorEmail missing/blank (normalization enforced)', async () => {
     await expect(svc.submit(makeSubmitDto({ requestorEmail: '   ' }))).rejects.toThrow(
-      /requestorEmail is required/i
-    );
-  });
-
-  it('submit → throws UnauthorizedRequestorError when role check fails', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: false });
-
-    // Match the actual message from UnauthorizedRequestorError
-    await expect(svc.submit(makeSubmitDto())).rejects.toThrow(
-      /does not correspond to an authorized requestor/i
-    );
-    expect(mockUserSvc.isAuthorizedRequestor).toHaveBeenCalledWith(
-      expect.objectContaining({ userEmail: 'user@example.com' })
+      /User email is required/i
     );
   });
 
   it('submit → throws when findByEmail returns undefined/null', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
-    mockUserSvc.findByEmail.mockResolvedValueOnce(undefined);
+    mockUserSvc.findByEmail.mockRejectedValueOnce(new Error('User not found'));
 
     await expect(svc.submit(makeSubmitDto())).rejects.toThrow(
-      /User with email user@example\.com not found/i
+      /User not found/i
     );
   });
 
   it('submit → happy path: creates inside a transaction and returns trimmed requestNumber', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 77, email: 'user@example.com' });
 
     // Allow DAO calls to succeed
@@ -213,7 +199,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → throws ProductNotFoundError (thrown within transaction)', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     // Force the tx to throw the same error branch the DAO would cause
@@ -225,7 +210,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → maps UniqueConstraintError to friendly message (or default Validation Error if instanceof mismatch)', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     transactionSpy.mockImplementationOnce(async () => {
@@ -240,7 +224,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → maps ForeignKeyConstraintError to helpful message with single field array', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     transactionSpy.mockImplementationOnce(async () => {
@@ -260,7 +243,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → maps ForeignKeyConstraintError to helpful message with multiple fields array', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     transactionSpy.mockImplementationOnce(async () => {
@@ -280,7 +262,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → maps ForeignKeyConstraintError with non-array fields to helpful message', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     transactionSpy.mockImplementationOnce(async () => {
@@ -300,7 +281,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → maps ForeignKeyConstraintError with undefined/null fields to helpful message without fields', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     transactionSpy.mockImplementationOnce(async () => {
@@ -320,7 +300,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → maps ValidationError to aggregated message (or throws original "boom")', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     // Helper to build ValidationErrorItem with full 8-arg signature
@@ -351,7 +330,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('submit → rethrows unknown errors', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
     transactionSpy.mockImplementationOnce(async () => {
@@ -362,16 +340,16 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   // ---------- viewPendingRequests ----------
-  it('viewPendingRequests → throws when not adjudicator', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: false });
+  it('viewPendingRequests → throws when email is invalid', async () => {
+    mockUserSvc.findByEmail.mockRejectedValueOnce(new Error('User not found'));
 
     await expect(
       svc.viewPendingRequests({ userEmail: 'nope@example.com' })
-    ).rejects.toThrow(/authorized (adjudicator|requestor)/i);
+    ).rejects.toThrow(/User not found/i);
   });
 
   it('viewPendingRequests → returns mapped DTOs when authorized', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: true });
+    mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 1, email: 'judge@example.com' });
     mockUseCaseRequestDAO.findByStatusId.mockResolvedValueOnce([makeRowCamel(), makeRowSnake()]);
 
     const out = await svc.viewPendingRequests({ userEmail: 'judge@example.com' });
@@ -414,16 +392,16 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   // ---------- viewAllRequests ----------
-  it('viewAllRequests → throws when not adjudicator', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: false });
+  it('viewAllRequests → throws when email is invalid', async () => {
+    mockUserSvc.findByEmail.mockRejectedValueOnce(new Error('User not found'));
 
     await expect(
       svc.viewAllRequests({ userEmail: 'nope@example.com' })
-    ).rejects.toThrow(/authorized (adjudicator|requestor)/i);
+    ).rejects.toThrow(/User not found/i);
   });
 
   it('viewAllRequests → returns mapped DTOs when authorized', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: true });
+    mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 1, email: 'judge@example.com' });
     mockUseCaseRequestDAO.findAllRequests.mockResolvedValueOnce([makeRowCamel()]);
 
     const out = await svc.viewAllRequests({ userEmail: 'judge@example.com' });
@@ -442,25 +420,23 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   // ---------- viewRequestsForRequestor ----------
-  it('viewRequestsForRequestor → throws when not requestor', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: false });
+  it('viewRequestsForRequestor → throws when email is invalid', async () => {
+    mockUserSvc.findByEmail.mockRejectedValueOnce(new Error('User not found'));
 
     await expect(
       svc.viewRequestsForRequestor({ userEmail: 'x@y.com' })
-    ).rejects.toThrow(/authorized requestor/i);
+    ).rejects.toThrow(/User not found/i);
   });
 
   it('viewRequestsForRequestor → throws when findByEmail returns falsy', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
-    mockUserSvc.findByEmail.mockResolvedValueOnce(null);
+    mockUserSvc.findByEmail.mockRejectedValueOnce(new Error('User not found'));
 
     await expect(
       svc.viewRequestsForRequestor({ userEmail: 'r@x.com' })
-    ).rejects.toThrow(/User with email r@x\.com not found/i);
+    ).rejects.toThrow(/User not found/i);
   });
 
   it('viewRequestsForRequestor → authorized + found user → returns mapped list', async () => {
-    mockUserSvc.isAuthorizedRequestor.mockResolvedValueOnce({ hasRole: true });
     mockUserSvc.findByEmail.mockResolvedValueOnce({ dataValues: { id: 444 } });
 
     mockUseCaseRequestDAO.findByRequestorId.mockResolvedValueOnce([makeRowCamel()]);
@@ -481,16 +457,16 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   // ---------- viewRequestForRequestNumber ----------
-  it('viewRequestForRequestNumber → throws when not adjudicator', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: false });
+  it('viewRequestForRequestNumber → throws when email is invalid', async () => {
+    mockUserSvc.findByEmail.mockRejectedValueOnce(new Error('User not found'));
 
     await expect(
       svc.viewRequestForRequestNumber({ userEmail: 'z@z.com', requestNumber: 'REQ-404' })
-    ).rejects.toThrow(/authorized (adjudicator|requestor)/i);
+    ).rejects.toThrow(/User not found/i);
   });
 
   it('viewRequestForRequestNumber → throws when DAO returns null', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: true });
+    mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 1, email: 'j@x.com' });
     mockUseCaseRequestDAO.findByRequestNumber.mockResolvedValueOnce(null);
 
     await expect(
@@ -499,7 +475,7 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('viewRequestForRequestNumber → success maps to DTO', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: true });
+    mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 1, email: 'j@x.com' });
     mockUseCaseRequestDAO.findByRequestNumber.mockResolvedValueOnce(makeRowCamel());
 
     const dto = await svc.viewRequestForRequestNumber({
@@ -517,7 +493,7 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   it('viewRequestForRequestNumber → maps DTO with undefined decision when decision is null/undefined (covers if (!d) branch)', async () => {
-    mockUserSvc.isAuthorizedAdjudicator.mockResolvedValueOnce({ hasRole: true });
+    mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 1, email: 'j@x.com' });
     
     // Create a row with no decision (undefined)
     const rowWithoutDecision = {

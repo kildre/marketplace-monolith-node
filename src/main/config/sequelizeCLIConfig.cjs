@@ -1,5 +1,7 @@
 // src/main/config/sequelizeCLIConfig.cjs
 require('dotenv/config');
+const log = require('../service/loggingService').default;
+
 const { Sequelize } = require('sequelize');
 const { rdbmsUrl, rdbmsDriver } = require('../service/config/rdbmsConfigService');
 
@@ -10,16 +12,16 @@ const isTrue = (v, d = false) => (v ? /^(1|true)$/i.test(String(v)) : d);
 const DIALECT = (rdbmsDriver).toLowerCase();
 
 // Prefer your secret; fallback to DATABASE_URL
-const URL = rdbmsUrl;;
-//console.log('[sequelize] Checking URL:', URL ? 'FOUND' : 'NOT FOUND');
-//console.log('[sequelize] secret-env-postgresql:', URL ? 'EXISTS' : 'MISSING');
-//console.log('[sequelize] SECRET_ENV_POSTGRESQL:', URL ? 'EXISTS' : 'MISSING');
+const URL = rdbmsUrl;
+log.info(`[sequelize] Checking URL: ${URL ? 'FOUND' : 'NOT FOUND'}`);
+log.info(`[sequelize] secret-env-postgresql: ${URL ? 'EXISTS' : 'MISSING'}`);
+log.info(`[sequelize] SECRET_ENV_POSTGRESQL: ${URL ? 'EXISTS' : 'MISSING'}`);
 process.env.SEQUELIZE_URL = URL; // single source for CLI
 
 /* ---------- shared options ---------- */
 const BASE = {
   dialect: DIALECT,
-  logging: isTrue(process.env.SEQUELIZE_LOG_SQL) ? console.log : false,
+  logging: isTrue(process.env.SEQUELIZE_LOG_SQL) ? (msg) => log.debug(String(msg)) : false,
   define: {
     underscored: true,
     freezeTableName: false,
