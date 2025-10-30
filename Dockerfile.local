@@ -1,43 +1,39 @@
-ARG BASE_IMAGE=node:20-slim
+ARG BASE_IMAGE=bitnami/node:latest
 FROM ${BASE_IMAGE} AS cli
 ENV NODE_ENV=development
 WORKDIR /app
 # (root by default) -> no permission issues
 COPY package*.json ./
-RUN npm ci --prefer-offline            # installs devDependencies too
+RUN npm ci --prefer-offline            
 COPY . .
-# If you want to run CLI as the 'node' user, make the tree writable and switch:
-RUN chown -R node:node /app
-USER node
 
 FROM ${BASE_IMAGE} AS build
-#ARG BASE_IMAGE="231388672283.dkr.ecr.us-gov-west-1.amazonaws.com/cgr.dev/odcfo-advana-bah/node-fips:24"
 
 # build stage should use -dev image to RUN commands
 # https://edu.chainguard.dev/chainguard/chainguard-images/overview/#why-minimal-container-images
 #FROM "${BASE_IMAGE}-dev" AS build
 
 ENV NODE_ENV=development
-USER node
+
 WORKDIR /app
 
-COPY --chown=node:node package*.json ./
+COPY package*.json package-lock.json ./
 RUN npm ci --prefer-offline
-COPY --chown=node:node . .
+COPY . .
 RUN npm run build && npm prune --omit=dev
 # Debug if needed:
 # RUN echo "=== BUILD ARTIFACTS ===" && ls -R dist
 
 FROM ${BASE_IMAGE} AS runtime
 ENV DIALECT=postgres
-USER node
+
 WORKDIR /app
 
-COPY --chown=node:node --from=build /app/dist ./dist
-COPY --chown=node:node --from=build /app/package*.json ./dist/
-COPY --chown=node:node --from=build /app/node_modules ./dist/node_modules
-COPY --chown=node:node --from=build /app/public ./dist/public
-COPY --chown=node:node --from=build /app/src ./dist/src
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package*.json ./dist/
+COPY --from=build /app/node_modules ./dist/node_modules
+COPY --from=build /app/public ./dist/public
+COPY --from=build /app/src ./dist/src
 
 WORKDIR /app/dist
 
