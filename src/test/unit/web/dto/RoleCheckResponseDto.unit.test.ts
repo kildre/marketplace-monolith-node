@@ -1,5 +1,5 @@
 import ConstraintError from "src/main/domain/errors/ConstraintError";
-import RoleCheckResponseDto from "src/main/web/dtos/RoleCheckResponseDto";
+import EmailCheckResponseDto from "src/main/web/dtos/RoleCheckResponseDto";
 
 describe("RoleCheckResponseDto", () => {
   const validData = {
@@ -7,12 +7,12 @@ describe("RoleCheckResponseDto", () => {
   };
 
   test("should create a valid RoleCheckResponseDto with hasRole true", () => {
-    const dto = new RoleCheckResponseDto(validData);
+    const dto = new EmailCheckResponseDto(validData);
     expect(dto.hasRole).toBe(true);
   });
 
   test("should create a valid RoleCheckResponseDto with hasRole false", () => {
-    const dto = new RoleCheckResponseDto({ hasRole: false });
+    const dto = new EmailCheckResponseDto({ hasRole: false });
     expect(dto.hasRole).toBe(false);
   });
 

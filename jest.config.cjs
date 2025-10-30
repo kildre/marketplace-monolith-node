@@ -29,7 +29,7 @@ const baseConfig = {
     appTsconfig.compilerOptions?.paths || {},
     { prefix: '<rootDir>/' }
   ),
-  transformIgnorePatterns: ['/node_modules/(?!@bollo-aggrey/ts-autogen)'],
+  transformIgnorePatterns: ['/node_modules/(?!(@bollo-aggrey/ts-autogen|node-fetch))'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   clearMocks: true,
   restoreMocks: true,

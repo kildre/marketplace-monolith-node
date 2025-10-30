@@ -1,314 +1,261 @@
 // src/test/int/service/userEndpointService.int.test.ts
 import 'reflect-metadata';
+import type { Request } from 'express';
 import { Sequelize } from 'sequelize';
-import { normalizeEmail, serializeError, seedRoles, createTestUser } from '../../utils/testHelpers';
 import {
-    PostgreSqlContainer,
-    StartedPostgreSqlContainer,
+  PostgreSqlContainer,
+  StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
 
-describe('userEndpointService (integration)', () => {
-    let container: StartedPostgreSqlContainer;
-    let sequelize: Sequelize;
-    let initDb: () => Promise<void>;
-    let MarketplaceUser: any;
-    let Role: any;
-    let UserRole: any;
+// SUT path (used after we set up mocks)
+const svcPath = '../../../main/service/userEndpointService';
 
-    const svcPath = '../../../main/service/userEndpointService';
-    const RoleEnum = require('../../../main/domain/enumeration/RoleEnum').RoleEnum;
+// A tiny helper (consistent with your previous utils)
+const normalizeEmail = (e: string) => e.trim().toLowerCase();
 
-    // Use shared helpers for normalization and error serialization
+// Helper to build a minimal Express-like Request with Authorization header
+function makeReq(token: string | undefined): Request {
+  return {
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  } as unknown as Request;
+}
 
-    beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16').start();
-        const pgUri = container.getConnectionUri();
+describe('userEndpointService (integration, token-based roles)', () => {
+  let container: StartedPostgreSqlContainer;
+  let sequelize: Sequelize;
+  let initDb: () => Promise<void>;
+  let MarketplaceUser: any;
 
-        process.env.DB_DIALECT = 'postgres';
-        process.env.DB_SSL = '0';
-        process.env.SEQUELIZE_URL = pgUri;
-        delete process.env['secret-env-postgresql'];
-        delete process.env['SECRET_ENV_POSTGRESQL'];
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:16').start();
+    const pgUri = container.getConnectionUri();
 
-        const entities = await import('../../../main/rdbms/entities');
-        sequelize = entities.sequelize as Sequelize;
-        initDb = entities.initDb as () => Promise<void>;
+    process.env.DB_DIALECT = 'postgres';
+    process.env.DB_SSL = '0';
+    process.env.SEQUELIZE_URL = pgUri;
+    delete process.env['secret-env-postgresql'];
+    delete process.env['SECRET_ENV_POSTGRESQL'];
 
-        await initDb();
-        await sequelize.authenticate();
-        await sequelize.drop();
-        await sequelize.sync();
+    const entities = await import('../../../main/rdbms/entities');
+    sequelize = entities.sequelize as Sequelize;
+    initDb = entities.initDb as () => Promise<void>;
 
-        // Get model references
-        MarketplaceUser = sequelize.models.MarketplaceUser;
-        Role = sequelize.models.Role;
-        UserRole = sequelize.models.UserRole;
+    await initDb();
+    await sequelize.authenticate();
+    await sequelize.drop();
+    await sequelize.sync();
 
-        // CRITICAL: Seed roles BEFORE any tests run
-        await seedRoles(Role);
+    MarketplaceUser = sequelize.models.MarketplaceUser;
+  }, 120_000);
 
-        // Verify roles were created
-        const roleCount = await Role.count();
-        if (roleCount === 0) {
-            throw new Error('Failed to seed roles - no roles in database');
-        }
-    }, 120_000);
+  afterAll(async () => {
+    await sequelize?.close();
+    await container?.stop();
+  });
 
-    afterAll(async () => {
-        await sequelize?.close();
-        await container?.stop();
+  beforeEach(async () => {
+    // Clean only users; there are no roles/user_roles anymore
+    await MarketplaceUser.destroy({ where: {} });
+    jest.clearAllMocks();
+  });
+
+  //
+  // MOCK the token helpers used by the service (../config/authConfig)
+  // We map tokens → roles:
+  //   - "ADJ" => adjudicator true, requestor false
+  //   - "REQ" => requestor true, adjudicator false
+  //   - anything else/undefined => both false
+  //
+  function mockAuthConfig() {
+    jest.doMock('../../../main/config/authConfig', () => {
+      return {
+        getAuthToken: (req: Request) => {
+          const h = req.headers?.authorization || '';
+          const m = typeof h === 'string' ? h.match(/^Bearer\s+(.+)$/i) : null;
+          return m ? m[1] : undefined;
+        },
+        isAuthorizedAdjudicator: (token: string) => token === 'ADJ',
+        isAuthorizedRequestor: (token: string) => token === 'REQ',
+      };
+    });
+  }
+
+  // -------------------- Authorization tests (token-based) --------------------
+
+  it('isAuthorizedAdjudicator → true when token confers adjudicator', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const res = await userEndpointService.isAuthorizedAdjudicator(
+      { userEmail: 'judge@example.com' },
+      makeReq('ADJ')
+    );
+
+    expect(res.hasRole).toBe(true);
+  });
+
+  it('isAuthorizedAdjudicator → false when token is requestor', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const res = await userEndpointService.isAuthorizedAdjudicator(
+      { userEmail: 'user@example.com' },
+      makeReq('REQ')
+    );
+
+    expect(res.hasRole).toBe(false);
+  });
+
+  it('isAuthorizedAdjudicator → false when no token', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const res = await userEndpointService.isAuthorizedAdjudicator(
+      { userEmail: 'nonexistent@example.com' },
+      makeReq(undefined)
+    );
+
+    expect(res.hasRole).toBe(false);
+  });
+
+  it('isAuthorizedAdjudicator → email normalization has no effect on token-based role', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const res = await userEndpointService.isAuthorizedAdjudicator(
+      { userEmail: '  Judge@Example.COM  ' },
+      makeReq('ADJ')
+    );
+
+    expect(res.hasRole).toBe(true);
+  });
+
+  it('isAuthorizedRequestor → true when token confers requestor', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const res = await userEndpointService.isAuthorizedRequestor(
+      { userEmail: 'requestor@example.com' },
+      makeReq('REQ')
+    );
+
+    expect(res.hasRole).toBe(true);
+  });
+
+  it('isAuthorizedRequestor → false when token is adjudicator', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const res = await userEndpointService.isAuthorizedRequestor(
+      { userEmail: 'adjudicator@example.com' },
+      makeReq('ADJ')
+    );
+
+    expect(res.hasRole).toBe(false);
+  });
+
+  it('multiple tokens → distinguishes different roles correctly', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const adj = await userEndpointService.isAuthorizedAdjudicator(
+      { userEmail: 'a@example.com' },
+      makeReq('ADJ')
+    );
+    const reqz = await userEndpointService.isAuthorizedRequestor(
+      { userEmail: 'r@example.com' },
+      makeReq('REQ')
+    );
+    const adjAsReq = await userEndpointService.isAuthorizedRequestor(
+      { userEmail: 'a@example.com' },
+      makeReq('ADJ')
+    );
+
+    expect(adj.hasRole).toBe(true);
+    expect(reqz.hasRole).toBe(true);
+    expect(adjAsReq.hasRole).toBe(false);
+  });
+
+  // -------------------- DB-backed lookups --------------------
+
+  it('findByEmail → throws when userEmail is missing/blank', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    await expect(
+      userEndpointService.findByEmail({ userEmail: '   ' })
+    ).rejects.toThrow(/userEmail is required/i);
+  });
+
+  it('findByEmail → returns user when found (normalizes input)', async () => {
+    // insert a user
+    const testEmail = 'user@example.com';
+    const created = await MarketplaceUser.create({ email: normalizeEmail(testEmail) });
+
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
+
+    const res = await userEndpointService.findByEmail({
+      userEmail: '  USER@EXAMPLE.com ',
     });
 
-    beforeEach(async () => {
-        // Clean test data in the correct order to avoid cascade issues
-        try {
-            // First, check how many roles exist BEFORE cleanup
-            const roleCountBefore = await Role.count();
-            // Step 1: Delete user-role associations first (this prevents cascade to roles)
-            const userRolesDeleted = await UserRole.destroy({ where: {} });
+    expect(res).toBeDefined();
+    expect(res.id).toBe(created.id);
+    expect(res.email).toBe(normalizeEmail(testEmail));
+  });
 
-            // Step 2: Delete users (now safe since no associations exist)
-            const usersDeleted = await MarketplaceUser.destroy({ where: {} });
+  it('findByEmail → throws when user not found', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default;
 
-            // Check role count AFTER cleanup to ensure roles weren't affected
-            const roleCountAfter = await Role.count();
+    await expect(
+      userEndpointService.findByEmail({ userEmail: 'missing@example.com' })
+    ).rejects.toThrow(/User with email missing@example\.com not found/i);
+  });
 
-            if (roleCountAfter === 0) {
-                await seedRoles(Role);
-            }
-        } catch (err) {
-            // rethrow so the test harness sees the failure
-            throw err;
-        }
+  it('findIdByEmail → throws when userEmail is missing/blank', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default as any;
+
+    await expect(
+      userEndpointService.findIdByEmail({ userEmail: '   ' })
+    ).rejects.toThrow(/userEmail is required\./i);
+  });
+
+  it('findIdByEmail → returns id when found (normalizes input)', async () => {
+    const testEmail = 'user2@example.com';
+    const created = await MarketplaceUser.create({ email: normalizeEmail(testEmail) });
+
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default as any;
+
+    const res = await userEndpointService.findIdByEmail({
+      userEmail: '  USER2@EXAMPLE.com ',
     });
 
-    // Use shared seedRoles helper
+    expect(typeof res).toBe('number');
+    expect(res).toBe(created.id);
+  });
 
-    // Use shared createTestUser helper
+  it('findIdByEmail → throws when user not found', async () => {
+    mockAuthConfig();
+    const mod = await import(svcPath);
+    const userEndpointService = mod.default as any;
 
-    it('isAuthorizedAdjudicator → true when user has ADJUDICATOR role', async () => {
-        const testEmail = 'judge@example.com';
-        await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.ADJUDICATOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        const res = await userEndpointService.isAuthorizedAdjudicator({
-            userEmail: testEmail
-        });
-
-        expect(res.hasRole).toBe(true);
-    });
-
-    it('isAuthorizedAdjudicator → false when user has REQUESTOR role', async () => {
-        const testEmail = 'user@example.com';
-        await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.REQUESTOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        const res = await userEndpointService.isAuthorizedAdjudicator({
-            userEmail: testEmail
-        });
-
-        expect(res.hasRole).toBe(false);
-    });
-
-    it('isAuthorizedAdjudicator → false when user does not exist', async () => {
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        const res = await userEndpointService.isAuthorizedAdjudicator({
-            userEmail: 'nonexistent@example.com'
-        });
-
-        expect(res.hasRole).toBe(false);
-    });
-
-    it('isAuthorizedAdjudicator → service handles email normalization', async () => {
-        const normalizedEmail = 'judge@example.com';
-        const createdUser = await createTestUser(MarketplaceUser, Role, normalizedEmail, RoleEnum.ADJUDICATOR.id);
-
-        // Verify the user and role association exist in DB
-        const userRoles = await UserRole.findAll({ where: { userId: createdUser.id } });
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        // Query with non-normalized email
-        const rawEmail = '  Judge@Example.COM  ';
-
-        const res = await userEndpointService.isAuthorizedAdjudicator({
-            userEmail: rawEmail
-        });
-
-        // If this fails, your service needs to normalize emails before calling DAO
-        expect(res.hasRole).toBe(true);
-    });
-
-    it('isAuthorizedRequestor → true when user has REQUESTOR role', async () => {
-        const testEmail = 'requestor@example.com';
-        await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.REQUESTOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        const res = await userEndpointService.isAuthorizedRequestor({
-            userEmail: testEmail
-        });
-
-        expect(res.hasRole).toBe(true);
-    });
-
-    it('isAuthorizedRequestor → false when user has ADJUDICATOR role', async () => {
-        const testEmail = 'adjudicator@example.com';
-        await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.ADJUDICATOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        const res = await userEndpointService.isAuthorizedRequestor({
-            userEmail: testEmail
-        });
-
-        expect(res.hasRole).toBe(false);
-    });
-
-    it('findByEmail → throws when userEmail is missing/blank', async () => {
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        await expect(
-            userEndpointService.findByEmail({ userEmail: '   ' })
-        ).rejects.toThrow(/userEmail is required/i);
-    });
-
-    it('findByEmail → returns user when found (normalizes input)', async () => {
-        const testEmail = 'user@example.com';
-        const createdUser = await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.REQUESTOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        // Query with different case and whitespace
-        const res = await userEndpointService.findByEmail({
-            userEmail: '  USER@EXAMPLE.com '
-        });
-
-        expect(res).toBeDefined();
-        expect(res.id).toBe(createdUser.id);
-        expect(res.email).toBe(normalizeEmail(testEmail));
-    });
-
-    it('findByEmail → throws when user not found', async () => {
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        await expect(
-            userEndpointService.findByEmail({ userEmail: 'missing@example.com' })
-        ).rejects.toThrow(/User with email missing@example\.com not found/i);
-    });
-
-    it('findByEmail → finds user with exact email match', async () => {
-        const testEmail = 'exact@example.com';
-        const createdUser = await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.ADJUDICATOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        const res = await userEndpointService.findByEmail({
-            userEmail: testEmail
-        });
-
-        expect(res).toBeDefined();
-        expect(res.id).toBe(createdUser.id);
-    });
-
-    // ===================== findIdByEmail =====================
-    it('findIdByEmail → throws when userEmail is missing/blank', async () => {
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default as any;
-
-        await expect(
-            userEndpointService.findIdByEmail({ userEmail: '   ' })
-        ).rejects.toThrow(/userEmail is required\./i);
-    });
-
-    it('findIdByEmail → returns id when found (normalizes input)', async () => {
-        const testEmail = 'user2@example.com';
-        const createdUser = await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.REQUESTOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default as any;
-
-        // Query with different case and whitespace
-        const res = await userEndpointService.findIdByEmail({
-            userEmail: '  USER2@EXAMPLE.com '
-        });
-
-        expect(typeof res).toBe('number');
-        expect(res).toBe(createdUser.id);
-    });
-
-    it('findIdByEmail → throws when user not found', async () => {
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default as any;
-
-        await expect(
-            userEndpointService.findIdByEmail({ userEmail: 'missing2@example.com' })
-        ).rejects.toThrow(/User with email missing2@example\.com not found\./i);
-    });
-
-    it('multiple users → distinguishes different roles correctly', async () => {
-        const adjudicatorEmail = 'adjudicator@example.com';
-        const requestorEmail = 'requestor@example.com';
-
-        await createTestUser(MarketplaceUser, Role, adjudicatorEmail, RoleEnum.ADJUDICATOR.id);
-        await createTestUser(MarketplaceUser, Role, requestorEmail, RoleEnum.REQUESTOR.id);
-
-        const mod = await import(svcPath);
-        const userEndpointService = mod.default;
-
-        const adjudicatorCheck = await userEndpointService.isAuthorizedAdjudicator({
-            userEmail: adjudicatorEmail
-        });
-        const requestorCheck = await userEndpointService.isAuthorizedRequestor({
-            userEmail: requestorEmail
-        });
-
-        expect(adjudicatorCheck.hasRole).toBe(true);
-        expect(requestorCheck.hasRole).toBe(true);
-
-        // Cross-check: adjudicator shouldn't be requestor
-        const adjudicatorAsRequestor = await userEndpointService.isAuthorizedRequestor({
-            userEmail: adjudicatorEmail
-        });
-        expect(adjudicatorAsRequestor.hasRole).toBe(false);
-    });
-
-    it('DEBUG → verify data is inserted and readable', async () => {
-        const testEmail = 'debug@example.com';
-
-        // Check roles exist
-        const roles = await Role.findAll();
-
-        // Create user
-        const created = await createTestUser(MarketplaceUser, Role, testEmail, RoleEnum.ADJUDICATOR.id);
-
-        // Verify it's in the database
-        const found = await MarketplaceUser.findOne({
-            where: { email: normalizeEmail(testEmail) },
-            include: [{ model: Role, as: 'roles' }] // Include roles to see the association
-        });
-
-        expect(found).toBeDefined();
-        expect(found.email).toBe(normalizeEmail(testEmail));
-
-        // Verify the role association exists in user_roles junction table
-        const userRoleAssociation = await UserRole.findOne({
-            where: { userId: found.id, roleId: RoleEnum.ADJUDICATOR.id }
-        });
-        expect(userRoleAssociation).toBeDefined();
-        expect(userRoleAssociation.roleId).toBe(RoleEnum.ADJUDICATOR.id);
-    });
+    await expect(
+      userEndpointService.findIdByEmail({ userEmail: 'missing2@example.com' })
+    ).rejects.toThrow(/User with email missing2@example\.com not found\./i);
+  });
 });

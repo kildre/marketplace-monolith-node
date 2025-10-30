@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import RoleCheckRequestDto from "../dtos/RoleCheckRequestDto";
+import EmailCheckRequestDto from "../dtos/RoleCheckRequestDto";
 import endpointService from "../../service/userEndpointService";
 import log from "../../service/loggingService";
 
@@ -10,7 +10,7 @@ interface UserControllerI {
 
 const isAuthorizedAdjudicator = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const result = await endpointService.isAuthorizedAdjudicator(new RoleCheckRequestDto(req.body)); // <-- await
+        const result = await endpointService.isAuthorizedAdjudicator(new EmailCheckRequestDto(req.body), req);
         res.status(200).json(result);
     } catch (e: any) {
         next(e);

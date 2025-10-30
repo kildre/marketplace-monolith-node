@@ -25,9 +25,9 @@ class Props {
  *           type: boolean
  *           example: true
  *       required:
- *         - hasRole
+ *         - valid
  */
-export default class RoleCheckResponseDto {
+export default class EmailCheckResponseDto {
   public readonly hasRole!: boolean;
 
   constructor(data: PropsI) {

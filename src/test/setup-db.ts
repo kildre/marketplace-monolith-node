@@ -1,6 +1,18 @@
 // test/_setup/setup-db.ts
 import { Sequelize } from 'sequelize';
 
+// Mock node-fetch before any imports that might use it
+jest.mock('node-fetch', () => {
+  return jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    json: async () => ({ active: true }),
+    text: async () => '',
+    headers: new Map(),
+  });
+});
+
 try { require('ts-node/register/transpile-only'); } catch {}
 import { Umzug, SequelizeStorage } from 'umzug';
 
