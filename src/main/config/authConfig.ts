@@ -1,9 +1,17 @@
 import type { Request, Response, NextFunction } from "express";
 import fetch from "node-fetch";
+import * as crypto from "crypto";
 import log from "../service/loggingService";
 
 // ───────────────────────── Env & constants ─────────────────────────
 const ADJ_ROLE = (process.env.MARKETPLACE_ADJUDICATOR_ROLE || "").trim();
+
+// allow either var name
+function isTrue(v?: string): boolean {
+  return typeof v === "string" && /^(1|true|yes|y|on)$/i.test(v.trim());
+}
+const BYPASS_AUTH =
+  isTrue(process.env.MARKETPLACE_BYPASS_AUTH);
 
 const {
   KEYCLOAK_BASE_URL,
@@ -17,8 +25,9 @@ const {
 type CacheEntry = { payload: IntrospectionResult; exp: number };
 const cache = new Map<string, CacheEntry>();
 
-function cacheKey(token: string) {
-  return token.slice(0, 24);
+function cacheKey(token: string): string {
+  // safer than slicing raw token
+  return crypto.createHash("sha256").update(token).digest("hex").slice(0, 24);
 }
 function putCache(token: string, payload: IntrospectionResult) {
   const now = Math.floor(Date.now() / 1000);
@@ -72,16 +81,10 @@ function basicChecks(payload: IntrospectionResult, expectedAudience?: string): b
     log.warn(`Token expired at ${payload.exp} now ${now}`);
     return false;
   }
-
-  // Issuer sanity — keep lenient unless EXPECTED_ISSUER is enforced elsewhere
-  if (payload.iss && !payload.iss.includes("/realms/")) {
-    log.error(`Unexpected issuer: ${payload.iss}`);
-  }
-
   if (expectedAudience) {
     const audArr = Array.isArray(payload.aud) ? payload.aud : [payload.aud].filter(Boolean);
     if (!audArr.includes(expectedAudience)) {
-      log.error(`Audience mismatch. aud= ${audArr}, expected= ${expectedAudience}`);
+      log.error(`Audience mismatch. aud=${JSON.stringify(audArr)} expected=${expectedAudience}`);
       return false;
     }
   }
@@ -99,37 +102,30 @@ function logRoles(payload: IntrospectionResult) {
 }
 
 // ───────────────────────── Public auth helpers (EXPORTED) ─────────────────────────
-/**
- * Return the Bearer token from the request (does not validate it).
- * Works with JWT and opaque tokens. Never rejects opaque tokens.
- */
 export function getAuthToken(req: Request): string | undefined {
   const auth = req.headers.authorization;
-  if (!auth?.startsWith("Bearer ")) {
-    return undefined;
-  }
+  if (!auth?.startsWith("Bearer ")) return undefined;
   const token = auth.substring("Bearer ".length).trim();
 
-  // Try to log a few hints if JWT; do not fail on opaque tokens.
+  // Log hints if JWT; keep opaque tokens working
   try {
     const [, p] = token.split(".");
     if (p) {
       const j = JSON.parse(Buffer.from(p, "base64").toString("utf8"));
-  log.debug(`token-hints typ: ${j.typ} azp: ${j.azp} aud: ${JSON.stringify(j.aud)} exp: ${j.exp} iss: ${j.iss}`);
+      const hash = crypto.createHash("sha256").update(token).digest("hex").slice(0, 16);
+      log.debug(`token-hints hash=${hash} typ=${j.typ} azp=${j.azp} aud=${JSON.stringify(j.aud)} exp=${j.exp} iss=${j.iss}`);
     }
   } catch {
-    log.error("Failed to parse token hints; assuming opaque token");
-    return undefined
+    const hash = crypto.createHash("sha256").update(token).digest("hex").slice(0, 16);
+    log.debug(`opaque-token hash=${hash}`);
   }
 
   return token;
 }
 
-/**
- * True if the cached payload for this token includes the adjudicator role from env.
- * Returns false if no cache yet or env role is not set.
- */
+/** True if cached token has adjudicator role. */
 export function isAuthorizedAdjudicator(token: string): boolean {
+  if (BYPASS_AUTH) return true; // everyone passes in bypass mode
   if (!ADJ_ROLE) return false;
   const payload = getCache(token);
   if (!payload) return false;
@@ -137,41 +133,56 @@ export function isAuthorizedAdjudicator(token: string): boolean {
   return roles.includes(ADJ_ROLE);
 }
 
-/**
- * Your current policy: any authenticated/cached token is considered a requestor.
- * If you want to enforce a specific role later, change this to check roles.
- */
+/** Current policy: any cached/active token is a requestor. */
 export function isAuthorizedRequestor(token: string): boolean {
+  if (BYPASS_AUTH) return true;
   const payload = getCache(token);
-  return !!(payload && payload.active !== false); // treat cached active (or unset active) as OK
+  return !!(payload && payload.active !== false);
 }
 
 // ───────────────────────── Middleware ─────────────────────────
 export function keycloakIntrospectMiddleware(required = true) {
-  if (!KEYCLOAK_BASE_URL || !KEYCLOAK_REALM || !KEYCLOAK_CLIENT_ID || !KEYCLOAK_CLIENT_SECRET) {
-    throw new Error("Missing Keycloak env vars. Please set KEYCLOAK_* values.");
+  // If bypassing, do NOT require Keycloak env vars.
+  if (!BYPASS_AUTH) {
+    if (!KEYCLOAK_BASE_URL || !KEYCLOAK_REALM || !KEYCLOAK_CLIENT_ID || !KEYCLOAK_CLIENT_SECRET) {
+      throw new Error("Missing Keycloak env vars. Please set KEYCLOAK_* values.");
+    }
   }
 
-  const base = KEYCLOAK_BASE_URL.replace(/\/+$/, "");
+  const base = (KEYCLOAK_BASE_URL || "").replace(/\/+$/, "");
   const introspectUrl = `${base}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token/introspect`;
 
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
+      // BYPASS: attach a synthetic auth payload and continue
+      if (BYPASS_AUTH) {
+        const roles = ADJ_ROLE ? [ADJ_ROLE] : [];
+        const fake: IntrospectionResult = {
+          active: true,
+          sub: "bypass-user",
+          azp: "bypass-client",
+          iss: base && KEYCLOAK_REALM ? `${base}/realms/${KEYCLOAK_REALM}` : "https://bypass.local/realms/example",
+          aud: EXPECTED_AUDIENCE || undefined,
+          realm_access: roles.length ? { roles } : undefined,
+          resource_access: {},
+        };
+        (req as any).auth = fake;
+        (req as any).auth.roles = roles;
+        log.warn(`[INTROSPECT] BYPASS enabled. Skipping Keycloak; roles=${JSON.stringify(roles)}`);
+        return next();
+      }
+
       const token = getAuthToken(req);
       if (!token) {
         if (required) return res.status(401).json({ error: "Missing token" });
         return next();
       }
-  log.debug(`[INTROSPECT] Token received: ${token.substring(0, 8)}...`);
+
       // Cache first
       const cached = getCache(token);
       if (cached) {
-        if (required && cached.active === false) {
-          return res.status(401).json({ error: "Token inactive" });
-        }
-        if (!basicChecks(cached, EXPECTED_AUDIENCE)) {
-          return res.status(403).json({ error: "Token check failed" });
-        }
+        if (required && cached.active === false) return res.status(401).json({ error: "Token inactive" });
+        if (!basicChecks(cached, EXPECTED_AUDIENCE)) return res.status(403).json({ error: "Token check failed" });
         (req as any).auth = cached;
         logRoles(cached);
         return next();
@@ -180,8 +191,8 @@ export function keycloakIntrospectMiddleware(required = true) {
       // Call introspection
       const form = new URLSearchParams({
         token,
-        client_id: KEYCLOAK_CLIENT_ID,
-        client_secret: KEYCLOAK_CLIENT_SECRET,
+        client_id: KEYCLOAK_CLIENT_ID || "",
+        client_secret: KEYCLOAK_CLIENT_SECRET || "",
         token_type_hint: "access_token",
       });
 
@@ -193,26 +204,20 @@ export function keycloakIntrospectMiddleware(required = true) {
 
       if (!resp.ok) {
         const text = await resp.text().catch(() => "");
-  log.debug(`HTTP ${resp.status} ${text?.slice(0, 500) ?? ''}`);
+        log.debug(`HTTP ${resp.status} ${text?.slice(0, 500) ?? ""}`);
         return res.status(401).json({ error: "Introspection failed" });
       }
 
       const payload = (await resp.json()) as IntrospectionResult;
-  log.debug(`active: ${payload.active} iss: ${payload.iss}`);
-
-      if (required && payload.active === false) {
-        return res.status(401).json({ error: "Token inactive" });
-      }
-      if (!basicChecks(payload, EXPECTED_AUDIENCE)) {
-        return res.status(403).json({ error: "Token check failed" });
-      }
+      if (required && payload.active === false) return res.status(401).json({ error: "Token inactive" });
+      if (!basicChecks(payload, EXPECTED_AUDIENCE)) return res.status(403).json({ error: "Token check failed" });
 
       putCache(token, payload);
       (req as any).auth = payload;
       logRoles(payload);
       return next();
     } catch (err: any) {
-  log.error(`[INTROSPECT] Exception: ${err?.message || String(err)}`);
+      log.error(`[INTROSPECT] Exception: ${err?.message || String(err)}`);
       return res.status(500).json({ error: "Introspection exception" });
     }
   };
