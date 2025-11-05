@@ -60,7 +60,7 @@ export class UseCaseRequest extends Model<
           allowNull: true,
           field: "point_of_contact",
         },
-        email: { type: DataTypes.STRING(255), allowNull: true },
+        email: { type: DataTypes.STRING(128), allowNull: true },
         requestedToolName: {
           type: DataTypes.STRING(128),
           allowNull: false,
