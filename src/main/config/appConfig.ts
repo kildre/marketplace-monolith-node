@@ -5,7 +5,7 @@ import cors from "cors";
 import path from "path";
 import { Application } from "express";
 import configureActuator from "./actuatorConfig";
-import configureRoutes from "./routesConfig";
+import configureRoutes from "./configureRoutes";
 import configureSwagger from "./swaggerConfig";
 import configureMorgan from "./morganConfig";
 

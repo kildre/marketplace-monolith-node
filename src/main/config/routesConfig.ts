@@ -1,92 +1,87 @@
-import type { Application, Request } from "express";
-import express from "express";
-
-import rootRoutes from "../web/routes/rootRoutes";
-import userRoutes from "../web/routes/userRoutes";
-import requestRoutes from "../web/routes/requestRoutes";
-import reportRoutes from "../web/routes/reportRoutes";
-import decisionRoutes from "../web/routes/decisionRoutes";
+// requestsGuard.ts
+import { Router, Request, Response, NextFunction } from "express";
 import log from "../service/loggingService";
 
-import { keycloakIntrospectMiddleware } from "./authConfig";
-import { requireRoles } from "../utils/authUtils";
-import { printRoutes } from "../utils/routeUtils";
-
-// Single source of truth for adjudicator role (from env)
 const ADJ_ROLE = (process.env.MARKETPLACE_ADJUDICATOR_ROLE || "").trim();
-// Convenience gate; if env not set, no role restriction is applied
-const requireAdjudicator = requireRoles(ADJ_ROLE);
+const REQ_ROLE = (process.env.MARKETPLACE_REQUESTOR_ROLE || "").trim();
 
-const configureRoutes = (app: Application) => {
-  log.info("Configuring routes...");
-  if (!ADJ_ROLE) {
-    log.warn(
-      "[CONFIG] MARKETPLACE_ADJUDICATOR_ROLE is not set. Approver-only endpoints will NOT be role-gated (token still required)."
-    );
-  } else {
-    log.info(`[CONFIG] MARKETPLACE_ADJUDICATOR_ROLE = ${ADJ_ROLE}`);
-  }
+// Normalize: lower-case, strip trailing slashes, ensure leading slash
+function norm(p: string): string {
+  const cleaned = (p || "/").toLowerCase().replace(/\/+$/, "");
+  return cleaned === "" ? "/" : cleaned;
+}
 
-  app.use(express.json());
+// Extract realm roles placed by your introspection middleware
+function getRealmRoles(req: Request): string[] {
+  const kc = (req as any).kc || (req as any).auth || {};
+  if (kc.realm_access?.roles) return kc.realm_access.roles as string[];
+  if (Array.isArray(kc.roles)) return kc.roles as string[];
+  return [];
+}
 
-  // (1) Public routes FIRST (no auth)
-  app.use("", rootRoutes); // e.g., /health, landing page, etc.
+function hasRole(roles: string[], needed: string): boolean {
+  if (!needed) return false; // strict: role must be configured
+  return roles.includes(needed);
+}
 
-  // (2) Protect the entire /api tree via introspection (valid token required)
-  app.use("/api", keycloakIntrospectMiddleware(true));
+export function requestsWhitelistGuard() {
+  const guard = Router();
 
-  // (3) Mount protected route groups
-  app.use(
-    "/api/users",
-    (req, _res, next) => {
-      log.debug(`[ROUTES] /api/users as ${(req as any).auth?.username}`);
-      next();
-    },
-    // No role checks: allowed for all authenticated users
-    userRoutes
-  );
+  guard.use((req, res, next) => {
+    const user = (req as any).auth?.username || (req as any).kc?.username || "unknown";
+    const npath = norm(req.path);
+    const method = req.method.toUpperCase();
+    const roles = getRealmRoles(req);
 
-  // Requests: POST /viewAll and /viewPending require adjudicator; others allowed for any authenticated user
-  app.use(
-    "/api/requests",
-    (req, res, next) => {
-      log.debug(`[ROUTES] /api/requests as ${(req as any).auth?.username}`);
-      log.debug(`[ROUTES] /api/requests method: ${req.method} path: ${req.path}`);
-
-      if (
-        req.method === "POST" &&
-        (req.path === "/viewAll" || req.path === "/viewPending")
-      ) {
-        return requireAdjudicator(req, res, next);
+    // ---- STRICT WHITELIST ----
+    // 1) Submit request: POST /api/requests → either role
+    if (method === "POST" && npath === "/") {
+      if (!ADJ_ROLE && !REQ_ROLE) {
+        return res.status(500).json({ error: "Config error: roles not set" });
       }
-      return next();
-    },
-    requestRoutes
-  );
+      if (hasRole(roles, ADJ_ROLE) || hasRole(roles, REQ_ROLE)) return next();
+      log.warn(`[DENY] ${user} lacks required role(s) for POST /api/requests`);
+      return res.status(403).json({ error: "Forbidden: adjudicator or requestor role required" });
+    }
 
-  // Decisions: require any approver-capable role
-  app.use(
-    "/api/decisions",
-    (req, _res, next) => {
-      log.debug(`[ROUTES] /api/decisions as ${(req as any).auth?.username}`);
-      next();
-    },
-    requireAdjudicator,
-    decisionRoutes
-  );
+    // 2) View all: POST /api/requests/viewAll → adjudicator only
+    if (method === "POST" && npath === "/viewall") {
+      if (!ADJ_ROLE) return res.status(500).json({ error: "Config error: ADJ role not set" });
+      if (hasRole(roles, ADJ_ROLE)) return next();
+      log.warn(`[DENY] ${user} lacks ${ADJ_ROLE} for POST /api/requests/viewAll`);
+      return res.status(403).json({ error: "Forbidden: adjudicator role required" });
+    }
 
-  // Reports: allow read or write marketplace roles
-  app.use(
-    "/api/report",
-    (req, _res, next) => {
-      log.debug(`[ROUTES] /api/report as ${(req as any).auth?.username}`);
-      next();
-    },
-    reportRoutes
-  );
+    // 3) View pending: POST /api/requests/viewPending → adjudicator only
+    if (method === "POST" && npath === "/viewpending") {
+      if (!ADJ_ROLE) return res.status(500).json({ error: "Config error: ADJ role not set" });
+      if (hasRole(roles, ADJ_ROLE)) return next();
+      log.warn(`[DENY] ${user} lacks ${ADJ_ROLE} for POST /api/requests/viewPending`);
+      return res.status(403).json({ error: "Forbidden: adjudicator role required" });
+    }
 
-  // Route inventory (for debugging)
-  printRoutes(app as any);
-};
+    // 4) View for request number: ANY /api/requests/viewForRequestNumber → either role
+    if (npath === "/viewforrequestnumber") {
+      if (!ADJ_ROLE && !REQ_ROLE) {
+        return res.status(500).json({ error: "Config error: roles not set" });
+      }
+      if (hasRole(roles, ADJ_ROLE) || hasRole(roles, REQ_ROLE)) return next();
+      log.warn(`[DENY] ${user} lacks required role(s) for ${method} /api/requests/viewForRequestNumber`);
+      return res.status(403).json({ error: "Forbidden: adjudicator or requestor role required" });
+    }
 
-export default configureRoutes;
+    // 5) View for requestor: ANY /api/requests/viewForRequestor → requestor only
+    if (npath === "/viewforrequestor") {
+      if (!REQ_ROLE) return res.status(500).json({ error: "Config error: REQ role not set" });
+      if (hasRole(roles, REQ_ROLE)) return next();
+      log.warn(`[DENY] ${user} lacks ${REQ_ROLE} for ${method} /api/requests/viewForRequestor`);
+      return res.status(403).json({ error: "Forbidden: requestor role required" });
+    }
+
+    // ---- DENY EVERYTHING ELSE UNDER /api/requests ----
+    log.warn(`[DENY] ${user} → Denying access to /api/requests route not explicitly allowed: ${method} ${req.path}`);
+    return res.status(403).json({ error: "Forbidden: route not explicitly allowed" });
+  });
+
+  return guard;
+}

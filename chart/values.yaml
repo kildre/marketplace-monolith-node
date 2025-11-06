@@ -253,6 +253,7 @@ secret:
           KEYCLOAK_CLIENT_ID: "marketplace-be"
           KEYCLOAK_CLIENT_SECRET: "fillme"
           MARKETPLACE_ADJUDICATOR_ROLE: "marketplace-approver"
+          MARKETPLACE_REQUESTOR_ROLE: "marketplace-requestor"
           INTROSPECT_AUTH: basic
           INTROSPECT_RETRY: true
           INTROSPECT_TIMEOUT_MS: 5000
