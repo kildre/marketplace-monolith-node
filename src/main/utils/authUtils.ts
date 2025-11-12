@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import type { IntrospectionResult } from "../config/authConfig";
 import log from "../service/loggingService";
+import { UnauthorizedUserError } from "../domain/errors/UnauthorizedUserError";
+import { AuthenticationError } from "../domain/errors/AuthenticationError";
 
 // ============================================================================
 // JWT & Token Utilities
@@ -147,10 +149,13 @@ export function requireRoles(...needed: (string | undefined)[]) {
     log.debug(`[ROLES] need: ${JSON.stringify(validRoles)} have: ${JSON.stringify(roles)} ok: ${ok}`);
     
     if (!ok) {
-      return res.status(403).json({ 
-        error: "Forbidden: missing roles", 
-        need: validRoles 
+      const required = validRoles.length === 1 ? validRoles[0] : validRoles.join(" OR ");
+      const err = new UnauthorizedUserError("Forbidden: missing roles", {
+        userEmail: (req as any).auth?.sub || (req as any).kc?.username || "unknown",
+        requiredRole: required,
+        actualRoles: roles,
       });
+      return next(err);
     }
     
     next();
@@ -163,8 +168,15 @@ export function requireRoles(...needed: (string | undefined)[]) {
 export function requireActiveToken() {
   return (req: Request, res: Response, next: NextFunction) => {
     const auth = extractAuth(req);
-    if (!auth || auth.active === false) {
-      return res.status(401).json({ error: "Missing or inactive token" });
+    if (!auth) {
+      // No introspection payload present – treat as missing token for routes outside global guard
+      const err = AuthenticationError.missingToken(req.path, req.method, req.ip);
+      return next(err);
+    }
+    if (auth.active === false) {
+      const tokenSub = auth.sub || "unknown";
+      const err = AuthenticationError.inactive(tokenSub, req.path);
+      return next(err);
     }
     next();
   };

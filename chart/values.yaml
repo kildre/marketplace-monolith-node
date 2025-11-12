@@ -248,11 +248,12 @@ secret:
           APPROVED_API_CALLERS: 'https://{{ $.Values.ingress.domain }} https://advana-marketplace.dev.mtt.cdao.us'
           REACT_APP_API_ENDPOINT: 'https://{{ $.Values.ingress.domain }}/api'
           REACT_APP_HIDE_LOGOUT_BUTTON: 'true'
-          KEYCLOAK_BASE_URL: "http://kubernetes.docker.internal:8083"
+          KEYCLOAK_BASE_URL: "https://kubernetes.docker.internal:8083"
           KEYCLOAK_REALM: "marketplace"
           KEYCLOAK_CLIENT_ID: "marketplace-be"
           KEYCLOAK_CLIENT_SECRET: "fillme"
           MARKETPLACE_ADJUDICATOR_ROLE: "marketplace-approver"
+          MARKETPLACE_REQUESTOR_ROLE: "marketplace-requestor"
           INTROSPECT_AUTH: basic
           INTROSPECT_RETRY: true
           INTROSPECT_TIMEOUT_MS: 5000

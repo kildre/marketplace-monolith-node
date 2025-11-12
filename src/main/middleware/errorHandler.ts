@@ -3,6 +3,8 @@ import { ValidationError } from "class-validator";
 import ErrorDto from "../web/dtos/ErrorDto";
 import logger from "../service/loggingService";
 import ConstraintError from "../domain/errors/ConstraintError";
+import { AuthenticationError } from "../domain/errors/AuthenticationError";
+import { UnauthorizedUserError } from "../domain/errors/UnauthorizedUserError";
 
 /**
  * Recursively extract all validation error messages from ValidationError tree
@@ -37,6 +39,18 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
+  // Handle AuthenticationError with its custom response format
+  if (err instanceof AuthenticationError) {
+    logger.error(`[AUTH_ERROR] ${err.toLogMessage()}`);
+    return res.status(err.status || 401).json(err.toClientResponse());
+  }
+
+  // Handle UnauthorizedUserError with its custom response format
+  if (err instanceof UnauthorizedUserError) {
+    logger.warn(`[AUTHZ_ERROR] ${err.toLogMessage()}`);
+    return res.status(err.status || 403).json(err.toClientResponse());
+  }
+
   const statusCode = (err as any).status || 500;
   const errorClass = err.name || "Error";
   let errMsg = `${errorClass}: ${err.message}`;
