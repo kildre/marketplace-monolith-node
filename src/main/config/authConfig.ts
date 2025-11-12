@@ -3,6 +3,7 @@ import fetch from "node-fetch";
 import * as https from "https";
 import * as crypto from "crypto";
 import log from "../service/loggingService";
+import { AuthenticationError } from "../domain/errors/AuthenticationError";
 
 // ───────────────────────── Env & constants ─────────────────────────
 const ADJ_ROLE = (process.env.MARKETPLACE_ADJUDICATOR_ROLE || "").trim();
@@ -79,7 +80,7 @@ function getCache(token: string): IntrospectionResult | undefined {
   return undefined;
 }
 
-setInterval(() => {
+function cleanupCache(): void {
   const now = Math.floor(Date.now() / 1000);
   let cleaned = 0;
   for (const [key, entry] of cache.entries()) {
@@ -91,7 +92,14 @@ setInterval(() => {
   if (cleaned > 0) {
     log.debug(`[CACHE] Cleaned ${cleaned} expired entries, size: ${cache.size}`);
   }
-}, 60_000);
+}
+
+const cacheCleanupInterval = setInterval(cleanupCache, 60_000);
+
+// Allow the process to exit even if the interval is still scheduled (useful for Jest tests)
+if (typeof (cacheCleanupInterval as any)?.unref === "function") {
+  (cacheCleanupInterval as any).unref();
+}
 
 // ───────────────────────── Types ─────────────────────────
 export interface IntrospectionResult {
@@ -110,12 +118,6 @@ export interface IntrospectionResult {
   username?: string;
   realm_access?: { roles: string[] };
   resource_access?: Record<string, { roles: string[] }>;
-}
-
-export interface ErrorResponse {
-  error: string;
-  code?: string;
-  details?: unknown;
 }
 
 // Extend Express Request type
@@ -137,19 +139,29 @@ function rolesFromPayload(p: IntrospectionResult): string[] {
   return [...rr, ...cr];
 }
 
-function basicChecks(payload: IntrospectionResult, expectedAudience?: string): boolean {
+function basicChecks(payload: IntrospectionResult, expectedAudience?: string, tokenHash?: string): void {
   const now = Math.floor(Date.now() / 1000);
 
   // not-before
   if (typeof payload.nbf === "number" && now < payload.nbf) {
     log.warn(`[AUTH_VALIDATION] Token not-before check failed: sub=${payload.sub}, nbf=${payload.nbf}, now=${now}`);
-    return false;
+    throw AuthenticationError.notYetValid(
+      payload.sub || "unknown",
+      payload.nbf,
+      now,
+      tokenHash
+    );
   }
 
   // expiration
   if (typeof payload.exp === "number" && payload.exp <= now) {
     log.warn(`[AUTH_VALIDATION] Token expiration check failed: sub=${payload.sub}, exp=${payload.exp}, now=${now}`);
-    return false;
+    throw AuthenticationError.expired(
+      payload.sub || "unknown",
+      payload.exp,
+      now,
+      tokenHash
+    );
   }
 
   // issuer
@@ -157,7 +169,12 @@ function basicChecks(payload: IntrospectionResult, expectedAudience?: string): b
     const expectedIssuer = `${KEYCLOAK_BASE_URL.replace(/\/+$/, "")}/realms/${KEYCLOAK_REALM}`;
     if (payload.iss && payload.iss !== expectedIssuer) {
       log.error(`[AUTH_VALIDATION] Issuer validation failed: sub=${payload.sub}, got="${payload.iss}", expected="${expectedIssuer}"`);
-      return false;
+      throw AuthenticationError.invalidIssuer(
+        payload.sub || "unknown",
+        payload.iss,
+        expectedIssuer,
+        tokenHash
+      );
     }
   }
 
@@ -166,12 +183,16 @@ function basicChecks(payload: IntrospectionResult, expectedAudience?: string): b
     const audArr = Array.isArray(payload.aud) ? payload.aud : [payload.aud].filter(Boolean);
     if (!audArr.includes(expectedAudience)) {
       log.error(`[AUTH_VALIDATION] Audience validation failed: sub=${payload.sub}, aud=${JSON.stringify(audArr)}, expected="${expectedAudience}"`);
-      return false;
+      throw AuthenticationError.invalidAudience(
+        payload.sub || "unknown",
+        payload.aud || [],
+        expectedAudience,
+        tokenHash
+      );
     }
   }
 
   log.info(`[AUTH_VALIDATION] Token validation passed: sub=${payload.sub}, azp=${payload.azp}, iss=${payload.iss}`);
-  return true;
 }
 
 function logRoles(payload: IntrospectionResult & { roles?: string[] }): void {
@@ -302,8 +323,9 @@ export function keycloakIntrospectMiddleware(required = true) {
       if (!token) {
         if (required) {
           log.warn(`[AUTH_ATTEMPT] Authentication required but no token provided: path=${req.path}, method=${req.method}, ip=${req.ip}`);
-          const error: ErrorResponse = { error: "Missing token", code: "NO_TOKEN" };
-          return res.status(401).json(error);
+          const error = AuthenticationError.missingToken(req.path, req.method, req.ip);
+          log.warn(error.toLogMessage());
+          return next(error);
         }
         log.info(`[AUTH_ATTEMPT] No token provided, but not required: path=${req.path}, method=${req.method}`);
         return next();
@@ -318,18 +340,25 @@ export function keycloakIntrospectMiddleware(required = true) {
         log.info(`[AUTH_SUCCESS] Cache hit: sub=${cached.sub}, azp=${cached.azp}, latency=${Date.now() - startTime}ms, path=${req.path}`);
         if (required && cached.active === false) {
           log.warn(`[AUTH_FAILURE] Cached token inactive: sub=${cached.sub}, path=${req.path}`);
-          const error: ErrorResponse = { error: "Token inactive", code: "INACTIVE_TOKEN" };
-          return res.status(401).json(error);
+          const error = AuthenticationError.inactive(cached.sub || "unknown", req.path, tokenHash);
+          log.warn(error.toLogMessage());
+          return next(error);
         }
-        if (!basicChecks(cached, EXPECTED_AUDIENCE)) {
-          log.warn(`[AUTH_FAILURE] Cached token validation failed: sub=${cached.sub}, path=${req.path}`);
-          const error: ErrorResponse = { error: "Token check failed", code: "VALIDATION_FAILED" };
-          return res.status(403).json(error);
+        
+        try {
+          basicChecks(cached, EXPECTED_AUDIENCE, tokenHash);
+        } catch (error) {
+          if (error instanceof AuthenticationError) {
+            log.warn(`[AUTH_FAILURE] Cached token validation failed: ${error.toLogMessage()}`);
+            return next(error);
+          }
+          throw error; // Re-throw if not AuthenticationError
         }
+        
         req.auth = cached as IntrospectionResult & { roles?: string[] };
         logRoles(req.auth);
         return next();
-      } // ← MISSING BRACE FIXED
+      } 
 
       log.info(`[AUTH_ATTEMPT] Cache miss, introspecting with Keycloak: tokenHash=${tokenHash}, path=${req.path}`);
 
@@ -352,12 +381,9 @@ export function keycloakIntrospectMiddleware(required = true) {
         log.error(
           `[AUTH_FAILURE] Keycloak introspection failed: status=${resp.status}, latency=${latency}ms, path=${req.path}, response_preview=${text?.slice(0, 200) ?? ""}`
         );
-        const error: ErrorResponse = {
-          error: "Introspection failed",
-          code: "INTROSPECTION_ERROR",
-          details: { status: resp.status },
-        };
-        return res.status(401).json(error);
+        const error = AuthenticationError.introspectionFailed(resp.status, text?.slice(0, 200) ?? "", req.path, tokenHash);
+        log.error(error.toLogMessage());
+        return next(error);
       }
 
       const payload = (await resp.json()) as IntrospectionResult;
@@ -365,13 +391,19 @@ export function keycloakIntrospectMiddleware(required = true) {
 
       if (required && payload.active === false) {
         log.warn(`[AUTH_FAILURE] Introspected token inactive: sub=${payload.sub}, path=${req.path}`);
-        const error: ErrorResponse = { error: "Token inactive", code: "INACTIVE_TOKEN" };
-        return res.status(401).json(error);
+        const error = AuthenticationError.inactive(payload.sub || "unknown", req.path, tokenHash);
+        log.warn(error.toLogMessage());
+        return next(error);
       }
-      if (!basicChecks(payload, EXPECTED_AUDIENCE)) {
-        log.warn(`[AUTH_FAILURE] Introspected token validation failed: sub=${payload.sub}, path=${req.path}`);
-        const error: ErrorResponse = { error: "Token check failed", code: "VALIDATION_FAILED" };
-        return res.status(403).json(error);
+      
+      try {
+        basicChecks(payload, EXPECTED_AUDIENCE, tokenHash);
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          log.warn(`[AUTH_FAILURE] Introspected token validation failed: ${error.toLogMessage()}`);
+          return next(error);
+        }
+        throw error; // Re-throw if not AuthenticationError
       }
 
       putCache(token, payload);
@@ -381,15 +413,26 @@ export function keycloakIntrospectMiddleware(required = true) {
       return next();
     } catch (err: any) {
       const latency = Date.now() - startTime;
+      
+      // Handle AuthenticationError instances that might be re-thrown
+      if (err instanceof AuthenticationError) {
+        log.error(
+          `[AUTH_ERROR] Authentication error: latency=${latency}ms, ${err.toLogMessage()}`
+        );
+        return next(err);
+      }
+      
+      // Handle all other exceptions as internal errors
       log.error(
         `[AUTH_ERROR] Authentication exception: latency=${latency}ms, path=${req.path}, method=${req.method}, error=${err?.message || String(err)}, stack=${err?.stack?.slice(0, 200)}`
       );
-      const error: ErrorResponse = {
-        error: "Introspection exception",
-        code: "INTERNAL_ERROR",
-        details: process.env.NODE_ENV === "development" ? err?.message : undefined,
-      };
-      return res.status(500).json(error);
+      const error = AuthenticationError.internalError(
+        err?.message || String(err),
+        req.path,
+        req.method,
+        err
+      );
+      return next(error);
     }
   };
 }
