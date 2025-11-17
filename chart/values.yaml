@@ -202,9 +202,7 @@ secret:
           # define which migration file to revert to
           APP_MIGRATION_FILE: ''
       'secret-env-db-postgresql':
-        data:
-          SECRET_ENV_POSTGRESQL: 'postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require'
-          DIALECT: 'postgres'
+        data: {}
 
       'public-env-platform-ui':
         data:
