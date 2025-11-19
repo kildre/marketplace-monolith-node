@@ -1,2 +1,4 @@
 chart/values.yaml
 chart/secrets.yaml
+chart\values.yaml
+chart\secrets.yaml
