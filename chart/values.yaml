@@ -202,8 +202,9 @@ secret:
           # define which migration file to revert to
           APP_MIGRATION_FILE: ''
       'secret-env-db-postgresql':
-        data: {}
-
+        data:
+          SECRET_ENV_POSTGRESQL: 'postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require'
+          DIALECT: 'postgres'
       'public-env-platform-ui':
         data:
           REACT_APP_NODE_ENV: 'nipr' # nipr, sipr or jwics
