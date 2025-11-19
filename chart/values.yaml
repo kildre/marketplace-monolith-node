@@ -66,6 +66,9 @@ deployment:
       # maxUnavailable: "50%"
     podAnnotations:
       iam.amazonaws.com/role: aws-role-arn
+      prometheus.io/scrape: "true"
+      prometheus.io/path: "/metrics"
+      prometheus.io/port: "8082"
     serviceAccountName: '{{ $.Release.Name }}'
 
     container:
@@ -201,11 +204,6 @@ secret:
           PG_APP_DUMP_FILE: ''
           # define which migration file to revert to
           APP_MIGRATION_FILE: ''
-      'secret-env-db-postgresql':
-        data:
-          SECRET_ENV_POSTGRESQL: 'postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require'
-          DIALECT: 'postgres'
-
       'public-env-platform-ui':
         data:
           REACT_APP_NODE_ENV: 'nipr' # nipr, sipr or jwics
@@ -241,6 +239,7 @@ secret:
           EXPRESS_PORT: '8082'
           SECURE_SESSION: 'true'
           NODE_ENV: 'production'
+          OTLP_ENDPOINT: 'otel-collector-splunk-otel-collector.otel-collector.svc.cluster.local:4317'
           #TLS_CERT_CA_FILEPATH: '/etc/ssl/certs/ca-bundle.crt'
           #TLS_CERT_FILEPATH: '/etc/pki/tls/certs/tls.crt'
           #TLS_KEY_FILEPATH: '/etc/pki/tls/private/tls.key'
@@ -257,6 +256,10 @@ secret:
           INTROSPECT_AUTH: basic
           INTROSPECT_RETRY: true
           INTROSPECT_TIMEOUT_MS: 5000
+      'secret-env-db-postgresql':
+        data:
+          SECRET_ENV_POSTGRESQL: 'postgresql://uot-jqggp-ks8vx:OY3qrFMX40ipgP5JkvJjfT1q8Bb@uot-jqggp-xmc47.coboi2otdxqo.us-gov-west-1.rds.amazonaws.com:5432/uot?sslmode=require'
+          DIALECT: 'postgres'
   ingress:      
     tls:
         'advana-marketplace-monolith-node.dev.mtt.cdao.us':

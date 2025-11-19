@@ -1,5 +1,4 @@
 chart/values.yaml
-# Ignore local development database credentials
-# docker-compose.yml:17
-# docker-compose.yml:19
-# docker-compose.yml
+chart/secrets.yaml
+chart\values.yaml
+chart\secrets.yaml
