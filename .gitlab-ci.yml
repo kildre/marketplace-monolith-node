@@ -4,6 +4,12 @@ include:
     # file: routes/terraform-only.yml
     # file: routes/terraform-bundle-only.yml
 
+stages:
+  - .pre
+  - pipeline-trigger
+  - deploy
+  - .post
+
 variables:
   HELM_CHART_DIR: "./chart"
   DOCKERFILE_PATH: "./Dockerfile.distroless"
@@ -15,3 +21,15 @@ variables:
   AUTO_APPLY: "false" # default to auto apply
   ENABLE_TF_BUNDLE_WORKFLOW: "false" # set to true for terraform bundle pipeline runs
   TF_DIR: "."
+
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp docs/index.html public/
+    - cp docs/APIcontract.yaml public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main

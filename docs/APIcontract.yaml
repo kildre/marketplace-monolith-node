@@ -1,0 +1,690 @@
+openapi: 3.1.0
+info:
+  title: "Marketplace \u2013 ServiceNow API"
+  version: 1.0.0
+  description: 'API contract for Marketplace backend integration with ServiceNow tables:
+    alm_license, u_request, and u_request_comment.
+
+    '
+servers:
+- url: https://api.marketplace.example.com
+  description: Marketplace API (mock or real)
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Product:
+      type: object
+      required:
+      - id
+      - name
+      - type
+      - price
+      - unit_cost
+      - cartStatus
+      - inCart
+      - currentlyInCart
+      properties:
+        id:
+          type: string
+          description: Unique record ID (SNOW sys_id)
+        name:
+          type: string
+          description: License name (u_license_name)
+        type:
+          type: string
+          description: License type (u_license_type)
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: double
+        unit_cost:
+          type: number
+          format: double
+          description: Equal to price in SNOW
+        rom:
+          type: number
+          format: double
+          nullable: true
+        cartStatus:
+          type: string
+          description: Availability in cart
+        inCart:
+          type: boolean
+        currentlyInCart:
+          type: integer
+          minimum: 0
+    CartItem:
+      type: object
+      required:
+      - id
+      - quantity
+      properties:
+        id:
+          type: string
+          description: Product ID (sys_id from alm_license)
+        quantity:
+          type: integer
+          minimum: 1
+    Request:
+      type: object
+      required:
+      - id
+      - requestNumber
+      - requestorEmail
+      - requestedToolName
+      - status
+      - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique request record ID (sys_id)
+        requestNumber:
+          type: string
+          description: Request number (u_request_number)
+        requestorEmail:
+          type: string
+          format: email
+        designation:
+          type: string
+          nullable: true
+        agency:
+          type: string
+          nullable: true
+        organization:
+          type: string
+          nullable: true
+        otherOrganization:
+          type: string
+          nullable: true
+        pointOfContact:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        phoneNumber:
+          type: string
+          nullable: true
+        estimatedRom:
+          type: number
+          format: double
+          nullable: true
+        requestedToolName:
+          type: string
+        description:
+          type: string
+          nullable: true
+        cartItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        status:
+          type: string
+          description: Current request status (Pending, Approved, Denied, etc.)
+        approver:
+          type: string
+          nullable: true
+          description: Approver email or name
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    RequestCreate:
+      type: object
+      required:
+      - requestorEmail
+      - pointOfContact
+      - email
+      - requestedToolName
+      - cartItems
+      properties:
+        requestorEmail:
+          type: string
+          format: email
+        designation:
+          type: string
+          nullable: true
+        agency:
+          type: string
+          nullable: true
+        organization:
+          type: string
+          nullable: true
+        otherOrganization:
+          type: string
+          nullable: true
+        pointOfContact:
+          type: string
+        email:
+          type: string
+          format: email
+        phoneNumber:
+          type: string
+          nullable: true
+        estimatedRom:
+          type: number
+          format: double
+          nullable: true
+        requestedToolName:
+          type: string
+        description:
+          type: string
+          nullable: true
+        cartItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+    RequestUpdate:
+      type: object
+      required:
+      - status
+      - updatedBy
+      properties:
+        status:
+          type: string
+        approver:
+          type: string
+          nullable: true
+        comments:
+          type: string
+          nullable: true
+        updatedBy:
+          type: string
+          description: Email or username of user performing update
+    Comment:
+      type: object
+      required:
+      - id
+      - requestId
+      - comment
+      - commentedBy
+      - commentedAt
+      properties:
+        id:
+          type: string
+          description: Unique comment record ID (sys_id)
+        requestId:
+          type: string
+          description: Related request ID (u_request)
+        comment:
+          type: string
+        commentedBy:
+          type: string
+        commentedAt:
+          type: string
+          format: date-time
+    CommentCreate:
+      type: object
+      required:
+      - comment
+      - commentedBy
+      properties:
+        comment:
+          type: string
+        commentedBy:
+          type: string
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          maxLength: 128
+        message:
+          type: string
+          maxLength: 2048
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        priority:
+          type: object
+          properties:
+            label:
+              type: string
+              enum:
+              - high
+              - medium
+              - low
+            value:
+              type: integer
+              enum:
+              - 1
+              - 2
+              - 3
+          required:
+          - label
+          - value
+      required:
+      - id
+      - title
+      - message
+      - read
+      - createdAt
+      - priority
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          description: Payload
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+security:
+- bearerAuth: []
+paths:
+  /products:
+    get:
+      summary: Get products
+      description: Retrieve list of available products (from alm_license).
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Product'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /requests:
+    post:
+      summary: Submit request
+      description: "Create a new request (u_request \u2013 POST)."
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCreate'
+      responses:
+        '201':
+          description: Request created
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Request'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: View requests
+      description: Retrieve a list of requests for the authenticated user (or all
+        if approver).
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: role
+        in: query
+        schema:
+          type: string
+          description: requestor or approver (optional hint for backend)
+      responses:
+        '200':
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Request'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /requests/{id}:
+    patch:
+      summary: Update request
+      description: "Update request status/details (u_request \u2013 PATCH). Typically\
+        \ approver-only."
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestUpdate'
+      responses:
+        '200':
+          description: Request updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Request'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (role not allowed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /requests/{id}/comments:
+    get:
+      summary: Get comments for a request
+      description: "Retrieve comment history (u_request_comment \u2013 GET)."
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Comment list
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Comment'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Add comment to request
+      description: "Add notes/comments to a request (u_request_comment \u2013 POST)."
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Comment'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /notifications:
+    get:
+      summary: Get notifications
+      description: Retrieve notifications for currently authenticated user.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Notification'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/session/register:
+    post:
+      summary: Register session and store Keycloak token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId:
+                  type: string
+              required:
+              - sessionId
+      responses:
+        '200':
+          description: OK
+  /api/session/{sessionId}:
+    get:
+      summary: Get Keycloak token for session
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+  /api/session/expire:
+    post:
+      summary: Expire session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId:
+                  type: string
+              required:
+              - sessionId
+      responses:
+        '200':
+          description: OK
+  /api/notifications:
+    get:
+      summary: List notifications
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+  /api/notifications/read:
+    patch:
+      summary: Mark notification read
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                read:
+                  type: boolean
+              required:
+              - id
+              - read
+      responses:
+        '200':
+          description: OK
+  /api/notifications/hidden:
+    patch:
+      summary: Hide/unhide notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                hidden:
+                  type: boolean
+              required:
+              - id
+              - hidden
+      responses:
+        '200':
+          description: OK
