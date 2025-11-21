@@ -15,3 +15,15 @@ variables:
   AUTO_APPLY: "false" # default to auto apply
   ENABLE_TF_BUNDLE_WORKFLOW: "false" # set to true for terraform bundle pipeline runs
   TF_DIR: "."
+
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp docs/index.html public/
+    - cp docs/APIcontract.yaml public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
