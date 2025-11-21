@@ -4,6 +4,12 @@ include:
     # file: routes/terraform-only.yml
     # file: routes/terraform-bundle-only.yml
 
+stages:
+  - .pre
+  - pipeline-trigger
+  - deploy
+  - .post
+
 variables:
   HELM_CHART_DIR: "./chart"
   DOCKERFILE_PATH: "./Dockerfile.distroless"
