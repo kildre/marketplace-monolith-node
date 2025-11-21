@@ -28,7 +28,7 @@ const isAuthorizedAdjudicator = async (
   const normalizedEmail = request.userEmail?.trim().toLowerCase() || '';
 
   try {
-    const token = getAuthToken(req);
+    const token = await getAuthToken(req);
     if (!token) {
       return new RoleCheckResponseDto({ hasRole: false });
     }
@@ -47,7 +47,7 @@ const isAuthorizedRequestor = async (
   const normalizedEmail = request.userEmail?.trim().toLowerCase() || '';
 
   try {
-    const token = getAuthToken(req);
+    const token = await getAuthToken(req);
     if (!token) {
       return new RoleCheckResponseDto({ hasRole: false });
     }

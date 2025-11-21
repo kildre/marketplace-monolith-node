@@ -18,6 +18,7 @@ const rootRouter = express.Router();
  */
 
 rootRouter.get("/", renderIndex);
+
 // Test error routes
 rootRouter.get("/test-error", throwTestError);
 rootRouter.get("/test-constraint-error", throwConstraintError);
