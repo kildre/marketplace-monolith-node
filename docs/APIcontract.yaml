@@ -308,7 +308,7 @@ components:
 security:
 - bearerAuth: []
 paths:
-  /products:
+  /api/products:
     get:
       summary: Get products
       description: Retrieve list of available products (from alm_license).
@@ -345,10 +345,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /requests:
+  
+  /api/requests:
     post:
       summary: Submit request
-      description: "Create a new request (u_request \u2013 POST)."
+      description: Create a new use case request.
       security:
       - bearerAuth: []
       requestBody:
@@ -381,25 +382,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-    get:
-      summary: View requests
-      description: Retrieve a list of requests for the authenticated user (or all
-        if approver).
+  
+  /api/requests/viewAll:
+    post:
+      summary: View all requests
+      description: View all use case requests (adjudicator only).
       security:
       - bearerAuth: []
-      parameters:
-      - name: status
-        in: query
-        schema:
-          type: string
-      - name: role
-        in: query
-        schema:
-          type: string
-          description: requestor or approver (optional hint for backend)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
       responses:
         '200':
-          description: List of requests
+          description: List of all requests
           content:
             application/json:
               schema:
@@ -417,7 +416,133 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /requests/{id}:
+        '403':
+          description: Forbidden - Adjudicator role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/requests/viewPending:
+    post:
+      summary: View pending requests
+      description: View all pending requests (adjudicator only).
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: List of pending requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Request'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Adjudicator role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/requests/viewForRequestor:
+    post:
+      summary: View requests for requestor
+      description: View all requests submitted by the requestor.
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requestorEmail:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: List of requestor's requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Request'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/requests/viewForRequestNumber:
+    post:
+      summary: View request by request number
+      description: View a specific request by request number.
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requestNumber:
+                  type: string
+              required:
+              - requestNumber
+      responses:
+        '200':
+          description: Request details
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Request'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/requests/{id}:
     patch:
       summary: Update request
       description: "Update request status/details (u_request \u2013 PATCH). Typically\
@@ -472,7 +597,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /requests/{id}/comments:
+  /api/requests/{id}/comments:
     get:
       summary: Get comments for a request
       description: "Retrieve comment history (u_request_comment \u2013 GET)."
@@ -688,3 +813,105 @@ paths:
       responses:
         '200':
           description: OK
+  
+  /api/decisions:
+    post:
+      summary: Submit decision
+      description: Submit a decision for a use case request (adjudicator only).
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requestId:
+                  type: string
+                  description: ID of the request being decided on
+                decision:
+                  type: string
+                  enum: [Approved, Denied]
+                  description: The decision (Approved or Denied)
+                comments:
+                  type: string
+                  nullable: true
+                  description: Optional decision comments
+              required:
+              - requestId
+              - decision
+      responses:
+        '201':
+          description: Decision created
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      description: Decision details
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Adjudicator role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/report/summary:
+    get:
+      summary: Retrieve marketplace summary
+      description: Retrieve marketplace summary with key totals (adjudicator only).
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Summary report
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        totalRequests:
+                          type: integer
+                        pendingRequests:
+                          type: integer
+                        approvedRequests:
+                          type: integer
+                        deniedRequests:
+                          type: integer
+                        totalEstimatedROM:
+                          type: number
+                          format: double
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Adjudicator role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
