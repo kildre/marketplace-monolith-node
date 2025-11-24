@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: ServiceNow Tables Mock API (SNOW-shaped)
+  version: 1.0.0
+  description: >
+    Mockable, SNOW-shaped API contract for Marketplace integration.
+    Uses ServiceNow-style envelopes `{ result: ... }`, snake_case fields,
+    and common sysparm_* query params. Tables covered: alm_license,
+    cmdb_software_model, u_requests (u_mp_request), u_request_comment,
+    decisions (u_mp_decision), users/isAuthorizedAdjudicator, and a
+    summary/report endpoint.
+
+servers:
+  - url: https://{instance}.service-now.com
+    variables:
+      instance:
+        default: dev12345
+
+# (truncated for brevity; full YAML same as prior response)

@@ -26,8 +26,8 @@ pages:
   stage: deploy
   script:
     - mkdir -p public
-    - cp docs/index.html public/
-    - cp docs/APIcontract.yaml public/
+    - cp docs/*.html public/
+    - cp docs/*.yaml public/
   artifacts:
     paths:
       - public
