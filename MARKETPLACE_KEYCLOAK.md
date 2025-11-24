@@ -92,10 +92,6 @@ These Keycloak artifacts (realm, roles, users or AD federation) should be provis
   - Ensure `openid` scope is enabled for all clients that perform OIDC flows.
   - Configure protocol mappers if you need custom claims (e.g., email).
 
-- Service account / machine-to-machine usage
-  - For backend-to-Keycloak calls (introspection, admin requests), use the `marketplace-api` service account or a separate confidential client with least privilege.
-  - Store client secrets in a secure secret store (e.g., Azure Key Vault, AWS Secrets Manager).
-
 - Operational prerequisites
   - Network access: backend must reach Keycloak base URL (consider firewall/NAT)
   - TLS: use HTTPS for Keycloak in non-development environments
@@ -129,7 +125,8 @@ These Keycloak artifacts (realm, roles, users or AD federation) should be provis
 
   # Development/Testing Flags
   KEYCLOAK_BYPASS_AUTH=false                       # NEVER set to true in production
-  NODE_ENV=development                             # Set to 'production' in prod
+  NODE_ENV=development      
+  USE_CLIENT_SESSION_STORAGE=true                  # Set to true to cache bearer token in the backend
   ```
 
   ### Backend Dependencies
@@ -142,29 +139,85 @@ These Keycloak artifacts (realm, roles, users or AD federation) should be provis
 ### Backend Authentication Middleware
 The backend uses a centralized authentication middleware (`authConfig.ts`) that:
 1. Extracts bearer token from `Authorization` header
-2. Checks local LRU cache for previously validated tokens
-3. Introspects token with Keycloak if not cached or expired
-4. Validates token claims (active, issuer, audience, expiration, not-before)
-5. Caches successful introspection results
-6. Attaches user identity and roles to `req.auth` for downstream use
-7. Throws `AuthenticationError` (401) for validation failures
-8. Routes errors through centralized `errorHandler` middleware
+2. Based on backend token storage setting, treat token as sessionId or keycloak token. If sessionId, retrieve keycloak token from the database.
+3. Checks local LRU cache for previously validated tokens
+4. Introspects token with Keycloak if not cached or expired
+5. Validates token claims (active, issuer, audience, expiration, not-before)
+6. Caches successful introspection results
+7. Attaches user identity and roles to `req.auth` for downstream use
+8. Throws `AuthenticationError` (401) for validation failures
+9. Routes errors through centralized `errorHandler` middleware
+
+### Client Session Storage (Token Caching)
+
+**Environment Variable**: `USE_CLIENT_SESSION_STORAGE`
+
+#### Purpose
+When `USE_CLIENT_SESSION_STORAGE=true`, the backend stores complete Keycloak token metadata in the PostgreSQL database (`session_tokens` table) and uses a **session ID** as the bearer token instead of sending the actual Keycloak access token on every request. 
+
+#### How It Works
+1. **Registration** (`POST /api/session/register`)
+   - Frontend obtains access token from Keycloak via OIDC flow.
+   - Frontend sends `{ sessionId, refreshToken <optional> }` with access token in `Authorization: Bearer <token>` header.
+   - Backend introspects token, extracts claims (sub, roles, exp), and stores in `session_tokens` table.
+   - Returns `{ sessionId, stored: true }` to frontend.
+
+2. **Subsequent Requests**
+   - Frontend sends `Authorization: Bearer <sessionId>` (not the JWT).
+   - Backend middleware (`getAuthToken`) looks up session ID in database.
+   - Retrieves stored access token and uses it for Keycloak introspection/validation.
+   - Updates `last_used_at` timestamp on successful retrieval.
+
+3. **Session Status** (`GET /api/session/:sessionId`)
+   - Public endpoint to check if session exists and retrieve token metadata.
+   - Returns active or expired session details.
+
+4. **Session Expiration** (`POST /api/session/expire`)
+   - Public endpoint to delete session and its stored tokens.
+   - Hard-deletes session record from database.
+
+#### Configuration
+```bash
+# Enable client session storage (default: false)
+USE_CLIENT_SESSION_STORAGE=true
+
+```
+
+#### Data Model
+The `session_tokens` table stores:
+- `session_id` – Unique identifier (UUID) used as bearer token
+- `access_token` – Keycloak access token (TEXT)
+- `refresh_token` – Optional refresh token (TEXT, nullable)
+- `keycloak_user_id` – Keycloak subject ID (UUID from `sub` claim)
+- `username` – Preferred username from token
+- `realm_roles` – Array of realm-level roles
+- `resource_roles` – JSONB object of client-specific roles
+- `token_exp` – Token expiration timestamp (DATE)
+- `last_used_at` – Last access timestamp (DATE, nullable)
+- `revoked_at` – Soft revocation timestamp (DATE, nullable)
+
+#### When to Use
+- **Enable** (`true`) for:
+  - Production deployments with high traffic
+  - Mobile apps with bandwidth constraints
+  - Applications requiring immediate token revocation
+  - Compliance requirements for centralized audit logs
+
+- **Disable** (`false`) for:
+  - Simple deployments without session management needs
+  - Stateless microservices architectures
+  - Development/testing environments without PostgreSQL
+
+#### Security Considerations
+- Session IDs should be generated with cryptographically secure randomness (e.g., UUIDv4).
+- Access tokens are stored in plaintext in the database; consider encryption at rest for production.
+- Session expiration cleanup (`cleanupExpiredSessions`) should run periodically via cron/scheduler.
+- Database backups must follow same security policies as token storage (encrypted, access-controlled).
 
 ### Error Handling
 The backend implements structured error handling with two main error categories:
 
-**Authentication Errors (401)** – `AuthenticationError` with 10 error codes:
-- `MISSING_TOKEN` – No bearer token provided
-- `INVALID_TOKEN_FORMAT` – Malformed token
-- `TOKEN_EXPIRED` – Token past expiration time
-- `TOKEN_NOT_YET_VALID` – Token before valid time (nbf)
-- `TOKEN_INACTIVE` – Token marked inactive by introspection
-- `INVALID_ISSUER` – Token issuer mismatch
-- `INVALID_AUDIENCE` – Token audience mismatch
-- `INTROSPECTION_FAILED` – Keycloak introspection HTTP error
-- `INTROSPECTION_ERROR` – Network or client error during introspection
-- `INTERNAL_ERROR` – Internal authentication processing error
-
+**Authentication Errors (401)** – `AuthenticationError` 
 **Authorization Errors (403)** – `UnauthorizedUserError` and subclasses:
 - `UnauthorizedUserError` – Base class for authorization denials
 - `UnauthorizedAdjudicatorError` – User lacks adjudicator/approver role
