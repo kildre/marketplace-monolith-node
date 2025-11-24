@@ -4,11 +4,10 @@ info:
   version: 1.0.0
   description: >
     Mockable, SNOW-shaped API contract for Marketplace integration.
-    Uses ServiceNow-style envelopes `{ result: ... }`, snake_case fields,
+    Uses ServiceNow-style envelopes "{ result: ... }", snake_case fields,
     and common sysparm_* query params. Tables covered: alm_license,
     cmdb_software_model, u_requests (u_mp_request), u_request_comment,
-    decisions (u_mp_decision), users/isAuthorizedAdjudicator, and a
-    summary/report endpoint.
+    u_mp_decision, users/isAuthorizedAdjudicator, and a summary/report endpoint.
 
 servers:
   - url: https://{instance}.service-now.com
@@ -16,4 +15,837 @@ servers:
       instance:
         default: dev12345
 
-# (truncated for brevity; full YAML same as prior response)
+security:
+  - basicAuth: []
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+  parameters:
+    sysparm_query:
+      name: sysparm_query
+      in: query
+      required: false
+      schema:
+        type: string
+      description: SNOW encoded query (e.g., "u_status=Pending^ORDERBYDESCu_created_on").
+    sysparm_fields:
+      name: sysparm_fields
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Comma-separated list of fields to return.
+    sysparm_limit:
+      name: sysparm_limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 50
+      description: Maximum number of records to return.
+    sysparm_offset:
+      name: sysparm_offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Record index to start at (for pagination).
+    sysparm_display_value:
+      name: sysparm_display_value
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ["true", "false", "all"]
+      description: Return display values instead of raw values.
+
+  schemas:
+    EnvelopeList:
+      type: object
+      properties:
+        result:
+          type: array
+          items: {}
+      required:
+        - result
+
+    EnvelopeObject:
+      type: object
+      properties:
+        result: {}
+      required:
+        - result
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            detail:
+              type: string
+          required:
+            - message
+          additionalProperties: true
+        status:
+          type: integer
+      required:
+        - error
+        - status
+
+    alm_license:
+      type: object
+      description: ServiceNow alm_license table record.
+      required:
+        - sys_id
+        - u_license_name
+        - u_license_type
+        - u_price
+        - u_unit_cost
+      properties:
+        sys_id:
+          type: string
+          description: Unique record ID.
+        u_license_name:
+          type: string
+          description: License name.
+        u_license_type:
+          type: string
+          description: License type (e.g., "License Based").
+        software_model:
+          type: string
+          nullable: true
+          description: sys_id of cmdb_software_model.
+        u_description:
+          type: string
+          nullable: true
+          description: Optional description (may be hydrated from cmdb_software_model.short_description).
+        u_price:
+          type: number
+          format: double
+          description: Price per license.
+        u_unit_cost:
+          type: number
+          format: double
+          description: Equal to price in SNOW.
+        u_rom:
+          type: string
+          nullable: true
+          description: Rough order of magnitude (ROM).
+        u_cart_status:
+          type: string
+          nullable: true
+          description: Availability in cart.
+        u_in_cart:
+          type: boolean
+          nullable: true
+          description: Whether the user currently has this item in their cart.
+        u_currently_in_cart:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Quantity of this license in the current cart.
+
+    cmdb_software_model:
+      type: object
+      description: ServiceNow cmdb_software_model table record.
+      required:
+        - sys_id
+        - name
+      properties:
+        sys_id:
+          type: string
+        name:
+          type: string
+        short_description:
+          type: string
+          nullable: true
+
+    u_requests:
+      type: object
+      description: ServiceNow u_requests / u_mp_request table record.
+      required:
+        - sys_id
+        - u_request_number
+        - u_requestor_email
+        - u_requested_tool_name
+        - u_status
+        - u_created_on
+      properties:
+        sys_id:
+          type: string
+          description: Unique request record ID.
+        u_request_number:
+          type: string
+          description: Request number.
+        u_requestor_email:
+          type: string
+          format: email
+          description: Email of the requestor.
+        u_designation:
+          type: string
+          nullable: true
+          description: Employment type (Civilian, Contractor, etc.).
+        u_agency:
+          type: string
+          nullable: true
+        u_organization:
+          type: string
+          nullable: true
+        u_other_organization:
+          type: string
+          nullable: true
+        u_point_of_contact:
+          type: string
+          nullable: true
+        u_email:
+          type: string
+          format: email
+          nullable: true
+        u_phone_number:
+          type: string
+          nullable: true
+        u_estimated_rom:
+          type: number
+          format: double
+          nullable: true
+          description: Estimated ROM for the request.
+        u_requested_tool_name:
+          type: string
+          description: Name of the requested product/tool.
+        u_description:
+          type: string
+          nullable: true
+          description: Request purpose/justification.
+        u_cart_items:
+          type: array
+          nullable: true
+          description: JSON of cart items submitted with the request.
+          items:
+            type: object
+            properties:
+              license_sys_id:
+                type: string
+              quantity:
+                type: integer
+                minimum: 1
+            required:
+              - license_sys_id
+              - quantity
+        u_status:
+          type: string
+          description: Current status of the request (Pending, Approved, Denied, etc.).
+        u_created_on:
+          type: string
+          format: date-time
+          description: Creation date/time.
+        u_last_updated:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last updated timestamp.
+        u_approver:
+          type: string
+          nullable: true
+          description: Approver's email or name.
+        u_comments:
+          type: string
+          nullable: true
+          description: Approval comments or notes.
+        u_updated_by:
+          type: string
+          nullable: true
+          description: User who updated the record.
+
+    u_request_comment:
+      type: object
+      description: ServiceNow u_request_comment table record.
+      required:
+        - sys_id
+        - u_request
+        - u_comment
+        - u_commented_by
+        - u_commented_on
+      properties:
+        sys_id:
+          type: string
+          description: Unique comment record ID.
+        u_request:
+          type: string
+          description: Related request (foreign key to u_requests.sys_id).
+        u_comment:
+          type: string
+          description: Comment text.
+        u_commented_by:
+          type: string
+          description: Comment author.
+        u_commented_on:
+          type: string
+          format: date-time
+          description: Timestamp of the comment.
+
+    u_mp_decision:
+      type: object
+      description: ServiceNow u_mp_decision table record.
+      required:
+        - sys_id
+        - u_request
+        - u_decision
+        - u_decided_by
+        - u_decided_on
+      properties:
+        sys_id:
+          type: string
+        u_request:
+          type: string
+          description: Foreign key to u_requests.sys_id.
+        u_decision:
+          type: string
+          description: Decision value (Approved, Denied, etc.).
+        u_reason:
+          type: string
+          nullable: true
+          description: Reason for the decision.
+        u_decided_by:
+          type: string
+          description: User who made the decision.
+        u_decided_on:
+          type: string
+          format: date-time
+          description: Timestamp of the decision.
+
+    isAuthorizedAdjudicatorResponse:
+      type: object
+      description: Result object for users/isAuthorizedAdjudicator check.
+      required:
+        - allowed
+      properties:
+        allowed:
+          type: boolean
+          description: Whether the user is an authorized adjudicator.
+        roles:
+          type: array
+          items:
+            type: string
+
+    summary_report:
+      type: object
+      description: Summary report derived from SNOW tables.
+      properties:
+        totals:
+          type: object
+          properties:
+            requests:
+              type: integer
+            items:
+              type: integer
+            estimated_rom_sum:
+              type: number
+              format: double
+        byStatus:
+          type: object
+          additionalProperties:
+            type: integer
+        byApprover:
+          type: object
+          additionalProperties:
+            type: integer
+
+paths:
+
+  /now/table/alm_license:
+    get:
+      summary: List products (alm_license)
+      description: Returns SNOW alm_license rows in an envelope with result array.
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/sysparm_query"
+        - $ref: "#/components/parameters/sysparm_fields"
+        - $ref: "#/components/parameters/sysparm_limit"
+        - $ref: "#/components/parameters/sysparm_offset"
+        - $ref: "#/components/parameters/sysparm_display_value"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+              examples:
+                default:
+                  value:
+                    result:
+                      - sys_id: lic_000000000000000000000001
+                        u_license_name: Advana Viz
+                        u_license_type: License Based
+                        software_model: sm_000000000000000000000001
+                        u_description: ""
+                        u_price: 199
+                        u_unit_cost: 199
+                        u_rom: "$200"
+                        u_cart_status: Available
+                        u_in_cart: false
+                        u_currently_in_cart: 0
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /now/table/cmdb_software_model:
+    get:
+      summary: List software models (cmdb_software_model)
+      description: >
+        Returns SNOW cmdb_software_model rows in an envelope "{ result: [...] }".
+        Useful as a join source for alm_license descriptions.
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/sysparm_query"
+        - $ref: "#/components/parameters/sysparm_fields"
+        - $ref: "#/components/parameters/sysparm_limit"
+        - $ref: "#/components/parameters/sysparm_offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+              examples:
+                default:
+                  value:
+                    result:
+                      - sys_id: sm_000000000000000000000001
+                        name: Advana Viz
+                        short_description: Powerful BI Suite for analytics workloads.
+
+  /now/table/u_requests:
+    get:
+      summary: View requests (u_requests)
+      description: >
+        Returns u_requests (u_mp_request) records. Use sysparm_query to filter
+        by u_status, u_requestor_email, u_request_number, etc.
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/sysparm_query"
+        - $ref: "#/components/parameters/sysparm_fields"
+        - $ref: "#/components/parameters/sysparm_limit"
+        - $ref: "#/components/parameters/sysparm_offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+              examples:
+                pending:
+                  value:
+                    result:
+                      - sys_id: req_000000000000000000000001
+                        u_request_number: MP-00001
+                        u_requestor_email: user.one@agency.mil
+                        u_requested_tool_name: Advana Viz
+                        u_status: Pending
+                        u_created_on: 2025-11-10T15:10:00.000Z
+                        u_last_updated: 2025-11-10T15:10:00.000Z
+                        u_approver: ""
+    post:
+      summary: Create request (u_requests)
+      description: Creates a new u_mp_request record. Returns the created record in an envelope.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                u_requestor_email:
+                  type: string
+                  format: email
+                u_designation:
+                  type: string
+                  nullable: true
+                u_agency:
+                  type: string
+                  nullable: true
+                u_organization:
+                  type: string
+                  nullable: true
+                u_other_organization:
+                  type: string
+                  nullable: true
+                u_point_of_contact:
+                  type: string
+                u_email:
+                  type: string
+                  format: email
+                u_phone_number:
+                  type: string
+                  nullable: true
+                u_estimated_rom:
+                  type: number
+                  format: double
+                  nullable: true
+                u_requested_tool_name:
+                  type: string
+                u_description:
+                  type: string
+                  nullable: true
+                u_cart_items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      license_sys_id:
+                        type: string
+                      quantity:
+                        type: integer
+                        minimum: 1
+                    required:
+                      - license_sys_id
+                      - quantity
+              required:
+                - u_requestor_email
+                - u_point_of_contact
+                - u_email
+                - u_requested_tool_name
+                - u_cart_items
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+              examples:
+                created:
+                  value:
+                    result:
+                      sys_id: req_000000000000000000000001
+                      u_request_number: MP-00001
+                      u_requestor_email: user.one@agency.mil
+                      u_requested_tool_name: Advana Viz
+                      u_status: Pending
+                      u_created_on: 2025-11-10T15:10:00.000Z
+
+  /now/table/u_requests/{sys_id}:
+    patch:
+      summary: Update request (u_requests)
+      description: >
+        Updates a u_mp_request record (typically u_status, u_approver, and comments).
+      security:
+        - basicAuth: []
+      parameters:
+        - name: sys_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                u_status:
+                  type: string
+                u_approver:
+                  type: string
+                u_comments:
+                  type: string
+              additionalProperties: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /now/table/viewAll:
+    post:
+      summary: View all requests (custom viewAll endpoint)
+      description: >
+        Custom SNOW Scripted REST or endpoint that returns u_requests records filtered
+        by adjudicator or role. Body may contain filter hints.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+
+  /now/table/viewPending:
+    post:
+      summary: View pending requests (custom viewPending endpoint)
+      description: Returns u_requests with u_status = Pending.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+
+  /now/table/viewForRequestor:
+    post:
+      summary: View requests for a requestor (custom viewForRequestor endpoint)
+      description: Returns u_requests filtered by u_requestor_email.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                u_requestor_email:
+                  type: string
+                  format: email
+              required:
+                - u_requestor_email
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+
+  /now/table/requests/viewForRequestNumber:
+    post:
+      summary: View request by request number (custom viewForRequestNumber endpoint)
+      description: Returns u_requests filtered by u_request_number.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                u_request_number:
+                  type: string
+              required:
+                - u_request_number
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /now/table/u_request_comment:
+    get:
+      summary: Get comments for requests (u_request_comment)
+      description: >
+        Returns u_request_comment records. Use sysparm_query to filter by u_request.
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/sysparm_query"
+        - $ref: "#/components/parameters/sysparm_fields"
+        - $ref: "#/components/parameters/sysparm_limit"
+        - $ref: "#/components/parameters/sysparm_offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeList"
+    post:
+      summary: Add comment to request (u_request_comment)
+      description: Creates a comment record for a given u_request.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                u_request:
+                  type: string
+                u_comment:
+                  type: string
+                u_commented_by:
+                  type: string
+              required:
+                - u_request
+                - u_comment
+                - u_commented_by
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+
+  /now/table/decisions:
+    post:
+      summary: Create decision (u_mp_decision)
+      description: >
+        Creates a decision for a request. In real SNOW, Business Rules may update
+        the related u_requests.u_status. The mock may simply return the created
+        decision record.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                u_request:
+                  type: string
+                u_decision:
+                  type: string
+                u_reason:
+                  type: string
+                  nullable: true
+                u_decided_by:
+                  type: string
+              required:
+                - u_request
+                - u_decision
+                - u_decided_by
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+
+  /now/table/users/isAuthorizedAdjudicator:
+    post:
+      summary: Check if user is an authorized adjudicator
+      description: >
+        Custom endpoint aggregating sys_user and sys_user_has_role. Returns
+        an object with an "allowed" flag and optional list of roles.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+              examples:
+                allowed:
+                  value:
+                    result:
+                      allowed: true
+                      roles:
+                        - x_marketplace_adjudicator
+                denied:
+                  value:
+                    result:
+                      allowed: false
+                      roles: []
+
+  /now/table/report/summary:
+    get:
+      summary: Summary report
+      description: >
+        Returns a pre-aggregated summary snapshot based on u_requests,
+        u_request_item, and sys_user tables (or a dedicated snapshot table).
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/sysparm_query"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+              examples:
+                default:
+                  value:
+                    result:
+                      totals:
+                        requests: 2
+                        items: 3
+                        estimated_rom_sum: 547
+                      byStatus:
+                        Pending: 1
+                        Approved: 1
+                        Denied: 0
+                      byApprover:
+                        adjudicator@agency.mil: 1
+        "500":
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
