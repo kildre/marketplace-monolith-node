@@ -98,7 +98,7 @@ These Keycloak artifacts (realm, roles, users or AD federation) should be provis
   - Time sync: ensure servers (Keycloak, backend) have synchronized clocks (NTP)
 
 ### Backend Configuration
-  Configure the following environment variables in your backend application environment (`.env` or environment variables):
+  Configure the following environment variables in your backend application environment (`.env` or environment variables). These variables are also defined in docker-compose.yml and chart/values.yml to override during deployment.
 
   ```bash
   # Keycloak Server Configuration
@@ -125,7 +125,6 @@ These Keycloak artifacts (realm, roles, users or AD federation) should be provis
 
   # Development/Testing Flags
   KEYCLOAK_BYPASS_AUTH=false                       # NEVER set to true in production
-  NODE_ENV=development      
   USE_CLIENT_SESSION_STORAGE=true                  # Set to true to cache bearer token in the backend
   ```
 
