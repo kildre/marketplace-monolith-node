@@ -20,7 +20,7 @@ export class Notification extends Model<
   declare message: string;
 
   // associations (NonAttribute so Sequelize won’t treat them as columns)
-  declare notificationPriority?: NonAttribute<NotificationPriority>;
+  declare priority?: NonAttribute<NotificationPriority>;
 
   static initModel(sequelize: Sequelize) {
     Notification.init(
@@ -46,7 +46,7 @@ export class Notification extends Model<
 
     Notification.belongsTo(NotificationPriority, {
       foreignKey: { name: "notificationPriorityId", allowNull: false },
-      as: "notificationPriority",
+      as: "priority",
     });
   }
 }
