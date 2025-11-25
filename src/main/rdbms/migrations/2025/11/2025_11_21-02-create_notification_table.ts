@@ -19,7 +19,6 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
     },
 
-    // match status.id (SMALLINT)
     notification_priority_id: { type: DataTypes.SMALLINT, allowNull: false },
   });
 

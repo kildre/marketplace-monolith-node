@@ -1,4 +1,4 @@
-// src/rdbms/entities/Status.ts
+
 import {
   DataTypes,
   Model,

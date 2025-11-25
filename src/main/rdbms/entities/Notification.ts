@@ -1,4 +1,4 @@
-// src/rdbms/entities/UseCaseRequest.ts
+
 import {
   DataTypes,
   Model,
@@ -8,10 +8,6 @@ import {
   CreationOptional,
   NonAttribute,
 } from "sequelize";
-import { Status } from "./Status";
-import { MarketplaceUser } from "./MarketplaceUser";
-import { Decision } from "./Decision";
-import { CartItem } from "./CartItem";
 import { NotificationPriority } from "./NotificationPriority";
 
 export class Notification extends Model<
@@ -25,9 +21,6 @@ export class Notification extends Model<
 
   // associations (NonAttribute so Sequelize won’t treat them as columns)
   declare notificationPriority?: NonAttribute<NotificationPriority>;
-//   declare status?: NonAttribute<Status>;
-//   declare decisions?: NonAttribute<Decision[]>;
-//   declare cartItems?: NonAttribute<CartItem[]>;
 
   static initModel(sequelize: Sequelize) {
     Notification.init(
@@ -51,24 +44,9 @@ export class Notification extends Model<
     const { NotificationPriority } =
       sequelize.models as any;
 
-    // UseCaseRequest.belongsTo(MarketplaceUser, {
-    //   foreignKey: { name: "requestorId", allowNull: false },
-    //   as: "requestor",
-    // });
-
     Notification.belongsTo(NotificationPriority, {
       foreignKey: { name: "notificationPriorityId", allowNull: false },
       as: "notificationPriority",
     });
-
-    // UseCaseRequest.hasMany(Decision, {
-    //   foreignKey: "requestId",
-    //   as: "decisions",
-    // });
-
-    // UseCaseRequest.hasMany(CartItem, {
-    //   foreignKey: "requestId",
-    //   as: "cartItems",
-    // });
   }
 }

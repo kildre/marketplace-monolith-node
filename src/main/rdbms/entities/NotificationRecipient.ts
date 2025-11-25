@@ -1,4 +1,4 @@
-// src/rdbms/entities/CartItem.ts
+
 import {
     DataTypes,
     Model,
