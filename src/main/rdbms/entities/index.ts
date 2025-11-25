@@ -13,6 +13,7 @@ import { CartItem } from './CartItem';
 import { NotificationRecipient } from './NotificationRecipient';
 import { NotificationPriority } from './NotificationPriority';
 import { Notification } from './Notification';
+import { SessionToken } from './SessionToken';
 
 // 1) Init all models (fields + table options)
 [
@@ -20,6 +21,7 @@ import { Notification } from './Notification';
   Product, MarketplaceOrder, OrderItem,
   UseCaseRequest, Decision, CartItem,
   NotificationPriority, Notification, NotificationRecipient,
+  SessionToken,
 ].forEach((m) => (m as any).initModel(sequelize));
 
 // 2) Run each model's own association logic
@@ -28,6 +30,7 @@ import { Notification } from './Notification';
   Product, MarketplaceOrder, OrderItem,
   UseCaseRequest, Decision, CartItem,
   NotificationPriority, Notification, NotificationRecipient,
+  SessionToken,
 ].forEach((m) => {
   const assoc = (m as unknown as AssocCapable).associate;
   if (typeof assoc === 'function') assoc(sequelize as Sequelize);
@@ -43,4 +46,5 @@ export {
   Product, MarketplaceOrder, OrderItem,
   UseCaseRequest, Decision, CartItem,
   NotificationPriority, Notification, NotificationRecipient,
+  SessionToken,
 };
