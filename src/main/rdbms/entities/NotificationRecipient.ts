@@ -56,7 +56,7 @@ export class NotificationRecipient
         });
 
         NotificationRecipient.belongsTo(Notification, {
-            foreignKey: 'NotificationId',
+            foreignKey: 'notificationId',
             as: 'notification',
         });
     }
