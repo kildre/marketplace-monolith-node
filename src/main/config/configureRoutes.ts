@@ -5,8 +5,11 @@ import express from "express";
 import rootRoutes from "../web/routes/rootRoutes";
 import userRoutes from "../web/routes/userRoutes";
 import requestRoutes from "../web/routes/requestRoutes";
+// sessionRouter contains register / status / expire; we now split handling so only register stays protected.
 import reportRoutes from "../web/routes/reportRoutes";
 import decisionRoutes from "../web/routes/decisionRoutes";
+// Session controllers (public + protected)
+import { getSessionStatusController, expireSessionController, registerSessionController } from "../web/controllers/sessionController";
 import log from "../service/loggingService";
 
 import { keycloakIntrospectMiddleware } from "./authConfig";
@@ -23,23 +26,34 @@ const configureRoutes = (app: Application) => {
 
   app.use(express.json());
 
-  // (1) Public routes
+  // (1) Public root-level routes
   app.use("", rootRoutes);
 
-  // (2) Auth required for all /api
+  // (2) Public session endpoints (NO auth) → GET /api/session/:sessionId, POST /api/session/expire
+  // Placed BEFORE the /api auth middleware so they bypass Keycloak introspection.
+  const publicSessionRouter = express.Router();
+  publicSessionRouter.get("/:sessionId", getSessionStatusController);
+  publicSessionRouter.post("/expire", expireSessionController);
+  app.use("/api/session", publicSessionRouter);
+
+  // (3) Auth required for remaining /api endpoints
   app.use("/api", keycloakIntrospectMiddleware(true));
 
-  // (3) /api/users → any authenticated user
+  // (4) /api/users → any authenticated user
   app.use("/api/users", userRoutes);
 
-  // (4) /api/requests → guard first, then actual handlers
+  // (5) /api/requests → guard first, then actual handlers
   app.use("/api/requests", requestsWhitelistGuard(), requestRoutes);
 
-  // (5) /api/decisions → adjudicator only
+  // (6) /api/decisions → adjudicator only
   app.use("/api/decisions", requireRoles(ADJ_ROLE), decisionRoutes);
 
-  // (6) /api/report → adjudicator only
+  // (7) /api/report → adjudicator only
   app.use("/api/report", requireRoles(ADJ_ROLE), reportRoutes);
+
+  // (8) POST /api/session/register → protected (requires auth) for creating session tokens
+  // Previously mis-mounted with app.use('/api/session/register', router) causing /register/register path.
+  app.post("/api/session/register", registerSessionController);
 
   printRoutes(app as any);
 };

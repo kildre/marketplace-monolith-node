@@ -4,10 +4,13 @@ import * as https from "https";
 import * as crypto from "crypto";
 import log from "../service/loggingService";
 import { AuthenticationError } from "../domain/errors/AuthenticationError";
+import { SessionTokenService } from "../service/sessionTokenService"
 
 // ───────────────────────── Env & constants ─────────────────────────
 const ADJ_ROLE = (process.env.MARKETPLACE_ADJUDICATOR_ROLE || "").trim();
 const REQ_ROLE = (process.env.MARKETPLACE_REQUESTOR_ROLE || "").trim();
+const USE_CLIENT_SESSION_STORAGE = isTrue(process.env.USE_CLIENT_SESSION_STORAGE);
+
 const CACHE_KEY_LENGTH = 24;
 const MAX_CACHE_SIZE = 1000;
 const TOKEN_CACHE_SAFETY_MARGIN_SEC = parseInt(process.env.TOKEN_CACHE_SAFETY_MARGIN_SEC || "10", 10);
@@ -65,7 +68,7 @@ function putCache(token: string, payload: IntrospectionResult): void {
   }
 }
 
-function getCache(token: string): IntrospectionResult | undefined {
+export function getCache(token: string): IntrospectionResult | undefined {
   const k = cacheKey(token);
   const entry = cache.get(k);
   const now = Math.floor(Date.now() / 1000);
@@ -207,10 +210,22 @@ function logRoles(payload: IntrospectionResult & { roles?: string[] }): void {
 }
 
 // ───────────────────────── Public auth helpers ─────────────────────────
-export function getAuthToken(req: Request): string | undefined {
+export async function getAuthToken(req: Request): Promise<string | undefined> {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) return undefined;
   const token = auth.substring("Bearer ".length).trim();
+
+
+  if (USE_CLIENT_SESSION_STORAGE && !req.path.includes('/session/register')) {
+    const sessionService = new SessionTokenService();
+    const storedToken = await sessionService.getActiveOrAnyBySessionId(token);
+    if(!storedToken) {
+      log.warn(`[AUTH] No stored token found for sessionId=${token}`);
+      return undefined;
+    }
+
+    return storedToken.accessToken;
+  }
 
   try {
     const [, p] = token.split(".");
@@ -319,7 +334,7 @@ export function keycloakIntrospectMiddleware(required = true) {
     }
 
     try {
-      const token = getAuthToken(req);
+      const token = await getAuthToken(req);
       if (!token) {
         if (required) {
           log.warn(`[AUTH_ATTEMPT] Authentication required but no token provided: path=${req.path}, method=${req.method}, ip=${req.ip}`);
@@ -335,7 +350,7 @@ export function keycloakIntrospectMiddleware(required = true) {
       log.info(`[AUTH_ATTEMPT] Processing authentication: tokenHash=${tokenHash}, path=${req.path}, method=${req.method}, ip=${req.ip}`);
 
       // Cache first
-      const cached = getCache(token);
+      const cached = getCache(await token);
       if (cached) {
         log.info(`[AUTH_SUCCESS] Cache hit: sub=${cached.sub}, azp=${cached.azp}, latency=${Date.now() - startTime}ms, path=${req.path}`);
         if (required && cached.active === false) {
