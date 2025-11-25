@@ -1,24 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Advana Marketplace API Documentation </title>
+  <title>Advana Marketplace - API Documentation</title>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
   <style>
     body {
       margin: 0;
-      padding: 0;
+      padding: 40px;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 50px;
+    }
+    h1 {
+      margin: 0 0 10px 0;
+      font-size: 2.5rem;
+      color: #333;
+      font-weight: 700;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 1.1rem;
+      margin-bottom: 40px;
+    }
+    .api-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .api-card {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 30px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.3s ease;
+      display: block;
+    }
+    .api-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      border-color: #667eea;
+    }
+    .api-card h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.5rem;
+      color: #667eea;
+      font-weight: 600;
+    }
+    .api-card p {
+      margin: 0;
+      color: #666;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #667eea;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    @media (max-width: 768px) {
+      .api-grid {
+        grid-template-columns: 1fr;
+      }
+      .container {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 2rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="redoc-container"></div>
-  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-  <script>
-    Redoc.init('APIcontract.yaml', {
-      scrollYOffset: 50
-    }, document.getElementById('redoc-container'));
-  </script>
+  <div class="container">
+    <h1>Advana Marketplace</h1>
+    <p class="subtitle">API Documentation</p>
+    
+    <div class="api-grid">
+      <a href="marketplace-api.html" class="api-card">
+        <h2>Marketplace API</h2>
+        <p>Backend API contract for the Advana Marketplace application including products, requests, and notifications.</p>
+        <span class="badge">OpenAPI 3.1</span>
+      </a>
+      
+      <a href="snow-api.html" class="api-card">
+        <h2>ServiceNow API</h2>
+        <p>ServiceNow Tables Mock API with SNOW-shaped envelopes for license management and request processing.</p>
+        <span class="badge">OpenAPI 3.1</span>
+      </a>
+    </div>
+  </div>
 </body>
 </html>
