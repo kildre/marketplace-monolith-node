@@ -10,6 +10,9 @@ import { UseCaseRequest } from './UseCaseRequest';
 import { Decision } from './Decision';
 import { AssocCapable } from './types';
 import { CartItem } from './CartItem';
+import { NotificationRecipient } from './NotificationRecipient';
+import { NotificationPriority } from './NotificationPriority';
+import { Notification } from './Notification';
 import { SessionToken } from './SessionToken';
 
 // 1) Init all models (fields + table options)
@@ -17,6 +20,7 @@ import { SessionToken } from './SessionToken';
   MarketplaceUser, Status, 
   Product, MarketplaceOrder, OrderItem,
   UseCaseRequest, Decision, CartItem,
+  NotificationPriority, Notification, NotificationRecipient,
   SessionToken,
 ].forEach((m) => (m as any).initModel(sequelize));
 
@@ -25,6 +29,7 @@ import { SessionToken } from './SessionToken';
   MarketplaceUser, Status, 
   Product, MarketplaceOrder, OrderItem,
   UseCaseRequest, Decision, CartItem,
+  NotificationPriority, Notification, NotificationRecipient,
   SessionToken,
 ].forEach((m) => {
   const assoc = (m as unknown as AssocCapable).associate;
@@ -40,5 +45,6 @@ export {
   MarketplaceUser, Status, 
   Product, MarketplaceOrder, OrderItem,
   UseCaseRequest, Decision, CartItem,
+  NotificationPriority, Notification, NotificationRecipient,
   SessionToken,
 };
