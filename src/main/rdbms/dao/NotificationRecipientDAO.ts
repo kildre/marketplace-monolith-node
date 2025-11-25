@@ -11,7 +11,7 @@ export class NotificationRecipientDAO extends BaseDAO<NotificationRecipient> {
 
   async findVisibleByRecipient(recipientId: number): Promise<NotificationRecipient[]> {
     return NotificationRecipient.findAll({
-      where: { recipient_id: recipientId, hidden: false } as any,
+      where: { recipientId, hidden: false } as any,
       include: [
         {model: MarketplaceUser, as: 'recipient'},
         {model: Notification, as: 'notification', include: [{model: NotificationPriority, as: 'priority'}]},
