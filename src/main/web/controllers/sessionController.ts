@@ -23,11 +23,9 @@ import { get } from "http";
 
 export async function registerSessionController(req: Request, res: Response) {
     try {
-        console.log("Register session request body:", req.body);
         const requestDto = new RegisterSessionRequestDto(req.body);
 
         const { sessionId, refreshToken } = requestDto;
-        console.log("Registering session:", sessionId);
 
         // Check if sessionId already exists
         const existing = await sessionTokenService.getAnyBySessionId?.(sessionId);
@@ -43,7 +41,6 @@ export async function registerSessionController(req: Request, res: Response) {
 
         // Extract access token from Authorization header (getAuthToken is now async)
         const accessToken = await getAuthToken(req);
-        console.log("Access token extracted:", accessToken);
         // If no access token was provided, respond with 401
         if (!accessToken) {
           return res.status(401).json({ error: "Missing access token" });
@@ -58,7 +55,6 @@ export async function registerSessionController(req: Request, res: Response) {
         }
 
         const tokenExpDate = new Date(introspectionResult.exp * 1000);
-        console.log("Token claims:", introspectionResult);
         // Step 2: persist via service
         const entity = await sessionTokenService.storeTokenForSession(sessionId, {
             accessToken,
@@ -69,7 +65,6 @@ export async function registerSessionController(req: Request, res: Response) {
             resourceRoles: introspectionResult.resource_access ?? {},
             tokenExp: tokenExpDate,
         });
-        console.log("Stored session token entity:", entity);
         // Step 3: build response DTO
         const responseDto = new RegisterSessionResponseDto({
             sessionId: entity.sessionId,
@@ -107,7 +102,6 @@ export async function registerSessionController(req: Request, res: Response) {
 
 export async function getSessionStatusController(req: Request, res: Response) {
   try {
-    console.log("Get session status for sessionId:", req.params.sessionId ?? req.query.sessionId);
     const requestDto = new GetSessionRequestDto({
       sessionId: req.params.sessionId ?? req.query.sessionId?.toString() ?? "",
     });
@@ -115,7 +109,6 @@ export async function getSessionStatusController(req: Request, res: Response) {
     const entity = await sessionTokenService.getAnyBySessionId?.(
       requestDto.sessionId
     );
-    console.log("Retrieved session token entity:", entity);
     // If you don't have getActiveOrAnyBySessionId, you can decide:
     // - if you want only ACTIVE: use getActiveTokenBySessionId
     // - if you want to show expired/revoked: use DAO directly or add a new service method
@@ -130,16 +123,13 @@ export async function getSessionStatusController(req: Request, res: Response) {
       console.log("No active session token found for sessionId:", responseDto);
       return res.status(404).json(responseDto);
     }
-    console.log("Active session token found:", entity);
     const responseDto = new GetSessionResponseDto({
           sessionId: requestDto.sessionId,
           token: entity.accessToken,
           refreshToken: entity.refreshToken ?? "",
     });
-    console.log("Response DTO for getSessionStatusController:", responseDto);
     return res.status(200).json(responseDto);
   } catch (err: any) {
-    console.log("Error in getSessionStatusController:", err);
     if (err instanceof ConstraintError) {
       return res.status(400).json({ error: "Invalid request", details: (err as any).errors ?? err.message });
     }
@@ -154,7 +144,6 @@ export async function getSessionStatusController(req: Request, res: Response) {
 // ====================================================================
 
 export async function expireSessionController(req: Request, res: Response) {
-  console.log("Expire session request body:", req.body);
   
   // Ensure we always send a response and don't fall through
   try {
