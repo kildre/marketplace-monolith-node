@@ -30,15 +30,6 @@ export const httpErrorCounter = new promClient.Counter({
   registers: [register]
 });
 
-// Database connection pool metrics
-export const dbConnectionPoolGauge = new promClient.Gauge({
-  name: 'db_connection_pool_size',
-  help: 'Database connection pool size',
-  labelNames: ['state'],
-  registers: [register]
-});
-
-
 // Middleware to track HTTP request metrics
 export const metricsMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Skip metrics endpoint to avoid recursion
