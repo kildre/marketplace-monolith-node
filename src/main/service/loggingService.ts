@@ -21,34 +21,42 @@ type ImmutableLogger = Readonly<{
 }>;
 
 const createLogger = () => {
+    const transports: winston.transport[] = [];
+    const exceptionHandlers: winston.transport[] = [];
+    const rejectionHandlers: winston.transport[] = [];
 
-    const rotatingTransport = new DailyRotateFile({
-        filename: 'logs/app-%DATE%.log',
-        datePattern: 'YYYY-MM-DD',
-        maxSize: '3g',
-        maxFiles: '30d', // Retain logs for 14 days,
-        format: winston.format.combine(
-            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-            winston.format.json()
-        ),
+    // Console transport - ALWAYS enabled for Kubernetes log aggregation
+    const consoleTransport = new winston.transports.Console({
+        format: nodeEnvService.isProd()
+            ? winston.format.combine(
+                winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
+                winston.format.json()
+              )
+            : winston.format.cli()
     });
+    transports.push(consoleTransport);
+    exceptionHandlers.push(consoleTransport);
+    rejectionHandlers.push(consoleTransport);
 
-    const transports = [ rotatingTransport ] as any[];
-    const exceptionHandlers = [ rotatingTransport ] as any[];
-    const rejectionHandlers = [ rotatingTransport ] as any[];
-
-
+    // File transport - only for non-production (local development backup)
     if (!nodeEnvService.isProd()) {
-        const consoleTransport = new winston.transports.Console({
-            format: winston.format.cli()
+        const rotatingTransport = new DailyRotateFile({
+            filename: 'logs/app-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            maxSize: '3g',
+            maxFiles: '30d',
+            format: winston.format.combine(
+                winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+                winston.format.json()
+            ),
         });
-        transports.push(consoleTransport);
-        exceptionHandlers.push(consoleTransport);
-        rejectionHandlers.push(consoleTransport);
+        transports.push(rotatingTransport);
+        exceptionHandlers.push(rotatingTransport);
+        rejectionHandlers.push(rotatingTransport);
     }
 
     const logger = winston.createLogger({
-        level: getLogLevel(), // Minimum log level
+        level: getLogLevel(),
         transports: transports,
         exceptionHandlers: exceptionHandlers,
         rejectionHandlers: rejectionHandlers,
