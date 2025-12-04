@@ -20,9 +20,9 @@ import UseCaseRequestDto from "../web/dtos/UseCaseRequestDto";
 import ViewRequestsRequestDto from "../web/dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../web/dtos/ViewRequestsResponseDto";
 import { ProductNotFoundError } from '../domain/errors/ProductNotFoundError';
-import { UnauthorizedAdjudicatorError } from '../domain/errors/UnauthorizedAdjudicatorError';
-import { UnauthorizedRequestorError } from '../domain/errors/UnauthorizedRequestorError';
-import { MarketplaceUser } from "../rdbms/entities";
+import { MarketplaceUser } from "../rdbms/entities/MarketplaceUser";
+import { NotificationPriorityEnum } from "../domain/enumeration/NotificationPriorityEnum";
+import { notificationService } from "./notificationService";
 
 export interface RequestEndpointServiceI {
   submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
@@ -106,6 +106,14 @@ export class RequestEndpointService implements RequestEndpointServiceI {
             { transaction: tx }
           );
         }
+
+        await notificationService.send({
+          recipientIds: [requestorUser.id],
+          title: `Request ${ucr.dataValues.requestNumber} Successfully Submitted`,
+          message: `You have successfully submitted your request ${ucr.dataValues.requestNumber}. It has been sent to a CSL for review. You will receive a notification when the status of your request has been updated.`,
+          priority: NotificationPriorityEnum.LOW,
+          tx,
+        });
 
         return ucr; // return from the transaction callback
       });
