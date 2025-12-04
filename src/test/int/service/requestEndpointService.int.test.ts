@@ -2,6 +2,7 @@
 import 'reflect-metadata';
 import { Sequelize } from 'sequelize';
 import { setupTestDb, teardownTestDb, TestDbContext } from '../../utils/testDbHelpers';
+import { NotificationServiceI } from 'src/main/service/notificationService';
 
 // Real models via entities
 const svcPath = '../../../main/service/requestEndpointService';
@@ -100,6 +101,14 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
       },
     };
     (service as any).userEndpointService = { ...defaultStub, ...stub };
+
+    let notificationServiceMock : NotificationServiceI = {
+    //  send: async (props: any) => ({ id: 1, title: props.title, message: props.message, notificationPriorityId: props.priority.id } as any),
+      send: async (props: any) => ({ id: 1, title: "Mock title", message: "Mock message", notificationPriorityId: 3 } as any),
+    };
+
+    (service as any).notificationService = notificationServiceMock;
+
     return service;
   }
 
