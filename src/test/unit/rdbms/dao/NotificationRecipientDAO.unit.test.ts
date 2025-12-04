@@ -37,7 +37,7 @@ describe('NotificationRecipientDAO', () => {
     (NotificationRecipient.findAll as any).mockResolvedValue([{ recipientId: 1, notificationId: 1 }, { recipientId: 1, notificationId: 2 }]);
     const items = await dao.findVisibleByRecipient(1);
     expect(NotificationRecipient.findAll).toHaveBeenCalledWith({
-      where: { recipient_id: 1, hidden: false } as any,
+      where: { recipientId: 1, hidden: false } as any,
       include: [
         {model: MarketplaceUser, as: 'recipient'},
         {model: Notification, as: 'notification', include: [{model: NotificationPriority, as: 'priority'}]},
