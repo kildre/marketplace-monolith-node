@@ -18,6 +18,7 @@ export class Notification extends Model<
   declare id: CreationOptional<number>;
   declare title: string;
   declare message: string;
+  declare notificationPriorityId: number;
 
   // associations (NonAttribute so Sequelize won’t treat them as columns)
   declare priority?: NonAttribute<NotificationPriority>;
@@ -28,6 +29,7 @@ export class Notification extends Model<
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         title: { type: DataTypes.STRING(128), allowNull: false },
         message: { type: DataTypes.STRING(2048), allowNull: false },
+        notificationPriorityId: { type: DataTypes.SMALLINT, allowNull: false, field: "notification_priority_id" },
         // Do NOT redeclare createdAt/updatedAt unless you really need to.
         // With timestamps: true + underscored: true, Sequelize uses created_at / updated_at automatically.
       },
