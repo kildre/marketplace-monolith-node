@@ -2,7 +2,8 @@
 import 'reflect-metadata';
 import { Sequelize } from 'sequelize';
 import { setupTestDb, teardownTestDb, TestDbContext } from '../../utils/testDbHelpers';
-import { NotificationServiceI } from 'src/main/service/notificationService';
+import { NotificationRecipientDAO } from '../../../main/rdbms/dao/NotificationRecipientDAO';
+import { NotificationPriorityEnum } from '../../../main/domain/enumeration/NotificationPriorityEnum';
 
 // Real models via entities
 const svcPath = '../../../main/service/requestEndpointService';
@@ -19,6 +20,8 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   let UseCaseRequest: any;
   let CartItem: any;
   let Notification: any;
+  let NotificationRecipient: any;
+  let notificationRecipientDAO: NotificationRecipientDAO;
 
   const normalizeEmail = (e: string) => String(e ?? '').trim().toLowerCase();
 
@@ -48,10 +51,13 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     UseCaseRequest = sequelize.models.UseCaseRequest;
     CartItem = sequelize.models.CartItem;
     Notification = sequelize.models.Notification;
+    NotificationRecipient = sequelize.models.NotificationRecipient;
     Status = sequelize.models.Status;
 
     await seedNotificationPriorities();
     await seedStatuses();
+
+    notificationRecipientDAO = new NotificationRecipientDAO();
   }, 120_000);
 
   afterAll(async () => {
@@ -62,8 +68,10 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     // Clean dynamic/test data; statuses remain
     await CartItem.destroy({ where: {} });
     await UseCaseRequest.destroy({ where: {} });
+    await NotificationRecipient.destroy({ where: {} });
     await MarketplaceUser.destroy({ where: {} });
     await Product.destroy({ where: {} });
+    await Notification.destroy({ where: {} });
 
     // Ensure notification priorities exist after cleanup
     await seedNotificationPriorities();
@@ -114,34 +122,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
       },
       ...stub
     };
-
-    // Import NotificationPriorityEnum for defaulting
-    const { NotificationPriorityEnum } = require('../../../main/domain/enumeration/NotificationPriorityEnum');
-    let notificationServiceMock : NotificationServiceI = {
-      send: async (props: any) => {
-        // Always use a valid priority object with an id property
-        let priority = props.priority;
-        if (!priority || typeof priority !== 'object' || typeof priority.id !== 'number') {
-          priority = NotificationPriorityEnum.LOW;
-        }
-        const notification = await Notification.create({
-          title: props.title,
-          message: props.message,
-          notificationPriorityId: priority.id,
-        }, { transaction: props.tx });
-        for (const recipientId of props.recipientIds) {
-          await sequelize.models.NotificationRecipient.create({
-            recipientId,
-            notificationId: notification.id,
-            read: false,
-            hidden: false,
-          }, { transaction: props.tx });
-        }
-        return notification;
-      },
-    };
-
-    (service as any).notificationService = notificationServiceMock;
 
     return service;
   }
@@ -207,6 +187,14 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const row = await UseCaseRequest.findOne({ where: { requestNumber: 'REQ-OK' } });
     expect(row).toBeTruthy();
     if (row) expect(row.requestNumber).toBe('REQ-OK');
+    expect(row.requestorId).toBeDefined();
+
+    let notificationRecipients = await notificationRecipientDAO.findVisibleByRecipient(row.requestorId);
+    expect(notificationRecipients.length).toEqual(1);
+    expect(notificationRecipients[0].notification).toBeDefined();
+    expect(notificationRecipients[0].notification?.message).toEqual(`You have successfully submitted your request ${row.requestNumber}. It has been sent to a CSL for review. You will receive a notification when the status of your request has been updated.`);
+    expect(notificationRecipients[0].notification?.title).toEqual(`Request ${row.requestNumber} Successfully Submitted`);
+    expect(notificationRecipients[0].notification?.notificationPriorityId).toEqual(NotificationPriorityEnum.LOW.id);
   });
 
   it('submit → ProductNotFoundError if any product missing', async () => {
