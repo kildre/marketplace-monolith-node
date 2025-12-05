@@ -2,7 +2,7 @@
 import 'reflect-metadata';
 import { Sequelize } from 'sequelize';
 import { setupTestDb, teardownTestDb, TestDbContext } from '../../utils/testDbHelpers';
-import { NotificationRecipientDAO } from '../../../main/rdbms/dao/NotificationRecipientDAO';
+import notificationRecipientDao from '../../../main/rdbms/dao/notificationRecipientDao';
 import { NotificationPriorityEnum } from '../../../main/domain/enumeration/NotificationPriorityEnum';
 
 // Real models via entities
@@ -21,7 +21,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   let CartItem: any;
   let Notification: any;
   let NotificationRecipient: any;
-  let notificationRecipientDAO: NotificationRecipientDAO;
 
   const normalizeEmail = (e: string) => String(e ?? '').trim().toLowerCase();
 
@@ -57,7 +56,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     await seedNotificationPriorities();
     await seedStatuses();
 
-    notificationRecipientDAO = new NotificationRecipientDAO();
   }, 120_000);
 
   afterAll(async () => {
@@ -189,7 +187,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     if (row) expect(row.requestNumber).toBe('REQ-OK');
     expect(row.requestorId).toBeDefined();
 
-    let notificationRecipients = await notificationRecipientDAO.findVisibleByRecipient(row.requestorId);
+    let notificationRecipients = await notificationRecipientDao.findVisibleByRecipient(row.requestorId);
     expect(notificationRecipients.length).toEqual(1);
     expect(notificationRecipients[0].notification).toBeDefined();
     expect(notificationRecipients[0].notification?.message).toEqual(`You have successfully submitted your request ${row.requestNumber}. It has been sent to a CSL for review. You will receive a notification when the status of your request has been updated.`);

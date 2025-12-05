@@ -23,11 +23,11 @@ jest.mock('../../../../main/rdbms/entities/Notification', () => {
 import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
 import { NotificationPriority } from '../../../../main/rdbms/entities/NotificationPriority';
 import { Notification } from '../../../../main/rdbms/entities/Notification';
-import { NotificationRecipientDAO } from '../../../../main/rdbms/dao/NotificationRecipientDAO';
+import notificationRecipientDao from '../../../../main/rdbms/dao/notificationRecipientDao';
 import { NotificationRecipient } from '../../../../main/rdbms/entities/NotificationRecipient';
 
 describe('NotificationRecipientDAO', () => {
-  const dao = new NotificationRecipientDAO();
+  const dao = notificationRecipientDao;
 
   beforeEach(() => {
     (NotificationRecipient.findAll as any).mockReset?.();

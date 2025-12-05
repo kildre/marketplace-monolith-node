@@ -4,7 +4,7 @@ import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { Notification } from '../entities/Notification';
 import { NotificationPriority } from '../entities/NotificationPriority';
 
-export class NotificationRecipientDAO extends BaseDAO<NotificationRecipient> {
+class NotificationRecipientDao extends BaseDAO<NotificationRecipient> {
   constructor() {
     super(NotificationRecipient);
   }
@@ -20,3 +20,7 @@ export class NotificationRecipientDAO extends BaseDAO<NotificationRecipient> {
     });
   }
 }
+
+const notificationRecipientDao = new NotificationRecipientDao();
+
+export default notificationRecipientDao; ;
