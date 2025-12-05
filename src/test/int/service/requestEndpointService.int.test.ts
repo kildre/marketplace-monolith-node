@@ -18,8 +18,25 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   let Product: any;
   let UseCaseRequest: any;
   let CartItem: any;
+  let Notification: any;
 
   const normalizeEmail = (e: string) => String(e ?? '').trim().toLowerCase();
+
+
+  async function seedNotificationPriorities() {
+    const NotificationPriority = sequelize.models.NotificationPriority;
+    if (NotificationPriority) {
+      const priorities = [
+        { id: 1, code: 'HIGH', level: 1 },
+        { id: 2, code: 'MEDIUM', level: 2 },
+        { id: 3, code: 'LOW', level: 3 },
+      ];
+      for (const p of priorities) {
+        const found = await NotificationPriority.findByPk(p.id);
+        if (!found) await NotificationPriority.create(p);
+      }
+    }
+  }
 
   beforeAll(async () => {
     db = await setupTestDb();
@@ -27,12 +44,13 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
 
     // bind model refs
     MarketplaceUser = sequelize.models.MarketplaceUser;
-    Status = sequelize.models.Status;
     Product = sequelize.models.Product;
     UseCaseRequest = sequelize.models.UseCaseRequest;
     CartItem = sequelize.models.CartItem;
+    Notification = sequelize.models.Notification;
+    Status = sequelize.models.Status;
 
-    // seed immutable statuses
+    await seedNotificationPriorities();
     await seedStatuses();
   }, 120_000);
 
@@ -46,6 +64,9 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     await UseCaseRequest.destroy({ where: {} });
     await MarketplaceUser.destroy({ where: {} });
     await Product.destroy({ where: {} });
+
+    // Ensure notification priorities exist after cleanup
+    await seedNotificationPriorities();
 
     // Ensure statuses exist
     if ((await Status.count()) === 0) {
@@ -79,32 +100,45 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const mod = await import(svcPath);
     const service = mod.default;
 
-    // Create a default user in the database for tests
-    const defaultEmail = 'default-test-user@example.com';
-    let defaultUser = await MarketplaceUser.findOne({ where: { email: defaultEmail } });
-    if (!defaultUser) {
-      defaultUser = await MarketplaceUser.create({ email: defaultEmail });
-    }
-
-    // wire real DAOs (already inside service), just replace userEndpointService
-    const defaultStub = {
+    // Always stub userEndpointService to create users if not found
+    (service as any).userEndpointService = {
       isAuthorizedRequestor: async () => ({ hasRole: false }),
       isAuthorizedAdjudicator: async () => ({ hasRole: false }),
       findByEmail: async (dto: any) => {
         const email = normalizeEmail(dto.userEmail ?? dto.email ?? '');
-        // Check if user exists, if not create them
         let user = await MarketplaceUser.findOne({ where: { email } });
         if (!user) {
           user = await MarketplaceUser.create({ email });
         }
-        return user; // Return the Sequelize model instance
+        return user;
       },
+      ...stub
     };
-    (service as any).userEndpointService = { ...defaultStub, ...stub };
 
+    // Import NotificationPriorityEnum for defaulting
+    const { NotificationPriorityEnum } = require('../../../main/domain/enumeration/NotificationPriorityEnum');
     let notificationServiceMock : NotificationServiceI = {
-    //  send: async (props: any) => ({ id: 1, title: props.title, message: props.message, notificationPriorityId: props.priority.id } as any),
-      send: async (props: any) => ({ id: 1, title: "Mock title", message: "Mock message", notificationPriorityId: 3 } as any),
+      send: async (props: any) => {
+        // Always use a valid priority object with an id property
+        let priority = props.priority;
+        if (!priority || typeof priority !== 'object' || typeof priority.id !== 'number') {
+          priority = NotificationPriorityEnum.LOW;
+        }
+        const notification = await Notification.create({
+          title: props.title,
+          message: props.message,
+          notificationPriorityId: priority.id,
+        }, { transaction: props.tx });
+        for (const recipientId of props.recipientIds) {
+          await sequelize.models.NotificationRecipient.create({
+            recipientId,
+            notificationId: notification.id,
+            read: false,
+            hidden: false,
+          }, { transaction: props.tx });
+        }
+        return notification;
+      },
     };
 
     (service as any).notificationService = notificationServiceMock;
