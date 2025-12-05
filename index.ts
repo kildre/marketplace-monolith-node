@@ -1,3 +1,5 @@
+// IMPORTANT: Instrumentation must be loaded FIRST before any other imports
+import "./src/main/instrumentation.js";
 import run from "./src/main/app.js";
 
 console.log("ENTRY", { pid: process.pid, ts: new Date().toISOString() });
@@ -6,7 +8,6 @@ console.log("ENTRY", { pid: process.pid, ts: new Date().toISOString() });
 if (!(globalThis as any).__APP_STARTED__) {
   (globalThis as any).__APP_STARTED__ = true;
   run().catch((err) => {
-    // log the full error (see section 2)
     console.error("Startup failed:", err && err.stack ? err.stack : err);
     process.exit(1);
   });

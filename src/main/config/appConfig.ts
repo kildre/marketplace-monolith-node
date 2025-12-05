@@ -1,5 +1,4 @@
 import { errorHandler } from "../middleware/errorHandler";
-// configureApp.ts
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -8,15 +7,14 @@ import configureActuator from "./actuatorConfig";
 import configureRoutes from "./configureRoutes";
 import configureSwagger from "./swaggerConfig";
 import configureMorgan from "./morganConfig";
-
-import { initDb } from "../rdbms/entities"; // ⬅️ add
+import { metricsMiddleware, register } from "../middleware/metricsMiddleware";
+import { initDb } from "../rdbms/entities";
 import { appHost, appPort } from "../service/config/middlewareConfigService";
 
 const configureApp = async (app: Application) => {
   const port = Number(process.env.PORT) || 8082;
 
   // Configure CORS - allow frontend to make requests
-  // Support multiple origins via comma-separated list
   const corsOrigins = process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : ['http://localhost:3000'];
@@ -27,6 +25,19 @@ const configureApp = async (app: Application) => {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
+
+  // Metrics middleware - track all requests
+  app.use(metricsMiddleware);
+
+  // Prometheus metrics endpoint
+  app.get('/metrics', async (req, res) => {
+    try {
+      res.set('Content-Type', register.contentType);
+      res.end(await register.metrics());
+    } catch (err) {
+      res.status(500).end(err instanceof Error ? err.message : 'Error collecting metrics');
+    }
+  });
 
   configureMorgan(app);
   app.use(express.static(path.join(__dirname, "public")));
