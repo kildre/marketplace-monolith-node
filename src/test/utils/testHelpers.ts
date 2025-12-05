@@ -1,5 +1,3 @@
-import { Sequelize } from 'sequelize';
-import { RoleEnum } from '../../main/domain/enumeration/RoleEnum';
 
 export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
@@ -16,22 +14,6 @@ export function serializeError(err: any) {
     } catch (_e2) {
       return { value: 'unserializable error' };
     }
-  }
-}
-
-export async function seedRoles(Role: any) {
-  try {
-    await Role.bulkCreate([
-      { id: RoleEnum.ADJUDICATOR.id, name: 'ADJUDICATOR' },
-      { id: RoleEnum.REQUESTOR.id, name: 'REQUESTOR' },
-    ], {
-      ignoreDuplicates: true,
-      validate: true,
-    });
-  } catch (error) {
-    // fallback to individual creates
-    try { await Role.create({ id: RoleEnum.ADJUDICATOR.id, name: 'ADJUDICATOR' }); } catch {}
-    try { await Role.create({ id: RoleEnum.REQUESTOR.id, name: 'REQUESTOR' }); } catch {}
   }
 }
 
