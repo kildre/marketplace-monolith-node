@@ -16,7 +16,7 @@ class NotificationRecipientDao extends BaseDAO<NotificationRecipient> {
         {model: MarketplaceUser, as: 'recipient'},
         {model: Notification, as: 'notification', include: [{model: NotificationPriority, as: 'priority'}]},
     ],
-      order: [['id', 'ASC']],
+      order: [['notification_id', 'ASC']],
     });
   }
 }
