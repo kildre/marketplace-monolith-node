@@ -15,7 +15,6 @@ export class NotificationRecipient
     extends Model<InferAttributes<NotificationRecipient>, InferCreationAttributes<NotificationRecipient>> {
 
     // columns (type-only; not emitted at runtime)
-    declare id: CreationOptional<number>;
     declare read: boolean;
     declare hidden: boolean;
 
@@ -30,13 +29,12 @@ export class NotificationRecipient
     static initModel(sequelize: Sequelize) {
         NotificationRecipient.init(
             {
-                id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
                 read: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
                 hidden: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
 
                 // FK columns (add these so you can read/write them directly)
-                recipientId: { type: DataTypes.INTEGER, allowNull: false, field: 'recipient_id' },
-                notificationId: { type: DataTypes.INTEGER, allowNull: false, field: 'notification_id' },
+                recipientId: { type: DataTypes.INTEGER, allowNull: false, field: 'recipient_id', primaryKey: true },
+                notificationId: { type: DataTypes.INTEGER, allowNull: false, field: 'notification_id', primaryKey: true },
             },
             {
                 sequelize,
@@ -45,6 +43,9 @@ export class NotificationRecipient
                 timestamps: true,
             }
         );
+
+        // Ensure Sequelize does not add/use a default `id` PK column for this model
+        NotificationRecipient.removeAttribute('id');
     }
 
     static associate(sequelize: Sequelize) {

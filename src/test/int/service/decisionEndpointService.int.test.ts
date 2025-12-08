@@ -16,8 +16,8 @@ import { setupTestDb, teardownTestDb, TestDbContext } from '../../utils/testDbHe
 
 import { DecisionEndpointService } from '../../../main/service/decisionEndpointService';
 import SubmitDecisionRequestDto from '../../../main/web/dtos/SubmitDecisionRequestDto';
-import { UnauthorizedAdjudicatorError } from '../../../main/domain/errors/UnauthorizedAdjudicatorError';
 import { UseCaseRequestNotFoundError } from '../../../main/domain/errors/UseCaseRequestNotFoundError';
+import { NotificationServiceI } from '../../../main/service/notificationService';
 
 describe('DecisionEndpointService (integration, expanded)', () => {
   let db: TestDbContext;
@@ -43,6 +43,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
   let userEndpointService: any;
   let usecaseDao: any;
   let decisionDAO: any;
+  let notificationServiceMock: NotificationServiceI;
 
   beforeEach(async () => {
     service = new DecisionEndpointService();
@@ -60,9 +61,14 @@ describe('DecisionEndpointService (integration, expanded)', () => {
       findByEmail: async (dto: any) => ({ id: 101, email: dto.userEmail ?? 'judge@example.com' }),
     };
 
+    notificationServiceMock = {
+      send: async (props: any) => ({ id: 1, title: props.title, message: props.message, notificationPriorityId: props.priority.id } as any),
+    };
+
     (service as any).userEndpointService = userEndpointService;
     (service as any).usecaseDao = usecaseDao;
     (service as any).decisionDAO = decisionDAO;
+    (service as any).notificationService = notificationServiceMock;
   });
 
   // ───────────── minimal validations/authorization/not-found ─────────────
@@ -163,7 +169,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
     (service as any).usecaseDao = {
       findByRequestNumber: async (rn: string) => {
         expect(rn).toBe('REQ-7');
-        return { id: 555 };
+        return { id: 555, requestor: { id: 888 } };
       },
     };
 
@@ -196,7 +202,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
       isAuthorizedAdjudicator: async () => ({ hasRole: true }),
       findByEmail: async () => ({ id: 111, email: 'judge@example.com' }),
     };
-    (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 222 }) };
+    (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 222, requestor: { id: 888 } }) };
     (service as any).decisionDAO = {
       create: async () => {
         throw new UniqueConstraintError({
@@ -223,7 +229,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
     };
 
     (service as any).usecaseDao = {
-      findByRequestNumber: async (rn: string) => ({ id: 123, requestNumber: rn }),
+      findByRequestNumber: async (rn: string) => ({ id: 123, requestNumber: rn, requestor: { id: 888 } }),
     };
 
     (service as any).decisionDAO = {
@@ -256,7 +262,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
     // 2) Ensure request lookup succeeds so we reach decisionDAO.create
     (service as any).usecaseDao = {
-      findByRequestNumber: async () => ({ id: 555 }),
+      findByRequestNumber: async () => ({ id: 555, requestor: { id: 888 } }),
     };
 
     // 3) If the service has a dedicated validator method, stub it to no-op
@@ -311,7 +317,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
       findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
     };
 
-    (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 202 }) };
+    (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 202, requestor: { id: 888 }  }) };
 
     const boom = new Error('kaboom');
     (service as any).decisionDAO = {

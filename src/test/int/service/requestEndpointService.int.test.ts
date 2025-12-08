@@ -2,6 +2,8 @@
 import 'reflect-metadata';
 import { Sequelize } from 'sequelize';
 import { setupTestDb, teardownTestDb, TestDbContext } from '../../utils/testDbHelpers';
+import notificationRecipientDao from '../../../main/rdbms/dao/notificationRecipientDao';
+import { NotificationPriorityEnum } from '../../../main/domain/enumeration/NotificationPriorityEnum';
 
 // Real models via entities
 const svcPath = '../../../main/service/requestEndpointService';
@@ -17,8 +19,26 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   let Product: any;
   let UseCaseRequest: any;
   let CartItem: any;
+  let Notification: any;
+  let NotificationRecipient: any;
 
   const normalizeEmail = (e: string) => String(e ?? '').trim().toLowerCase();
+
+
+  async function seedNotificationPriorities() {
+    const NotificationPriority = sequelize.models.NotificationPriority;
+    if (NotificationPriority) {
+      const priorities = [
+        { id: 1, code: 'HIGH', level: 1 },
+        { id: 2, code: 'MEDIUM', level: 2 },
+        { id: 3, code: 'LOW', level: 3 },
+      ];
+      for (const p of priorities) {
+        const found = await NotificationPriority.findByPk(p.id);
+        if (!found) await NotificationPriority.create(p);
+      }
+    }
+  }
 
   beforeAll(async () => {
     db = await setupTestDb();
@@ -26,13 +46,16 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
 
     // bind model refs
     MarketplaceUser = sequelize.models.MarketplaceUser;
-    Status = sequelize.models.Status;
     Product = sequelize.models.Product;
     UseCaseRequest = sequelize.models.UseCaseRequest;
     CartItem = sequelize.models.CartItem;
+    Notification = sequelize.models.Notification;
+    NotificationRecipient = sequelize.models.NotificationRecipient;
+    Status = sequelize.models.Status;
 
-    // seed immutable statuses
+    await seedNotificationPriorities();
     await seedStatuses();
+
   }, 120_000);
 
   afterAll(async () => {
@@ -43,8 +66,13 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     // Clean dynamic/test data; statuses remain
     await CartItem.destroy({ where: {} });
     await UseCaseRequest.destroy({ where: {} });
+    await NotificationRecipient.destroy({ where: {} });
     await MarketplaceUser.destroy({ where: {} });
     await Product.destroy({ where: {} });
+    await Notification.destroy({ where: {} });
+
+    // Ensure notification priorities exist after cleanup
+    await seedNotificationPriorities();
 
     // Ensure statuses exist
     if ((await Status.count()) === 0) {
@@ -78,28 +106,21 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const mod = await import(svcPath);
     const service = mod.default;
 
-    // Create a default user in the database for tests
-    const defaultEmail = 'default-test-user@example.com';
-    let defaultUser = await MarketplaceUser.findOne({ where: { email: defaultEmail } });
-    if (!defaultUser) {
-      defaultUser = await MarketplaceUser.create({ email: defaultEmail });
-    }
-
-    // wire real DAOs (already inside service), just replace userEndpointService
-    const defaultStub = {
+    // Always stub userEndpointService to create users if not found
+    (service as any).userEndpointService = {
       isAuthorizedRequestor: async () => ({ hasRole: false }),
       isAuthorizedAdjudicator: async () => ({ hasRole: false }),
       findByEmail: async (dto: any) => {
         const email = normalizeEmail(dto.userEmail ?? dto.email ?? '');
-        // Check if user exists, if not create them
         let user = await MarketplaceUser.findOne({ where: { email } });
         if (!user) {
           user = await MarketplaceUser.create({ email });
         }
-        return user; // Return the Sequelize model instance
+        return user;
       },
+      ...stub
     };
-    (service as any).userEndpointService = { ...defaultStub, ...stub };
+
     return service;
   }
 
@@ -164,6 +185,14 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const row = await UseCaseRequest.findOne({ where: { requestNumber: 'REQ-OK' } });
     expect(row).toBeTruthy();
     if (row) expect(row.requestNumber).toBe('REQ-OK');
+    expect(row.requestorId).toBeDefined();
+
+    let notificationRecipients = await notificationRecipientDao.findVisibleByRecipient(row.requestorId);
+    expect(notificationRecipients.length).toEqual(1);
+    expect(notificationRecipients[0].notification).toBeDefined();
+    expect(notificationRecipients[0].notification?.message).toEqual(`You have successfully submitted your request ${row.requestNumber}. It has been sent to a CSL for review. You will receive a notification when the status of your request has been updated.`);
+    expect(notificationRecipients[0].notification?.title).toEqual(`Request ${row.requestNumber} Successfully Submitted`);
+    expect(notificationRecipients[0].notification?.notificationPriorityId).toEqual(NotificationPriorityEnum.LOW.id);
   });
 
   it('submit → ProductNotFoundError if any product missing', async () => {

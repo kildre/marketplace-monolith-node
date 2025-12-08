@@ -23,11 +23,11 @@ jest.mock('../../../../main/rdbms/entities/Notification', () => {
 import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
 import { NotificationPriority } from '../../../../main/rdbms/entities/NotificationPriority';
 import { Notification } from '../../../../main/rdbms/entities/Notification';
-import { NotificationRecipientDAO } from '../../../../main/rdbms/dao/NotificationRecipientDAO';
+import notificationRecipientDao from '../../../../main/rdbms/dao/notificationRecipientDao';
 import { NotificationRecipient } from '../../../../main/rdbms/entities/NotificationRecipient';
 
 describe('NotificationRecipientDAO', () => {
-  const dao = new NotificationRecipientDAO();
+  const dao = notificationRecipientDao;
 
   beforeEach(() => {
     (NotificationRecipient.findAll as any).mockReset?.();
@@ -37,12 +37,12 @@ describe('NotificationRecipientDAO', () => {
     (NotificationRecipient.findAll as any).mockResolvedValue([{ recipientId: 1, notificationId: 1 }, { recipientId: 1, notificationId: 2 }]);
     const items = await dao.findVisibleByRecipient(1);
     expect(NotificationRecipient.findAll).toHaveBeenCalledWith({
-      where: { recipient_id: 1, hidden: false } as any,
+      where: { recipientId: 1, hidden: false } as any,
       include: [
         {model: MarketplaceUser, as: 'recipient'},
         {model: Notification, as: 'notification', include: [{model: NotificationPriority, as: 'priority'}]},
       ],
-      order: [['id', 'ASC']],
+      order: [['notification_id', 'ASC']],
     });
     expect(items).toHaveLength(2);
   });
