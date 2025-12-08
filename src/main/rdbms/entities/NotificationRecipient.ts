@@ -15,7 +15,6 @@ export class NotificationRecipient
     extends Model<InferAttributes<NotificationRecipient>, InferCreationAttributes<NotificationRecipient>> {
 
     // columns (type-only; not emitted at runtime)
-    declare id: CreationOptional<number>;
     declare read: boolean;
     declare hidden: boolean;
 
@@ -30,7 +29,6 @@ export class NotificationRecipient
     static initModel(sequelize: Sequelize) {
         NotificationRecipient.init(
             {
-                id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
                 read: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
                 hidden: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
 
