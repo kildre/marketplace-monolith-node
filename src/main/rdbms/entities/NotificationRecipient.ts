@@ -33,8 +33,8 @@ export class NotificationRecipient
                 hidden: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
 
                 // FK columns (add these so you can read/write them directly)
-                recipientId: { type: DataTypes.INTEGER, allowNull: false, field: 'recipient_id' },
-                notificationId: { type: DataTypes.INTEGER, allowNull: false, field: 'notification_id' },
+                recipientId: { type: DataTypes.INTEGER, allowNull: false, field: 'recipient_id', primaryKey: true },
+                notificationId: { type: DataTypes.INTEGER, allowNull: false, field: 'notification_id', primaryKey: true },
             },
             {
                 sequelize,
