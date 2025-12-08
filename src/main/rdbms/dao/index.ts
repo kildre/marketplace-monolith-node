@@ -1,5 +1,5 @@
 export * from './BaseDAO';
-export * from './MarketplaceUserDAO';
+export * from './marketplaceUserDao';
 export * from './StatusDAO';
 export * from './ProductDAO';
 export * from './MarketplaceOrderDAO';
