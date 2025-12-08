@@ -43,6 +43,9 @@ export class NotificationRecipient
                 timestamps: true,
             }
         );
+
+        // Ensure Sequelize does not add/use a default `id` PK column for this model
+        NotificationRecipient.removeAttribute('id');
     }
 
     static associate(sequelize: Sequelize) {
