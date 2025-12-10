@@ -3,13 +3,16 @@ import NotificationRecipientDto from "../web/dtos/NotificationRecipientDto";
 import marketplaceUserDao from "../rdbms/dao/marketplaceUserDao";
 import notificationRecipientDao from "../rdbms/dao/notificationRecipientDao";
 import { NotificationRecipient } from "../rdbms/entities/NotificationRecipient";
+import { Notification } from "../rdbms/entities/Notification";
+import MissingAssociationError from "../domain/errors/MissingAssociationError";
+import NotificationDto from "../web/dtos/NotificationDto";
 
 
-export interface NotificationRecipientServiceI {
+export interface NotificationRecipientEndpointServiceI {
   getVisible(request: GetVisibleNotificationRecipientsRequestDto): Promise<NotificationRecipientDto[]>;
 }
 
-class NotificationRecipientEndpointService implements NotificationRecipientServiceI {
+class NotificationRecipientEndpointService implements NotificationRecipientEndpointServiceI {
   async getVisible(request: GetVisibleNotificationRecipientsRequestDto): Promise<NotificationRecipientDto[]> {
     const currentUserEmail = String(request.currentUserEmail)
       .trim()
@@ -24,22 +27,46 @@ class NotificationRecipientEndpointService implements NotificationRecipientServi
     const dtos : NotificationRecipientDto[] = [];
 
     for (const nr of notificationRecipients) {
-  
+      dtos.push(this.notificationRecipientToDto(nr));
     }
 
     return dtos;
   }
 
   private notificationRecipientToDto(nr: NotificationRecipient): NotificationRecipientDto {
+    if (!nr.notification) {
+        throw new MissingAssociationError({
+          associationName: 'notification',
+          entityClassName: 'NotificationRecipient',
+        });
+    }
+
     return new NotificationRecipientDto({
-      id: nr.id,
-      title: nr.title,
-      message: nr.message,
+      notification: this.notificationToDto(nr.notification),
       read: nr.read,
-        priorityLevel: nr.notification?.priority?.level,
-        createdAt: nr.createdAt.toISOString(),
-        updatedAt: nr.updatedAt.toISOString(),
+      createdAt: nr.createdAt.toISOString(),
+      updatedAt: nr.updatedAt.toISOString(),
     });
+  }
+
+  private notificationToDto(n: Notification): NotificationDto {
+
+    if (!n.priority) {
+        throw new MissingAssociationError({
+          associationName: 'priority',
+          entityClassName: 'Notification',
+        });
+    }
+
+    return new NotificationDto({
+      id: n.id,
+      title: n.title,
+      message: n.message,
+      priorityLevel: n.priority.level,
+      createdAt: n.createdAt.toISOString(),
+      updatedAt: n.updatedAt.toISOString(),
+    });
+
   }
 
 }
