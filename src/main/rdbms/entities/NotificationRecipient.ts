@@ -22,6 +22,11 @@ export class NotificationRecipient
     declare recipientId: number; // maps to recipient_id
     declare notificationId: number; // maps to notification_id
 
+    // timestamp columns added by Sequelize when `timestamps: true` is enabled
+    // Declaring them here makes them readable/typed on the model instances.
+    declare createdAt: CreationOptional<Date>;
+    declare updatedAt: CreationOptional<Date>;
+
     // associations (NonAttribute so Sequelize doesn't treat them as columns)
     declare recipient?: NonAttribute<MarketplaceUser>;
     declare notification?: NonAttribute<Notification>;
@@ -35,11 +40,14 @@ export class NotificationRecipient
                 // FK columns (add these so you can read/write them directly)
                 recipientId: { type: DataTypes.INTEGER, allowNull: false, field: 'recipient_id', primaryKey: true },
                 notificationId: { type: DataTypes.INTEGER, allowNull: false, field: 'notification_id', primaryKey: true },
+                createdAt: { type: DataTypes.DATE, allowNull: false, field: 'created_at' },
+                updatedAt: { type: DataTypes.DATE, allowNull: false, field: 'updated_at' },
             },
             {
                 sequelize,
                 tableName: 'notification_recipient',
                 underscored: true,
+                // This adds the properties at runtime, but we still need to declare them above for TypeScript.
                 timestamps: true,
             }
         );
