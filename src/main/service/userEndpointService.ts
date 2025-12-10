@@ -11,7 +11,7 @@ import {
   isAuthorizedRequestor as tokenHasRequestorRole,     // (token: string) => boolean
 } from '../config/authConfig';
 
-interface UserEndpointServiceI {
+export interface UserEndpointServiceI {
   isAuthorizedAdjudicator(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
   isAuthorizedRequestor(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
   findIdByEmail(request: RoleCheckRequestDto): Promise<number>;
