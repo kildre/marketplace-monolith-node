@@ -15,6 +15,7 @@ import { UseCaseRequestDAO } from '../rdbms/dao/UseCaseRequestDAO';
 import userEndpointService from './userEndpointService';
 import { StatusEnum, fromId, fromCode } from '../domain/enumeration/StatusEnum';
 import { notificationService } from "./notificationService";
+import MissingAssociationError from "../domain/errors/MissingAssociationError";
 
 export interface DecisionEndpointServiceI {
   submit(req: SubmitDecisionRequestDto): Promise<SubmitDecisionResponseDto>;
@@ -76,7 +77,10 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
         }
 
         if (!useCaseRequest.requestor) {
-          throw new Error('UseCaseRequest is missing requestor association');
+          throw new MissingAssociationError({
+            associationName: 'requestor',
+            entityClassName: 'UseCaseRequest',
+          });
         }
 
         const decision = await this.decisionDAO.create(
