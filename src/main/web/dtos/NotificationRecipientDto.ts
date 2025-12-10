@@ -1,34 +1,48 @@
-import { IsBoolean, IsDateString, IsInt, IsNotEmpty, IsString, validateSync } from "class-validator";
+import { IsBoolean, IsDateString, ValidateNested, validateSync } from "class-validator";
 import ConstraintError from "src/main/domain/errors/ConstraintError";
+import NotificationDto from "./NotificationDto";
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     NotificationRecipientDto:
+ *       type: object
+ *       properties:
+ *         notification:
+ *           $ref: '#/components/schemas/NotificationDto'
+ *         read:
+ *           type: boolean
+ *           example: false
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: '2025-12-10T12:34:56.789Z'
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           example: '2025-12-10T12:34:56.789Z'
+ *       required:
+ *         - notification
+ *         - read
+ *         - createdAt
+ *         - updatedAt
+ */
 
 
 interface PropsI {
-    id: number;
-    title: string;
-    message: string;
+    notification: NotificationDto;
     read: boolean;
-    priorityLevel: number;
     createdAt: string;
     updatedAt: string;
   }
 
 export default class NotificationRecipientDto {
-  @IsInt()
-  public readonly id: number;
-
-  @IsString()
-  @IsNotEmpty()
-  public readonly title: string;
-
-  @IsString()
-  @IsNotEmpty()
-  public readonly message: string;
+  @ValidateNested()
+  public readonly notification: NotificationDto;
 
   @IsBoolean()
   public readonly read: boolean;
-
-  @IsInt()
-  public readonly priorityLevel: number;
 
   @IsDateString()
   public readonly createdAt: string;
@@ -37,11 +51,8 @@ export default class NotificationRecipientDto {
   public readonly updatedAt: string;
 
     constructor(data: PropsI) {
-        this.id = data.id;
-        this.title = data.title;
-        this.message = data.message;
+        this.notification = data.notification;
         this.read = data.read;
-        this.priorityLevel = data.priorityLevel;
         this.createdAt = data.createdAt;
         this.updatedAt = data.updatedAt;
 
