@@ -6,6 +6,19 @@ interface PropsI {
     currentUserEmail: string;
   }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     GetVisibleNotificationRecipientsRequestDto:
+ *       type: object
+ *       properties:
+ *         currentUserEmail:
+ *           type: string
+ *           example: "user@example.com"
+ *       required:
+ *         - currentUserEmail
+ */
 export default class GetVisibleNotificationRecipientsRequestDto {
   @IsString()
   @IsNotEmpty()
