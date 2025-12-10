@@ -4,6 +4,10 @@ import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { Notification } from '../entities/Notification';
 import { NotificationPriority } from '../entities/NotificationPriority';
 
+export interface NotificationRecipientDaoI {
+  findVisibleByRecipient(recipientId: number): Promise<NotificationRecipient[]>;
+}
+
 class NotificationRecipientDao extends BaseDAO<NotificationRecipient> {
   constructor() {
     super(NotificationRecipient);
@@ -21,6 +25,6 @@ class NotificationRecipientDao extends BaseDAO<NotificationRecipient> {
   }
 }
 
-const notificationRecipientDao = new NotificationRecipientDao();
+const notificationRecipientDao: NotificationRecipientDaoI = new NotificationRecipientDao();
 
 export default notificationRecipientDao; ;
