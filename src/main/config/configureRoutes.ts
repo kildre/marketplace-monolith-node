@@ -16,6 +16,7 @@ import { keycloakIntrospectMiddleware } from "./authConfig";
 import { requireRoles } from "../utils/authUtils";
 import { printRoutes } from "../utils/routeUtils";
 import { requestsWhitelistGuard } from "./routesConfig"; // path to the file above
+import notificationRecipientRoutes from "../web/routes/notificationRecipientRoutes";
 
 const ADJ_ROLE = (process.env.MARKETPLACE_ADJUDICATOR_ROLE || "").trim();
 
@@ -51,7 +52,10 @@ const configureRoutes = (app: Application) => {
   // (7) /api/report → adjudicator only
   app.use("/api/report", requireRoles(ADJ_ROLE), reportRoutes);
 
-  // (8) POST /api/session/register → protected (requires auth) for creating session tokens
+  // (8) /api/notificationRecipients → any authenticated user
+  app.use("/api/notificationRecipients", notificationRecipientRoutes);
+
+  // (9) POST /api/session/register → protected (requires auth) for creating session tokens
   // Previously mis-mounted with app.use('/api/session/register', router) causing /register/register path.
   app.post("/api/session/register", registerSessionController);
 
