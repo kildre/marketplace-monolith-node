@@ -37,8 +37,8 @@ describe('pg Client helpers (integration + branch wiring)', () => {
   });
 
   describe('real DB (PG_SSL_REQUIRE=false)', () => {
-    let runPgQuery: (q: String) => Promise<any>;
-    let runPgQueryWithVars: (q: String, vars: Array<String>) => Promise<any>;
+    let runPgQuery: (q: string) => Promise<any>;
+    let runPgQueryWithVars: (q: string, vars: Array<String>) => Promise<any>;
 
     beforeAll(async () => {
       const mod = await import('../../../main/service/pgService'); // file under test

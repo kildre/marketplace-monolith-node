@@ -27,7 +27,7 @@ const getPgClient = () => {
         });
 };
 
-export const runPgQueryWithVars = async (query : String, vars: Array<String>) => {
+export const runPgQueryWithVars = async (query: string, vars: any[]) => {
         const client = getPgClient();
 
         await client.connect();
@@ -37,6 +37,6 @@ export const runPgQueryWithVars = async (query : String, vars: Array<String>) =>
         return res;
 };
 
-export const runPgQuery = async (query : String) => {
-        return runPgQueryWithVars(query, []);
+export const runPgQuery = async (query: string) => {
+    return runPgQueryWithVars(query, []);
 };
