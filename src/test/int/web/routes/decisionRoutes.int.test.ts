@@ -15,6 +15,7 @@ jest.mock('../../../../main/service/decisionEndpointService', () => {
 // Import AFTER the mock so the controller constructs the mocked service
 import decisionRouter from '../../../../main/web/routes/decisionRoutes';
 import { DecisionEndpointService } from '../../../../main/service/decisionEndpointService';
+import { errorHandler } from 'src/main/middleware/errorHandler';
 
 type MockSvc = { submit: jest.Mock };
 const MockCtor = DecisionEndpointService as unknown as jest.Mock;
@@ -26,12 +27,7 @@ beforeAll(() => {
   app = express();
   app.use(express.json());
   app.use('/decisions', decisionRouter);
-
-  // Minimal error handler (replace with your real one if you want exact codes)
-  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    const status = err?.status ?? err?.statusCode ?? 500;
-    res.status(status).json({ message: err?.message ?? 'Internal Server Error' });
-  });
+  app.use(errorHandler);
 
   // Cache the single instance that the controller constructed
   svc = (MockCtor.mock.results[0]?.value || MockCtor.mock.instances[0]) as MockSvc;
@@ -93,7 +89,7 @@ describe('POST /decisions (router + controller integration)', () => {
       .send({ adjudicatorEmail: 'no-role@example.com', requestNumber: 'REQ-1002', statusId: 2 });
 
     expect(res.status).toBe(403);
-    expect(res.body.message).toMatch(/authorized/i);
+    expect(res.body.errMsg).toMatch(/authorized/i);
   });
 
   it('returns a validation error when body is invalid', async () => {
@@ -105,7 +101,7 @@ describe('POST /decisions (router + controller integration)', () => {
       .post('/decisions')
       .send({ /* missing adjudicatorEmail */ requestNumber: 'REQ-1003', statusId: 2 });
 
-    expect([400, 422]).toContain(res.status);
-    expect(res.body.message).toMatch(/adjudicatorEmail is required/i);
+    expect(res.status).toEqual(400);
+    expect(res.body.errMsg).toMatch(/adjudicatorEmail is required/i);
   });
 });
