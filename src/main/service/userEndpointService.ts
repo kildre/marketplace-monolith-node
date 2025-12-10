@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import RoleCheckRequestDto from '../web/dtos/RoleCheckRequestDto';
 import RoleCheckResponseDto from '../web/dtos/RoleCheckResponseDto';
-import { MarketplaceUserDAO } from '../rdbms/dao/MarketplaceUserDAO';
+import marketplaceUserDao from '../rdbms/dao/marketplaceUserDao';
 import { MarketplaceUser } from '../rdbms/entities/MarketplaceUser';
 
 // Use the auth utilities that read the token from the Express Request
@@ -11,14 +11,14 @@ import {
   isAuthorizedRequestor as tokenHasRequestorRole,     // (token: string) => boolean
 } from '../config/authConfig';
 
-interface UserEndpointServiceI {
+export interface UserEndpointServiceI {
   isAuthorizedAdjudicator(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
   isAuthorizedRequestor(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
   findIdByEmail(request: RoleCheckRequestDto): Promise<number>;
   findByEmail(request: RoleCheckRequestDto): Promise<MarketplaceUser>;
 }
 
-const userDao = new MarketplaceUserDAO();
+const userDao = marketplaceUserDao;
 
 const isAuthorizedAdjudicator = async (
   request: RoleCheckRequestDto,

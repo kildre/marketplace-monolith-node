@@ -18,7 +18,6 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
     'pkonka@metrostar.com',
     'prasad.v.konka.ctr@usmc.mil',
   ];
-  ];
 
   // Look up the user IDs again to clean user_roles safely
   const inList = emails.map(e => `'${e.replace(/'/g, "''")}'`).join(',');
