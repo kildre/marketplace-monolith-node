@@ -15,27 +15,36 @@ const configureApp = async (app: Application) => {
   const port = Number(process.env.PORT) || 8082;
 
   // Configure CORS - allow frontend to make requests
-  const corsOrigins = process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : ['http://localhost:3000'];
-  
-  app.use(cors({
-    origin: corsOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+    : ["http://localhost:3000"];
+
+  app.use(
+    cors({
+      origin: corsOrigins,
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "traceparent",
+        "tracestate",
+      ],
+    })
+  );
 
   // Metrics middleware - track all requests
   app.use(metricsMiddleware);
 
   // Prometheus metrics endpoint
-  app.get('/metrics', async (req, res) => {
+  app.get("/metrics", async (req, res) => {
     try {
-      res.set('Content-Type', register.contentType);
+      res.set("Content-Type", register.contentType);
       res.end(await register.metrics());
     } catch (err) {
-      res.status(500).end(err instanceof Error ? err.message : 'Error collecting metrics');
+      res
+        .status(500)
+        .end(err instanceof Error ? err.message : "Error collecting metrics");
     }
   });
 
