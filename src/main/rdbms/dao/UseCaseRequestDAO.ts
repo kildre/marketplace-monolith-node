@@ -1,7 +1,7 @@
 // src/dao/UseCaseRequestDAO.ts
-import { FindOptions, Includeable, Transaction, Sequelize } from 'sequelize';
-import { BaseDAO } from './BaseDAO';
-import { UseCaseRequest } from '../entities/UseCaseRequest';
+import { FindOptions, Includeable, Transaction, Sequelize } from "sequelize";
+import { BaseDAO } from "./BaseDAO";
+import { UseCaseRequest } from "../entities/UseCaseRequest";
 
 type WithTx = { transaction?: Transaction };
 
@@ -21,7 +21,7 @@ type CommonOpts = WithTx &
     /** Anything else you want to pass (attributes, order, paranoid, etc.) */
     findOptions?: Omit<
       FindOptions,
-      'where' | 'include' | 'limit' | 'offset' | 'transaction'
+      "where" | "include" | "limit" | "offset" | "transaction"
     >;
   };
 
@@ -36,37 +36,41 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
     if (!s) {
       throw new Error(
         `Model ${this.model.name} is not bound to a Sequelize instance. ` +
-        'Did you call initModel(...) and initDb() before using the DAO?'
+          "Did you call initModel(...) and initDb() before using the DAO?"
       );
     }
     return s;
   }
 
   /** Build safe includes with the correct aliases */
-  private buildIncludes(flags: IncludeFlags, extra?: Includeable[]): Includeable[] | undefined {
-    const { MarketplaceUser, Status, Decision, CartItem, Product } = this.sequelize.models as any;
+  private buildIncludes(
+    flags: IncludeFlags,
+    extra?: Includeable[]
+  ): Includeable[] | undefined {
+    const { MarketplaceUser, Status, Decision, CartItem, Product } = this
+      .sequelize.models as any;
 
     const include: Includeable[] = [];
 
     if (flags.includeRequestor) {
-      include.push({ model: MarketplaceUser, as: 'requestor' });
+      include.push({ model: MarketplaceUser, as: "requestor" });
     }
     if (flags.includeStatus) {
-      include.push({ model: Status, as: 'status' });
+      include.push({ model: Status, as: "status" });
     }
     if (flags.includeDecisions) {
-      include.push({ 
-        model: Decision, 
-        as: 'decisions',
+      include.push({
+        model: Decision,
+        as: "decisions",
         required: false,
-        include: [{ model: Status, as: 'status' }]
+        include: [{ model: Status, as: "status" }],
       });
     }
     if (flags.includeCartItems) {
-      include.push({ 
-        model: CartItem, 
-        as: 'cartItems',
-        include: [{ model: Product, as: 'product' }]
+      include.push({
+        model: CartItem,
+        as: "cartItems",
+        include: [{ model: Product, as: "product" }],
       });
     }
 
@@ -78,17 +82,18 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
   async findAllRequests(
     options: CommonOpts & PageOpts = {}
   ): Promise<UseCaseRequest[]> {
-    const include = this.buildIncludes(
-      options,
-      options.extraInclude
-    );
+    const include = this.buildIncludes(options, options.extraInclude);
+
+    // Enforce maximum limit to prevent resource exhaustion
+    const MAX_LIMIT = 1000;
+    const safeLimit = options.limit ? Math.min(options.limit, MAX_LIMIT) : 50;
 
     return this.model.findAll({
       include,
-      limit: options.limit,
+      limit: safeLimit,
       offset: options.offset,
       transaction: options.transaction,
-      order: [['id', 'DESC']],
+      order: [["id", "DESC"]],
       ...(options.findOptions ?? {}),
     });
   }
@@ -100,10 +105,7 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
     statusId: number,
     options: CommonOpts & PageOpts = {}
   ): Promise<UseCaseRequest[]> {
-    const include = this.buildIncludes(
-      options,
-      options.extraInclude
-    );
+    const include = this.buildIncludes(options, options.extraInclude);
 
     return this.model.findAll({
       where: { status_id: statusId } as any,
@@ -111,7 +113,7 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
       limit: options.limit,
       offset: options.offset,
       transaction: options.transaction,
-      order: [['id', 'DESC']],
+      order: [["id", "DESC"]],
       ...(options.findOptions ?? {}),
     });
   }
@@ -123,10 +125,7 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
     requestorId: number,
     options: CommonOpts & PageOpts = {}
   ): Promise<UseCaseRequest[]> {
-    const include = this.buildIncludes(
-      options,
-      options.extraInclude
-    );
+    const include = this.buildIncludes(options, options.extraInclude);
 
     return this.model.findAll({
       where: { requestor_id: requestorId } as any,
@@ -134,7 +133,7 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
       limit: options.limit,
       offset: options.offset,
       transaction: options.transaction,
-      order: [['id', 'DESC']],
+      order: [["id", "DESC"]],
       ...(options.findOptions ?? {}),
     });
   }
@@ -158,20 +157,17 @@ export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
 
   private fullIncludes(): Includeable[] {
     return [
-      { association: 'requestor' },
-      { association: 'status' },
+      { association: "requestor" },
+      { association: "status" },
       {
-        association: 'cartItems',
+        association: "cartItems",
         required: false,
-        include: [{ association: 'product' }],
+        include: [{ association: "product" }],
       },
       {
-        association: 'decisions',
+        association: "decisions",
         required: false,
-        include: [
-          { association: 'status' },
-          { association: 'adjudicator' },
-        ],
+        include: [{ association: "status" }, { association: "adjudicator" }],
       },
     ];
   }

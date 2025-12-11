@@ -25,10 +25,10 @@ services:
       KEYCLOAK_CLIENT_SECRET: "fillme"
       MARKETPLACE_ADJUDICATOR_ROLE: "marketplace-approver"
       MARKETPLACE_REQUESTOR_ROLE: "marketplace-requestor"
-      MARKETPLACE_BYPASS_AUTH: false
+      KEYCLOAK_BYPASS_AUTH: true
       USE_CLIENT_SESSION_STORAGE: true
       INTROSPECT_AUTH: basic
-      INTROSPECT_RETRY: true       
+      INTROSPECT_RETRY: true
       INTROSPECT_TIMEOUT_MS: 5000
     depends_on:
       postgres:
@@ -60,4 +60,3 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
- 

@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsArray,
   ValidateNested,
+  MaxLength,
+  ArrayMaxSize,
   validateSync,
 } from "class-validator";
 import { Type, plainToInstance } from "class-transformer";
@@ -29,54 +31,67 @@ interface PropsI {
 class Props {
   @IsOptional()
   @IsString()
+  @MaxLength(32)
   requestNumber?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   requestorEmail?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   designation?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   agency?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   organization?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   otherOrganization?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   pointOfContact?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   email?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(32)
   phoneNumber?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(32)
   estimatedRom?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   requestedToolName?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1024)
   description?: string;
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => CartItemProps)
   cartItems?: CartItemProps[];

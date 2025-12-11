@@ -9,7 +9,11 @@ import requestRoutes from "../web/routes/requestRoutes";
 import reportRoutes from "../web/routes/reportRoutes";
 import decisionRoutes from "../web/routes/decisionRoutes";
 // Session controllers (public + protected)
-import { getSessionStatusController, expireSessionController, registerSessionController } from "../web/controllers/sessionController";
+import {
+  getSessionStatusController,
+  expireSessionController,
+  registerSessionController,
+} from "../web/controllers/sessionController";
 import log from "../service/loggingService";
 
 import { keycloakIntrospectMiddleware } from "./authConfig";
@@ -25,7 +29,19 @@ const configureRoutes = (app: Application) => {
 
   // … existing env logs and base config …
 
-  app.use(express.json());
+  // Configure request body parsing with size limits to prevent overflow attacks
+  app.use(
+    express.json({
+      limit: "10mb", // Prevent large JSON payloads
+      strict: true,
+    })
+  );
+  app.use(
+    express.urlencoded({
+      extended: true,
+      limit: "10mb",
+    })
+  );
 
   // (1) Public root-level routes
   app.use("", rootRoutes);
