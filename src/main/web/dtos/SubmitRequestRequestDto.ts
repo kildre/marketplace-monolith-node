@@ -31,62 +31,62 @@ interface PropsI {
 class Props {
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(32)
   requestNumber?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(128)
   requestorEmail?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(128)
   designation?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(128)
   agency?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(128)
   organization?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(128)
   otherOrganization?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(128)
   pointOfContact?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(128)
   email?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(50)
+  @MaxLength(32)
   phoneNumber?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(32)
   estimatedRom?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(128)
   requestedToolName?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(10000)
+  @MaxLength(1024)
   description?: string;
 
   @IsOptional()
