@@ -80,6 +80,7 @@ output "marketplace_db_intance_address" {
 
 output "marketplace_db_master_username" {
   value = module.marketplace_db.instance_username
+  sensitive = true
 }
 
 output "marketplace_db_master_password" {
