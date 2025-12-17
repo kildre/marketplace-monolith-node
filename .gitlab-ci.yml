@@ -20,7 +20,7 @@ variables:
   TF_VARS_FILE: "configs/il2-sartorial.tfvars"
   AUTO_APPLY: "false" # default to auto apply
   ENABLE_TF_BUNDLE_WORKFLOW: "false" # set to true for terraform bundle pipeline runs
-  TF_DIR: "."
+  TF_DIR: "terraform"
 
 pages:
   stage: deploy
