@@ -67,7 +67,7 @@ module "marketplace_db" {
 
 module "marketplace_audit_logs_bucket" {
   source  = "code.cdao.us/platform/s3-bucket/aws"
-  version = "0.1.0"
+  version = "0.0.1"
 
   name = "advana-marketplace-${data.aws_caller_identity.current.account_id}"
 
