@@ -3,7 +3,6 @@ locals {
     [for subnet in data.aws_subnet.app : subnet.cidr_block],
     var.additional_cidrs
   )
-
 }
 
 data "aws_vpc" "tenant" {
@@ -12,6 +11,8 @@ data "aws_vpc" "tenant" {
     values = [var.vpc_name]
   }
 }
+
+data "aws_caller_identity" "current" {}
 
 data "aws_subnets" "db" {
   filter {
@@ -64,6 +65,15 @@ module "marketplace_db" {
   apply_immediately   = true
 }
 
+module "marketplace_audit_logs_bucket" {
+  source  = "code.cdao.us/platform/s3-bucket/aws"
+  version = "0.1.0"
+
+  name = "advana-marketplace-${data.aws_caller_identity.current.account_id}"
+
+  bucket_ownership_controls = "BucketOwnerPreferred"
+}
+
 output "marketplace_db_intance_address" {
   value = module.marketplace_db.instance_address
 }
@@ -75,4 +85,12 @@ output "marketplace_db_master_username" {
 output "marketplace_db_master_password" {
   value = module.marketplace_db.instance_password
   sensitive = true
+}
+
+output "marketplace_s3_bucket_arn" {
+  value = module.marketplace_audit_logs_bucket.arn
+}
+
+output "marketplace_s3_bucket_name" {
+  value = module.marketplace_audit_logs_bucket.bucket
 }
