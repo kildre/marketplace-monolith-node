@@ -146,6 +146,7 @@ export interface IntrospectionResult {
   azp?: string;
   client_id?: string;
   username?: string;
+  email?: string; 
   realm_access?: { roles: string[] };
   resource_access?: Record<string, { roles: string[] }>;
 }
@@ -266,8 +267,9 @@ export async function getAuthToken(req: Request): Promise<string | undefined> {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) return undefined;
   const token = auth.substring("Bearer ".length).trim();
-
+  console.log("Extracted auth token from request");
   if (USE_CLIENT_SESSION_STORAGE && !req.path.includes("/session/register")) {
+    console.log("Using session storage to retrieve token");
     const sessionService = new SessionTokenService();
     const storedToken = await sessionService.getActiveOrAnyBySessionId(token);
     if (!storedToken) {
@@ -301,7 +303,7 @@ export async function getAuthToken(req: Request): Promise<string | undefined> {
       .substring(0, 16);
     log.debug(`[AUTH] Opaque token hash=${tokenHash}`);
   }
-
+  console.log("Returning auth token", token);
   return token;
 }
 
@@ -559,7 +561,7 @@ export function keycloakIntrospectMiddleware(required = true) {
         }
         throw error; // Re-throw if not AuthenticationError
       }
-
+      console.log(payload);
       putCache(token, payload);
       req.auth = payload as IntrospectionResult & { roles?: string[] };
       logRoles(req.auth);
@@ -599,4 +601,18 @@ export function keycloakIntrospectMiddleware(required = true) {
       return next(error);
     }
   };
+}
+
+
+export async function getUserEmailFromTokenPayload(req: Request): Promise<string | undefined> {
+    const token = await getAuthToken(req);
+    if (!token) {
+          return undefined;
+    }
+    const tokenpayload = getCache(token);
+    console.log("Token payload:", tokenpayload);
+    if (!tokenpayload) {
+      return undefined;
+    }
+    return tokenpayload.email;
 }

@@ -25,7 +25,7 @@ import { NotificationPriorityEnum } from "../domain/enumeration/NotificationPrio
 import { notificationService } from "./notificationService";
 
 export interface RequestEndpointServiceI {
-  submit(req: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto>;
+  submit(req: SubmitRequestRequestDto, requestorEmail: String): Promise<SubmitRequestResponseDto>;
   viewPendingRequests(
     req: ViewRequestsRequestDto
   ): Promise<ViewRequestsResponseDto>;
@@ -67,8 +67,8 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   };
 
   // ---------- submit ----------
-  async submit(request: SubmitRequestRequestDto): Promise<SubmitRequestResponseDto> {
-    const requestorUser = await this.validUserEmail(request.requestorEmail ?? '');
+  async submit(request: SubmitRequestRequestDto, requestorEmail: String): Promise<SubmitRequestResponseDto> {
+    const requestorUser = await this.validUserEmail(requestorEmail as string);
 
     try {
       //Transaction: create request + cart items

@@ -12,51 +12,11 @@ import {
 } from '../config/authConfig';
 
 export interface UserEndpointServiceI {
-  isAuthorizedAdjudicator(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
-  isAuthorizedRequestor(request: RoleCheckRequestDto, req: Request): Promise<RoleCheckResponseDto>;
   findIdByEmail(request: RoleCheckRequestDto): Promise<number>;
   findByEmail(request: RoleCheckRequestDto): Promise<MarketplaceUser>;
 }
 
 const userDao = marketplaceUserDao;
-
-const isAuthorizedAdjudicator = async (
-  request: RoleCheckRequestDto,
-  req: Request
-): Promise<RoleCheckResponseDto> => {
-  // Normalize for logging or future use (not used for auth any more)
-  const normalizedEmail = request.userEmail?.trim().toLowerCase() || '';
-
-  try {
-    const token = await getAuthToken(req);
-    if (!token) {
-      return new RoleCheckResponseDto({ hasRole: false });
-    }
-    const hasRole = tokenHasAdjudicatorRole(token);
-    return new RoleCheckResponseDto({ hasRole });
-  } catch (e) {
-    // If anything goes wrong, default to not authorized
-    return new RoleCheckResponseDto({ hasRole: false });
-  }
-};
-
-const isAuthorizedRequestor = async (
-  request: RoleCheckRequestDto,
-  req: Request
-): Promise<RoleCheckResponseDto> => {
-  const normalizedEmail = request.userEmail?.trim().toLowerCase() || '';
-
-  try {
-    const token = await getAuthToken(req);
-    if (!token) {
-      return new RoleCheckResponseDto({ hasRole: false });
-    }
-    const hasRole = tokenHasRequestorRole(token);
-    return new RoleCheckResponseDto({ hasRole });
-  } catch (e) {
-    return new RoleCheckResponseDto({ hasRole: false });
-  }
-};
 
 const findIdByEmail = async (request: RoleCheckRequestDto): Promise<number> => {
   const email = request.userEmail?.trim().toLowerCase();
@@ -75,8 +35,6 @@ const findByEmail = async (request: RoleCheckRequestDto): Promise<MarketplaceUse
 };
 
 const userEndpointService: UserEndpointServiceI = {
-  isAuthorizedAdjudicator,
-  isAuthorizedRequestor,
   findIdByEmail,
   findByEmail,
 };

@@ -2,7 +2,6 @@ import { read } from "fs";
 import { NotificationRecipientDaoI } from "src/main/rdbms/dao/notificationRecipientDao";
 import { NotificationRecipient } from "src/main/rdbms/entities";
 import { NotificationRecipientEndpointServiceI } from "src/main/service/notificationRecipientEndpointService";
-import { UserEndpointServiceI } from "src/main/service/userEndpointService";
 import GetVisibleNotificationRecipientsRequestDto from "src/main/web/dtos/GetVisibleNotificationRecipientsRequestDto";
 import NotificationRecipientDto from "src/main/web/dtos/NotificationRecipientDto";
 import EmailCheckRequestDto from "src/main/web/dtos/RoleCheckRequestDto";

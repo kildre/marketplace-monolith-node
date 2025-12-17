@@ -3,7 +3,6 @@ import type { Application, Request } from "express";
 import express from "express";
 
 import rootRoutes from "../web/routes/rootRoutes";
-import userRoutes from "../web/routes/userRoutes";
 import requestRoutes from "../web/routes/requestRoutes";
 // sessionRouter contains register / status / expire; we now split handling so only register stays protected.
 import reportRoutes from "../web/routes/reportRoutes";
@@ -55,9 +54,6 @@ const configureRoutes = (app: Application) => {
 
   // (3) Auth required for remaining /api endpoints
   app.use("/api", keycloakIntrospectMiddleware(true));
-
-  // (4) /api/users → any authenticated user
-  app.use("/api/users", userRoutes);
 
   // (5) /api/requests → guard first, then actual handlers
   app.use("/api/requests", requestsWhitelistGuard(), requestRoutes);

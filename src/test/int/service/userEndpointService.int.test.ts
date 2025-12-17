@@ -62,9 +62,6 @@ describe('userEndpointService (integration, token-based roles)', () => {
   //
   // MOCK the token helpers used by the service (../config/authConfig)
   // We map tokens → roles:
-  //   - "ADJ" => adjudicator true, requestor false
-  //   - "REQ" => requestor true, adjudicator false
-  //   - anything else/undefined => both false
   //
   function mockAuthConfig() {
     jest.doMock('../../../main/config/authConfig', () => {
@@ -74,114 +71,9 @@ describe('userEndpointService (integration, token-based roles)', () => {
           const m = typeof h === 'string' ? h.match(/^Bearer\s+(.+)$/i) : null;
           return m ? m[1] : undefined;
         },
-        isAuthorizedAdjudicator: (token: string) => token === 'ADJ',
-        isAuthorizedRequestor: (token: string) => token === 'REQ',
       };
     });
   }
-
-  // -------------------- Authorization tests (token-based) --------------------
-
-  it('isAuthorizedAdjudicator → true when token confers adjudicator', async () => {
-    mockAuthConfig();
-    const mod = await import(svcPath);
-    const userEndpointService = mod.default;
-
-    const res = await userEndpointService.isAuthorizedAdjudicator(
-      { userEmail: 'judge@example.com' },
-      makeReq('ADJ')
-    );
-
-    expect(res.hasRole).toBe(true);
-  });
-
-  it('isAuthorizedAdjudicator → false when token is requestor', async () => {
-    mockAuthConfig();
-    const mod = await import(svcPath);
-    const userEndpointService = mod.default;
-
-    const res = await userEndpointService.isAuthorizedAdjudicator(
-      { userEmail: 'user@example.com' },
-      makeReq('REQ')
-    );
-
-    expect(res.hasRole).toBe(false);
-  });
-
-  it('isAuthorizedAdjudicator → false when no token', async () => {
-    mockAuthConfig();
-    const mod = await import(svcPath);
-    const userEndpointService = mod.default;
-
-    const res = await userEndpointService.isAuthorizedAdjudicator(
-      { userEmail: 'nonexistent@example.com' },
-      makeReq(undefined)
-    );
-
-    expect(res.hasRole).toBe(false);
-  });
-
-  it('isAuthorizedAdjudicator → email normalization has no effect on token-based role', async () => {
-    mockAuthConfig();
-    const mod = await import(svcPath);
-    const userEndpointService = mod.default;
-
-    const res = await userEndpointService.isAuthorizedAdjudicator(
-      { userEmail: '  Judge@Example.COM  ' },
-      makeReq('ADJ')
-    );
-
-    expect(res.hasRole).toBe(true);
-  });
-
-  it('isAuthorizedRequestor → true when token confers requestor', async () => {
-    mockAuthConfig();
-    const mod = await import(svcPath);
-    const userEndpointService = mod.default;
-
-    const res = await userEndpointService.isAuthorizedRequestor(
-      { userEmail: 'requestor@example.com' },
-      makeReq('REQ')
-    );
-
-    expect(res.hasRole).toBe(true);
-  });
-
-  it('isAuthorizedRequestor → false when token is adjudicator', async () => {
-    mockAuthConfig();
-    const mod = await import(svcPath);
-    const userEndpointService = mod.default;
-
-    const res = await userEndpointService.isAuthorizedRequestor(
-      { userEmail: 'adjudicator@example.com' },
-      makeReq('ADJ')
-    );
-
-    expect(res.hasRole).toBe(false);
-  });
-
-  it('multiple tokens → distinguishes different roles correctly', async () => {
-    mockAuthConfig();
-    const mod = await import(svcPath);
-    const userEndpointService = mod.default;
-
-    const adj = await userEndpointService.isAuthorizedAdjudicator(
-      { userEmail: 'a@example.com' },
-      makeReq('ADJ')
-    );
-    const reqz = await userEndpointService.isAuthorizedRequestor(
-      { userEmail: 'r@example.com' },
-      makeReq('REQ')
-    );
-    const adjAsReq = await userEndpointService.isAuthorizedRequestor(
-      { userEmail: 'a@example.com' },
-      makeReq('ADJ')
-    );
-
-    expect(adj.hasRole).toBe(true);
-    expect(reqz.hasRole).toBe(true);
-    expect(adjAsReq.hasRole).toBe(false);
-  });
 
   // -------------------- DB-backed lookups --------------------
 

@@ -8,6 +8,7 @@ import UseCaseRequestDto from "../dtos/UseCaseRequestDto";
 import ViewRequestByRequestNumDto from "../dtos/ViewRequestByRequestNumDto";
 
 import { RequestEndpointService } from "../../service/requestEndpointService";
+import { getUserEmailFromTokenPayload } from "src/main/config/authConfig";
 
 const service: RequestEndpointService = new RequestEndpointService();
 
@@ -18,7 +19,8 @@ export async function submit(
 ) {
   try {
     const payload = new SubmitRequestRequestDto(req.body);
-    const response = await service.submit(payload);
+    const userEmail = await getUserEmailFromTokenPayload(req);
+    const response = await service.submit(payload, userEmail as string);
     return res.status(200).json(response);
   } catch (e: any) {
     next(e);

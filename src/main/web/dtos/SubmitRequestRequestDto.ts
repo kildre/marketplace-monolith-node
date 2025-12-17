@@ -111,9 +111,6 @@ class Props {
  *         requestNumber:
  *           type: string
  *           example: "REQ-789"
- *         requestorEmail:
- *           type: string
- *           example: "requestor@example.com"
  *         designation:
  *           type: string
  *           example: "Analyst"
@@ -151,7 +148,6 @@ class Props {
  */
 export default class SubmitRequestRequestDto {
   public readonly requestNumber?: string;
-  public readonly requestorEmail?: string;
   public readonly designation?: string;
   public readonly agency?: string;
   public readonly organization?: string;
@@ -171,7 +167,6 @@ export default class SubmitRequestRequestDto {
       throw new ConstraintError(errors);
     }
     this.requestNumber = props.requestNumber;
-    this.requestorEmail = props.requestorEmail;
     this.designation = props.designation;
     this.agency = props.agency;
     this.organization = props.organization;
