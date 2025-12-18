@@ -7,10 +7,8 @@ import notificationRecipientDao from '../../../main/rdbms/dao/notificationRecipi
 import { NotificationPriorityEnum } from '../../../main/domain/enumeration/NotificationPriorityEnum';
 
 // Mock authConfig BEFORE importing the service
-const mockGetUserEmailFromTokenPayload = jest.fn();
 jest.mock('../../../main/config/authConfig', () => ({
   ...jest.requireActual('../../../main/config/authConfig'),
-  getUserEmailFromTokenPayload: mockGetUserEmailFromTokenPayload,
 }));
 
 // Real models via entities
@@ -83,8 +81,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
 
     // Reset and set default mock implementation
     jest.clearAllMocks();
-    // Mock to accept any Request parameter and return default email
-    mockGetUserEmailFromTokenPayload.mockImplementation(async (req: any) => 'test@example.com');
   });
 
   async function seedStatuses() {
@@ -131,8 +127,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   // -------- submit() --------
 
   it('submit → throws if UseCaseRequest.sequelize is missing (initDb not run)', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'test@example.com');
-    
     const service = await getServiceWithAuth();
 
     const originalSequelize = UseCaseRequest.sequelize;
@@ -151,7 +145,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   });
 
   it('submit → happy path returns trimmed requestNumber and persists data', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'test@example.com');
     
     await createProduct('Prod A');
     await createProduct('Prod B');
@@ -182,9 +175,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     expect(notificationRecipients[0].notification?.notificationPriorityId).toEqual(NotificationPriorityEnum.LOW.id);
   });
 
-  it('submit → ProductNotFoundError if any product missing', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'user@example.com');
-    
+  it('submit → ProductNotFoundError if any product missing', async () => {    
     await createProduct('Prod OK');
     const service = await getServiceWithAuth();
 
@@ -200,9 +191,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     } as any)).rejects.toThrow(/Product not found:\s*Missing One/i);
   });
 
-  it('submit → maps unique constraint to a duplicate error message', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementation(async (req: any) => 'test@example.com');
-    
+  it('submit → maps unique constraint to a duplicate error message', async () => {    
     const service = await getServiceWithAuth();
 
     await service.submit({
@@ -220,9 +209,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     } as any)).rejects.toThrow(/Duplicate value/i);
   });
 
-  it('submit → succeeds when cartItems is omitted (undefined)', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'test@example.com');
-    
+  it('submit → succeeds when cartItems is omitted (undefined)', async () => {    
     const service = await getServiceWithAuth();
 
     const res = await service.submit({
@@ -238,9 +225,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     expect(items.length).toBe(0);
   });
 
-  it('submit → maps ORM validation errors (e.g., requestedToolName missing)', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'test@example.com');
-    
+  it('submit → maps ORM validation errors (e.g., requestedToolName missing)', async () => {    
     const service = await getServiceWithAuth();
 
     await expect(service.submit({
@@ -279,9 +264,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
 
   // -------- view*() happy paths --------
 
-  it('viewPendingRequests → sees pending requests', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementation(async (req: any) => 'requestor@example.com');
-    
+  it('viewPendingRequests → sees pending requests', async () => {    
     await createProduct('P1');
     await createProduct('P2');
 
@@ -324,9 +307,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     expect(out.requests).toEqual([]);
   });
 
-  it('viewAllRequests → gets mapped list', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'r@example.com');
-    
+  it('viewAllRequests → gets mapped list', async () => {    
     await createProduct('X');
 
     const service = await getServiceWithAuth();
@@ -347,9 +328,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     }));
   });
 
-  it('viewRequestsForRequestor → sees own requests', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'ME@EXAMPLE.COM');
-    
+  it('viewRequestsForRequestor → sees own requests', async () => {    
     await createProduct('R');
 
     const service = await getServiceWithAuth();
@@ -386,9 +365,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
       .rejects.toThrow(/Request with number REQ-404 not found/i);
   });
 
-  it('viewRequestForRequestNumber → found returns mapped dto', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'r@example.com');
-    
+  it('viewRequestForRequestNumber → found returns mapped dto', async () => {    
     await createProduct('PX');
 
     const service = await getServiceWithAuth();
@@ -411,9 +388,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     }));
   });
 
-  it('viewPendingRequests → email normalization works', async () => {
-    mockGetUserEmailFromTokenPayload.mockImplementationOnce(async (req: any) => 'reqnorm@example.com');
-    
+  it('viewPendingRequests → email normalization works', async () => {    
     await createProduct('NP');
 
     const service = await getServiceWithAuth();

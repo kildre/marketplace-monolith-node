@@ -6,11 +6,8 @@ import ViewRequestsRequestDto from "../dtos/ViewRequestsRequestDto";
 import ViewRequestsResponseDto from "../dtos/ViewRequestsResponseDto";
 import UseCaseRequestDto from "../dtos/UseCaseRequestDto";
 import ViewRequestByRequestNumDto from "../dtos/ViewRequestByRequestNumDto";
-
-import { RequestEndpointService } from "../../service/requestEndpointService";
-import { getUserEmailFromTokenPayload } from "src/main/config/authConfig";
-
-const service: RequestEndpointService = new RequestEndpointService();
+import service from "../../service/requestEndpointService";
+import { CurrentUserNotFoundError } from "src/main/domain/errors/CurrentUserNotFoundError";
 
 export async function submit(
   req: Request,
@@ -18,9 +15,11 @@ export async function submit(
   next: NextFunction
 ) {
   try {
+    if (!req.currentUser) {
+      throw new CurrentUserNotFoundError();
+    }
     const payload = new SubmitRequestRequestDto(req.body);
-    const userEmail = await getUserEmailFromTokenPayload(req);
-    const response = await service.submit(payload, userEmail as string);
+    const response = await service.submit(payload, req.currentUser);
     return res.status(200).json(response);
   } catch (e: any) {
     next(e);

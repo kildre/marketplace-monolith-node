@@ -14,7 +14,6 @@ import CartItemDto, { CartItemProps } from "./CartItemDto";
 
 interface PropsI {
   requestNumber?: string;
-  requestorEmail?: string;
   designation?: string;
   agency?: string;
   organization?: string;
@@ -33,11 +32,6 @@ class Props {
   @IsString()
   @MaxLength(32)
   requestNumber?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(128)
-  requestorEmail?: string;
 
   @IsOptional()
   @IsString()

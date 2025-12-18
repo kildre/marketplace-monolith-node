@@ -25,7 +25,7 @@ import { NotificationPriorityEnum } from "../domain/enumeration/NotificationPrio
 import { notificationService } from "./notificationService";
 
 export interface RequestEndpointServiceI {
-  submit(req: SubmitRequestRequestDto, requestorEmail: String): Promise<SubmitRequestResponseDto>;
+  submit(req: SubmitRequestRequestDto, requestorUser: MarketplaceUser): Promise<SubmitRequestResponseDto>;
   viewPendingRequests(
     req: ViewRequestsRequestDto
   ): Promise<ViewRequestsResponseDto>;
@@ -67,9 +67,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   };
 
   // ---------- submit ----------
-  async submit(request: SubmitRequestRequestDto, requestorEmail: String): Promise<SubmitRequestResponseDto> {
-    const requestorUser = await this.validUserEmail(requestorEmail as string);
-
+  async submit(request: SubmitRequestRequestDto, requestorUser: MarketplaceUser): Promise<SubmitRequestResponseDto> {
     try {
       //Transaction: create request + cart items
       const useCaseReq = await this.sequelize.transaction(async (tx: Transaction) => {
