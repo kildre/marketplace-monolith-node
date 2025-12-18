@@ -10,6 +10,29 @@ import {
 
 export type TxOpt = { transaction?: Transaction };
 
+export interface BaseDaoI<M extends Model> {
+  create(
+    data: CreationAttributes<M>,
+    options?: TxOpt
+  ): Promise<M>;
+  findById(
+    id: number | string,
+    options?: Omit<FindOptions, 'where'> & TxOpt  
+  ): Promise<M | null>;
+  findAll(
+    options?: FindOptions & TxOpt
+  ): Promise<M[]>;
+  updateById(
+    id: number | string,
+    data: Partial<CreationAttributes<M>>,
+    options?: TxOpt
+  ): Promise<M | null>;
+  deleteById(
+    id: number | string,
+    options?: TxOpt & { hard?: boolean }
+  ): Promise<boolean>;
+}
+
 export class BaseDAO<M extends Model> {
   protected readonly model: ModelStatic<M>;
 
