@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import GetVisibleNotificationRecipientsRequestDto from "../dtos/GetVisibleNotificationRecipientsRequestDto";
 import NotificationRecipientDto from "../dtos/NotificationRecipientDto";
 import endpointService from "../../service/notificationRecipientEndpointService";
+import { CurrentUserNotFoundError } from "src/main/domain/errors/CurrentUserNotFoundError";
 
 
 export interface NotificationRecipientControllerI {
@@ -16,8 +16,10 @@ class NotificationRecipientController implements NotificationRecipientController
         next: NextFunction
     ) {
         try {
-            const payload = new GetVisibleNotificationRecipientsRequestDto(req.body);
-            const result = await endpointService.getVisible(payload);
+            if (!req.currentUser) {
+                throw new CurrentUserNotFoundError();
+            }
+            const result = await endpointService.getVisible(req.currentUser);
             res.status(200).json(result);
         } catch (e: any) {
             next(e);

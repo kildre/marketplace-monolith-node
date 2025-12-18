@@ -1,28 +1,18 @@
-import GetVisibleNotificationRecipientsRequestDto from "../web/dtos/GetVisibleNotificationRecipientsRequestDto";
 import NotificationRecipientDto from "../web/dtos/NotificationRecipientDto";
-import marketplaceUserDao from "../rdbms/dao/marketplaceUserDao";
 import notificationRecipientDao from "../rdbms/dao/notificationRecipientDao";
 import { NotificationRecipient } from "../rdbms/entities/NotificationRecipient";
 import { Notification } from "../rdbms/entities/Notification";
 import MissingAssociationError from "../domain/errors/MissingAssociationError";
 import NotificationDto from "../web/dtos/NotificationDto";
+import { MarketplaceUser } from "../rdbms/entities/MarketplaceUser";
 
 
 export interface NotificationRecipientEndpointServiceI {
-  getVisible(request: GetVisibleNotificationRecipientsRequestDto): Promise<NotificationRecipientDto[]>;
+  getVisible(currentUser: MarketplaceUser): Promise<NotificationRecipientDto[]>;
 }
 
 class NotificationRecipientEndpointService implements NotificationRecipientEndpointServiceI {
-  async getVisible(request: GetVisibleNotificationRecipientsRequestDto): Promise<NotificationRecipientDto[]> {
-    const currentUserEmail = String(request.currentUserEmail)
-      .trim()
-      .toLowerCase();
-    
-    const currentUser = await marketplaceUserDao.findByEmail(currentUserEmail);
-    if (!currentUser) {
-      throw new Error(`User with email ${currentUserEmail} not found.`);
-    }
-
+  async getVisible(currentUser: MarketplaceUser): Promise<NotificationRecipientDto[]> {
     const notificationRecipients = await notificationRecipientDao.findVisibleByRecipient(currentUser.id);
     const dtos : NotificationRecipientDto[] = [];
 
