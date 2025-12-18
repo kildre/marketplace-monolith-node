@@ -4,7 +4,7 @@ import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { Notification } from '../entities/Notification';
 import { NotificationPriority } from '../entities/NotificationPriority';
 
-export interface NotificationRecipientDaoI {
+export interface NotificationRecipientDaoI extends BaseDAO<NotificationRecipient> {
   findVisibleByRecipient(recipientId: number): Promise<NotificationRecipient[]>;
 }
 
