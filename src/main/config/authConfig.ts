@@ -5,6 +5,7 @@ import * as crypto from "crypto";
 import log from "../service/loggingService";
 import { AuthenticationError } from "../domain/errors/AuthenticationError";
 import { SessionTokenService } from "../service/sessionTokenService";
+import marketplaceUserDao from "../rdbms/dao/marketplaceUserDao";
 
 // ───────────────────────── Env & constants ─────────────────────────
 const ADJ_ROLE = (process.env.MARKETPLACE_ADJUDICATOR_ROLE || "").trim();
@@ -146,7 +147,8 @@ export interface IntrospectionResult {
   azp?: string;
   client_id?: string;
   username?: string;
-  email?: string; 
+  // Require email. If it isn't present, we won't be able to process the request anyway.
+  email: string; 
   realm_access?: { roles: string[] };
   resource_access?: Record<string, { roles: string[] }>;
 }
@@ -411,6 +413,7 @@ export function keycloakIntrospectMiddleware(required = true) {
         aud: EXPECTED_AUDIENCE || undefined,
         realm_access: roles.length ? { roles } : undefined,
         resource_access: {},
+        email: "bypass-user@metrostar.com",
       };
       fake.roles = roles;
       req.auth = fake;
@@ -419,7 +422,7 @@ export function keycloakIntrospectMiddleware(required = true) {
           roles
         )}, path=${req.path}, method=${req.method}`
       );
-      return next();
+      return forwardToRouter(fake, req, next);
     }
 
     try {
@@ -480,9 +483,8 @@ export function keycloakIntrospectMiddleware(required = true) {
             log.warn(
               `[AUTH_FAILURE] Cached token validation failed: ${error.toLogMessage()}`
             );
-            return next(error);
           }
-          throw error; // Re-throw if not AuthenticationError
+          return next(error); // All errors should be forwarded to the error handler middleware
         }
 
         req.auth = cached as IntrospectionResult & { roles?: string[] };
@@ -572,7 +574,7 @@ export function keycloakIntrospectMiddleware(required = true) {
           req.path
         }, method=${req.method}`
       );
-      return next();
+      return forwardToRouter(payload, req, next);
     } catch (err: any) {
       const latency = Date.now() - startTime;
 
@@ -603,16 +605,13 @@ export function keycloakIntrospectMiddleware(required = true) {
   };
 }
 
+async function forwardToRouter(token: IntrospectionResult, req: Request, next: NextFunction): Promise<void> {
+  let currentUser = await marketplaceUserDao.findByEmail(token.email);
+  // User should be authorized at this point. So if we're encountering them for the first time, create a MarketplaceUser record.
+  if (!currentUser) {
+    currentUser = await marketplaceUserDao.create({ email: token.email });
+  }
+  req.currentUser = currentUser;
 
-export async function getUserEmailFromTokenPayload(req: Request): Promise<string | undefined> {
-    const token = await getAuthToken(req);
-    if (!token) {
-          return undefined;
-    }
-    const tokenpayload = getCache(token);
-    console.log("Token payload:", tokenpayload);
-    if (!tokenpayload) {
-      return undefined;
-    }
-    return tokenpayload.email;
-}
+  return next();
+};
