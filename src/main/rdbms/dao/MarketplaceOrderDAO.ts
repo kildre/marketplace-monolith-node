@@ -4,15 +4,15 @@ import {
   CreationAttributes,
   FindOptions,
 } from 'sequelize';
-import { BaseDAO } from './BaseDAO';
 import { MarketplaceOrder } from '../entities/MarketplaceOrder';
 import { OrderItem } from '../entities/OrderItem';
 import { Status } from '../entities/Status';
 import { MarketplaceUser } from '../entities/MarketplaceUser';
+import { IdDao } from './IdDao';
 
 type WithTx = { transaction?: Transaction };
 
-export class MarketplaceOrderDAO extends BaseDAO<MarketplaceOrder> {
+export class MarketplaceOrderDAO extends IdDao<MarketplaceOrder> {
   constructor() {
     super(MarketplaceOrder);
   }

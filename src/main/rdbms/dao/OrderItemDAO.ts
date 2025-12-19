@@ -1,8 +1,8 @@
-import { BaseDAO } from './BaseDAO';
 import { OrderItem } from '../entities/OrderItem';
 import { Product } from '../entities/Product';
+import { IdDao } from './IdDao';
 
-export class OrderItemDAO extends BaseDAO<OrderItem> {
+export class OrderItemDAO extends IdDao<OrderItem> {
   constructor() {
     super(OrderItem);
   }

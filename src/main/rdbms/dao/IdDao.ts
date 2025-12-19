@@ -7,21 +7,15 @@ import {
   Transaction,
   Sequelize,
 } from 'sequelize';
+import { BaseDao, BaseDaoI } from './BaseDao';
 
 export type TxOpt = { transaction?: Transaction };
 
-export interface BaseDaoI<M extends Model> {
-  create(
-    data: CreationAttributes<M>,
-    options?: TxOpt
-  ): Promise<M>;
+export interface IdDaoI<M extends Model> extends BaseDaoI<M> {
   findById(
     id: number | string,
     options?: Omit<FindOptions, 'where'> & TxOpt  
   ): Promise<M | null>;
-  findAll(
-    options?: FindOptions & TxOpt
-  ): Promise<M[]>;
   updateById(
     id: number | string,
     data: Partial<CreationAttributes<M>>,
@@ -33,11 +27,9 @@ export interface BaseDaoI<M extends Model> {
   ): Promise<boolean>;
 }
 
-export class BaseDao<M extends Model> implements BaseDaoI<M> {
-  protected readonly model: ModelStatic<M>;
-
+export class IdDao<M extends Model> extends BaseDao<M> implements IdDaoI<M> {
   constructor(model: ModelStatic<M>) {
-    this.model = model;
+    super(model);
   }
 
   /** The Sequelize instance this model is bound to (safer than importing a global). */
@@ -52,28 +44,15 @@ export class BaseDao<M extends Model> implements BaseDaoI<M> {
     return s;
   }
 
-  async create(
-    data: CreationAttributes<M>,
-    options?: TxOpt
-  ): Promise<M> {
-    return this.model.create(data as any, { transaction: options?.transaction });
-  }
-
   async findById(
-    id: number | string,
+    id: number,
     options?: Omit<FindOptions, 'where'> & TxOpt
   ): Promise<M | null> {
     return this.model.findByPk(id as any, options);
   }
 
-  async findAll(
-    options?: FindOptions & TxOpt
-  ): Promise<M[]> {
-    return this.model.findAll(options);
-  }
-
   async updateById(
-    id: number | string,
+    id: number,
     data: Partial<CreationAttributes<M>>,
     options?: TxOpt
   ): Promise<M | null> {
@@ -86,7 +65,7 @@ export class BaseDao<M extends Model> implements BaseDaoI<M> {
   }
 
   async deleteById(
-    id: number | string,
+    id: number,
     options?: TxOpt & { hard?: boolean }
   ): Promise<boolean> {
     const instance = await this.model.findByPk(id as any, {
@@ -99,18 +78,5 @@ export class BaseDao<M extends Model> implements BaseDaoI<M> {
       transaction: options?.transaction,
     });
     return true;
-  }
-
-  /**
-   * Optional helper for managed transactions using the model-bound Sequelize.
-   * Usage:
-   *   await this.withManagedTx(async (tx) => { ... }, options?.transaction)
-   */
-  protected async withManagedTx<T>(
-    fn: (tx: Transaction) => Promise<T>,
-    tx?: Transaction
-  ): Promise<T> {
-    if (tx) return fn(tx);
-    return this.sequelize.transaction(fn);
   }
 }

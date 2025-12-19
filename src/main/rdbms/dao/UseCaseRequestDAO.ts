@@ -1,7 +1,7 @@
 // src/dao/UseCaseRequestDAO.ts
 import { FindOptions, Includeable, Transaction, Sequelize } from "sequelize";
-import { BaseDAO } from "./BaseDAO";
 import { UseCaseRequest } from "../entities/UseCaseRequest";
+import { IdDao } from "./IdDao";
 
 type WithTx = { transaction?: Transaction };
 
@@ -25,7 +25,7 @@ type CommonOpts = WithTx &
     >;
   };
 
-export class UseCaseRequestDAO extends BaseDAO<UseCaseRequest> {
+export class UseCaseRequestDAO extends IdDao<UseCaseRequest> {
   constructor() {
     super(UseCaseRequest);
   }

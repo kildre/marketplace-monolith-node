@@ -1,9 +1,9 @@
 import { FindOptions } from 'sequelize';
-import { BaseDAO } from './BaseDAO';
 import { Product } from '../entities/Product';
 import { OrderItem } from '../entities/OrderItem';
+import { IdDao } from './IdDao';
 
-export class ProductDAO extends BaseDAO<Product> {
+export class ProductDAO extends IdDao<Product> {
   constructor() {
     super(Product);
   }

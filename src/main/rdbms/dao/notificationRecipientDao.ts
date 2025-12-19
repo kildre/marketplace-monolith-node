@@ -1,14 +1,14 @@
-import { BaseDAO } from './BaseDAO';
+import { BaseDao } from './BaseDao';
 import { NotificationRecipient } from '../entities/NotificationRecipient';
 import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { Notification } from '../entities/Notification';
 import { NotificationPriority } from '../entities/NotificationPriority';
 
-export interface NotificationRecipientDaoI extends BaseDAO<NotificationRecipient> {
+export interface NotificationRecipientDaoI extends BaseDao<NotificationRecipient> {
   findVisibleByRecipient(recipientId: number): Promise<NotificationRecipient[]>;
 }
 
-class NotificationRecipientDao extends BaseDAO<NotificationRecipient> {
+class NotificationRecipientDao extends BaseDao<NotificationRecipient> implements NotificationRecipientDaoI {
   constructor() {
     super(NotificationRecipient);
   }

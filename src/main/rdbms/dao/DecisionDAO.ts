@@ -1,10 +1,10 @@
 import { Transaction } from 'sequelize';
-import { BaseDAO } from './BaseDAO';
 import { Decision } from '../entities/Decision';
 import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { Status } from '../entities/Status';
+import { IdDao } from './IdDao';
 
-export class DecisionDAO extends BaseDAO<Decision> {
+export class DecisionDAO extends IdDao<Decision> {
   constructor() {
     super(Decision);
   }

@@ -1,7 +1,7 @@
-import { BaseDAO } from './BaseDAO';
 import { Status } from '../entities/Status';
+import { IdDao } from './IdDao';
 
-export class StatusDAO extends BaseDAO<Status> {
+export class StatusDAO extends IdDao<Status> {
   constructor() {
     super(Status);
   }

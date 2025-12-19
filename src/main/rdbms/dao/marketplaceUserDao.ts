@@ -1,19 +1,19 @@
 // src/rdbms/dao/MarketplaceUserDAO.ts
 import { sequelize } from '../../config/sequelizeCLIConfig.cjs';
-import { BaseDAO, BaseDaoI } from './BaseDAO';
 import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { FindOptions, Transaction, fn, col, where, Op } from 'sequelize';
+import { IdDao, IdDaoI } from './IdDao';
 
 type WithTx = { transaction?: Transaction };
 
-export interface MarketplaceUserDaoI extends BaseDaoI<MarketplaceUser> {
+export interface MarketplaceUserDaoI extends IdDaoI<MarketplaceUser> {
   findByEmail(
     email: string,
     opts?: Omit<FindOptions, 'where' | 'transaction'> & WithTx
   ): Promise<MarketplaceUser | null>;
 }
 
-class MarketplaceUserDAO extends BaseDAO<MarketplaceUser> {
+class MarketplaceUserDAO extends IdDao<MarketplaceUser> implements MarketplaceUserDaoI {
   constructor() {
     super(MarketplaceUser);
   }

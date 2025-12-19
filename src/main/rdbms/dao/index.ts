@@ -1,4 +1,4 @@
-export * from './BaseDAO';
+export * from './BaseDao';
 export * from './marketplaceUserDao';
 export * from './StatusDAO';
 export * from './ProductDAO';
