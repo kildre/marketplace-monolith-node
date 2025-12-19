@@ -1,5 +1,5 @@
 // configureRoutes.ts
-import type { Application, Request } from "express";
+import type { Application } from "express";
 import express from "express";
 
 import rootRoutes from "../web/routes/rootRoutes";

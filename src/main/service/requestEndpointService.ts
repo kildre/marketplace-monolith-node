@@ -6,10 +6,9 @@ import { ProductDAO } from "../rdbms/dao/ProductDAO";
 import { CartItemDAO } from "../rdbms/dao/CartItemDAO";
 import { Decision } from "../rdbms/entities/Decision";
 import { UseCaseRequest } from "../rdbms/entities/UseCaseRequest";
-import EmailCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
 import ViewRequestByRequestNumDto from "../web/dtos/ViewRequestByRequestNumDto";
 
-import userEndpointService from "./userEndpointService";
+import userService from "./userService";
 
 // --- DTOs (same shapes you use in your controllers) ---
 import CartItemDto from "../web/dtos/CartItemDto";
@@ -38,7 +37,7 @@ export interface RequestEndpointServiceI {
 }
 
 export class RequestEndpointService implements RequestEndpointServiceI {
-  private userEndpointService = userEndpointService;
+  private userService = userService;
   private productDAO = new ProductDAO();
   private cartItemDAO = new CartItemDAO();
   private useCaseRequestDAO = new UseCaseRequestDAO();
@@ -140,13 +139,12 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   }
 
   /** Validates and retrieves user by email, throws if not found */
-  private async validUserEmail(email: string): Promise<MarketplaceUser> { 
-    const normalizedEmail = String(email || "").trim();
+  private async validUserEmail(email: string): Promise<MarketplaceUser> {
+    const normalizedEmail = this.userService.normalizeEmail(email);
     if (!normalizedEmail) {
       throw new Error('User email is required');
     }
-    const dto = new EmailCheckRequestDto({ userEmail: normalizedEmail });
-    return await this.userEndpointService.findByEmail(dto);
+    return await this.userService.findByEmail(normalizedEmail);
   }
 
   // ---------- viewPendingRequests ----------
