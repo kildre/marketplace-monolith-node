@@ -18,6 +18,7 @@ import { DecisionEndpointService } from '../../../main/service/decisionEndpointS
 import SubmitDecisionRequestDto from '../../../main/web/dtos/SubmitDecisionRequestDto';
 import { UseCaseRequestNotFoundError } from '../../../main/domain/errors/UseCaseRequestNotFoundError';
 import { NotificationServiceI } from '../../../main/service/notificationService';
+import decisionDao from '../../../main/rdbms/dao/decisionDao';
 
 describe('DecisionEndpointService (integration, expanded)', () => {
   let db: TestDbContext;
@@ -42,16 +43,14 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
   let userEndpointService: any;
   let usecaseDao: any;
-  let decisionDAO: any;
   let notificationServiceMock: NotificationServiceI;
 
   beforeEach(async () => {
     service = new DecisionEndpointService();
 
     // Import real DAOs
-    const { UseCaseRequestDAO, DecisionDAO } = await import('../../../main/rdbms/dao');
+    const { UseCaseRequestDAO } = await import('../../../main/rdbms/dao');
     usecaseDao = new UseCaseRequestDAO();
-    decisionDAO = new DecisionDAO();
 
     // Default wiring: deny authorization unless a test overrides it explicitly
     userEndpointService = {
@@ -67,7 +66,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
     (service as any).userEndpointService = userEndpointService;
     (service as any).usecaseDao = usecaseDao;
-    (service as any).decisionDAO = decisionDAO;
+    (service as any).decisionDao = decisionDao;
     (service as any).notificationService = notificationServiceMock;
   });
 
@@ -175,7 +174,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
     // decisionDAO.create should be called within a transaction
     const createSpy = jest.fn().mockResolvedValue({ id: 999 });
-    (service as any).decisionDAO = { create: createSpy };
+    (service as any).decisionDao = { create: createSpy };
 
     const payload = new SubmitDecisionRequestDto({
       adjudicatorEmail: '  JUDGE@EXAMPLE.COM  ', // should normalize to judge@example.com
@@ -203,7 +202,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
       findByEmail: async () => ({ id: 111, email: 'judge@example.com' }),
     };
     (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 222, requestor: { id: 888 } }) };
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         throw new UniqueConstraintError({
           errors: [{ message: 'decisionNumber must be unique' }],
@@ -232,7 +231,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
       findByRequestNumber: async (rn: string) => ({ id: 123, requestNumber: rn, requestor: { id: 888 } }),
     };
 
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         throw new ForeignKeyConstraintError({
           table: 'decisions',
@@ -271,7 +270,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
     }
 
     // 4) Force DAO to throw a Sequelize ValidationError with properly-typed items
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         const items = [
           new ValidationErrorItem(
@@ -320,7 +319,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
     (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 202, requestor: { id: 888 }  }) };
 
     const boom = new Error('kaboom');
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         throw boom;
       },

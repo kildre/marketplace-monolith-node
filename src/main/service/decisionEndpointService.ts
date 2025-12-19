@@ -24,6 +24,7 @@ export interface DecisionEndpointServiceI {
 export class DecisionEndpointService implements DecisionEndpointServiceI {
   private userEndpointService = userEndpointService;
   private usecaseDao = new UseCaseRequestDAO();
+  private decisionDao = decisionDao;
   private StatusEnum = StatusEnum;
 
   /** Use the Sequelize instance that the models are actually bound to. */
@@ -82,7 +83,7 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
           });
         }
 
-        const decision = await decisionDao.create(
+        const decision = await this.decisionDao.create(
           {
             decisionNumber: request.decisionNumber ?? '',
             ticketType: request.ticketType ?? null,
