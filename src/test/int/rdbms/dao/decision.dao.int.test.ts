@@ -4,14 +4,13 @@ import { UseCaseRequest } from '../../../../main/rdbms/entities/UseCaseRequest';
 import { MarketplaceOrder } from '../../../../main/rdbms/entities/MarketplaceOrder';
 import { Status } from '../../../../main/rdbms/entities/Status';
 import { Decision } from '../../../../main/rdbms/entities/Decision';
-import { DecisionDAO } from '../../../../main/rdbms/dao/DecisionDAO';
+import dao from '../../../../main/rdbms/dao/decisionDao';
 import {
   PostgreSqlContainer,
   StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
 
 describe('DecisionDAO (integration)', () => {
-  let dao: DecisionDAO;
   let container: StartedPostgreSqlContainer | undefined;
   let sequelize: Sequelize;
 
@@ -68,8 +67,6 @@ describe('DecisionDAO (integration)', () => {
       statusId: statusNew.id,
       requestorId: requestor.id,
     });
-
-    dao = new DecisionDAO();
   });
 
   afterAll(async () => {

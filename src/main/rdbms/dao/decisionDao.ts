@@ -2,9 +2,16 @@ import { Transaction } from 'sequelize';
 import { Decision } from '../entities/Decision';
 import { MarketplaceUser } from '../entities/MarketplaceUser';
 import { Status } from '../entities/Status';
-import { IdDao } from './IdDao';
+import { IdDao, IdDaoI } from './IdDao';
 
-export class DecisionDAO extends IdDao<Decision> {
+export interface DecisionDaoI extends IdDaoI<Decision> {
+  createForRequest(decisionData: Partial<Decision>, tx?: Transaction): Promise<Decision>;
+  listForRequest(requestId: number): Promise<Decision[]>;
+  listForOrder(orderId: number): Promise<Decision[]>;
+  updateStatus(decisionId: number, statusId: number, tx?: Transaction): Promise<Decision | null>;
+}
+
+class DecisionDAO extends IdDao<Decision> implements DecisionDaoI {
   constructor() {
     super(Decision);
   }
@@ -52,3 +59,6 @@ export class DecisionDAO extends IdDao<Decision> {
     return decision;
   }
 }
+
+const decisionDao = new DecisionDAO();
+export default decisionDao;

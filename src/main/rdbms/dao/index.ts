@@ -5,4 +5,4 @@ export * from './ProductDAO';
 export * from './MarketplaceOrderDAO';
 export * from './OrderItemDAO';
 export * from './UseCaseRequestDAO';
-export * from './DecisionDAO';
+export * from './decisionDao';

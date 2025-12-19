@@ -4,7 +4,7 @@ import SubmitDecisionRequestDto from '../web/dtos/SubmitDecisionRequestDto';
 import SubmitDecisionResponseDto from '../web/dtos/SubmitDecisionResponseDto';
 import EmailCheckRequestDto from "../web/dtos/RoleCheckRequestDto";
 import { UseCaseRequestNotFoundError } from '../domain/errors/UseCaseRequestNotFoundError';
-import { DecisionDAO } from "../rdbms/dao/DecisionDAO";
+import decisionDao from "../rdbms/dao/decisionDao";
 import { Decision } from "../rdbms/entities/Decision";
 import { NotificationPriorityEnum } from "../domain/enumeration/NotificationPriorityEnum";
 
@@ -13,7 +13,7 @@ import { NotificationPriorityEnum } from "../domain/enumeration/NotificationPrio
 import { UseCaseRequestDAO } from '../rdbms/dao/UseCaseRequestDAO';
 // TODO: An endpoint service should not depend on another endpoint service. Common functionality should be extracted to a shared lower level service. Refactor needed.
 import userEndpointService from './userEndpointService';
-import { StatusEnum, fromId, fromCode } from '../domain/enumeration/StatusEnum';
+import { StatusEnum, fromId } from '../domain/enumeration/StatusEnum';
 import { notificationService } from "./notificationService";
 import MissingAssociationError from "../domain/errors/MissingAssociationError";
 
@@ -23,7 +23,6 @@ export interface DecisionEndpointServiceI {
 
 export class DecisionEndpointService implements DecisionEndpointServiceI {
   private userEndpointService = userEndpointService;
-  private decisionDAO = new DecisionDAO();
   private usecaseDao = new UseCaseRequestDAO();
   private StatusEnum = StatusEnum;
 
@@ -83,7 +82,7 @@ export class DecisionEndpointService implements DecisionEndpointServiceI {
           });
         }
 
-        const decision = await this.decisionDAO.create(
+        const decision = await decisionDao.create(
           {
             decisionNumber: request.decisionNumber ?? '',
             ticketType: request.ticketType ?? null,
