@@ -24,7 +24,7 @@ import { NotificationPriorityEnum } from "../domain/enumeration/NotificationPrio
 import { notificationService } from "./notificationService";
 
 export interface RequestEndpointServiceI {
-  submit(req: SubmitRequestRequestDto, requestorUser: MarketplaceUser): Promise<SubmitRequestResponseDto>;
+  submit(req: SubmitRequestRequestDto, requestorUser?: MarketplaceUser): Promise<SubmitRequestResponseDto>;
   viewPendingRequests(
     req: ViewRequestsRequestDto
   ): Promise<ViewRequestsResponseDto>;
@@ -66,10 +66,45 @@ export class RequestEndpointService implements RequestEndpointServiceI {
   };
 
   // ---------- submit ----------
-  async submit(request: SubmitRequestRequestDto, requestorUser: MarketplaceUser): Promise<SubmitRequestResponseDto> {
+  async submit(request: SubmitRequestRequestDto, requestorUser?: MarketplaceUser): Promise<SubmitRequestResponseDto> {
+    // Check Sequelize instance first (before any other validations)
+    const s = UseCaseRequest.sequelize;
+    if (!s) {
+      throw new Error(
+        "UseCaseRequest model is not bound to a Sequelize instance. " +
+        "Make sure initDb() ran and models were initialized."
+      );
+    }
+
+    // If requestorUser not provided, try to get from request email
+    if (!requestorUser) {
+      // Type-safe access to email fields that might be in the DTO
+      const dto = request as any;
+      const email = dto.requestorEmail || dto.email;
+      if (email) {
+        try {
+          requestorUser = await this.validUserEmail(email);
+        } catch (err) {
+          // If user lookup fails, throw with context
+          throw new Error(`Failed to resolve requestor user: ${(err as Error).message}`);
+        }
+      }
+    }
+
+    // Validate requestorUser is provided before entering try block
+    if (!requestorUser) {
+      throw new Error('Requestor user is required');
+    }
+
     try {
+      // Get the user ID, handling both plain objects and Sequelize instances
+      const requestorId = (requestorUser as any).dataValues?.id ?? (requestorUser as any).id;
+      if (!requestorId) {
+        throw new Error('Invalid requestor user: missing ID');
+      }
+
       //Transaction: create request + cart items
-      const useCaseReq = await this.sequelize.transaction(async (tx: Transaction) => {
+      const useCaseReq = await s.transaction(async (tx: Transaction) => {
         const ucr = await this.useCaseRequestDAO.create(
           {
             requestNumber: String(request.requestNumber ?? '').trim(),
@@ -83,21 +118,35 @@ export class RequestEndpointService implements RequestEndpointServiceI {
             email: request.email,
             phoneNumber: request.phoneNumber,
             estimatedRom: request.estimatedRom,
-            requestorId: requestorUser.id,
+            requestorId: requestorId,
             statusId: StatusEnum.PENDING.id,
           } as any,
           { transaction: tx }
         );
+
+        // Extract the created request ID and number safely
+        const requestId = (ucr as any).dataValues?.id ?? (ucr as any).id;
+        const createdRequestNumber = (ucr as any).dataValues?.requestNumber ?? (ucr as any).requestNumber;
+        
+        if (!requestId) {
+          throw new Error('Failed to create request: missing ID');
+        }
+
         // Resolve products & create CartItems
         for (const item of request.cartItems ?? []) {
           const product = await this.productDAO.findByName(item.name, { transaction: tx });
           if (!product) {
             throw new ProductNotFoundError(item.name);
           }
+          // Handle both Sequelize instances and plain objects
+          const productId = (product as any).dataValues?.id ?? (product as any).id;
+          if (!productId) {
+            throw new Error(`Product ${item.name} found but has no ID`);
+          }
           await this.cartItemDAO.create(
             {
-              requestId: ucr.dataValues.id,
-              productId: product.dataValues.id,
+              requestId: requestId,
+              productId: productId,
               quantity: item.quantity,
             } as any,
             { transaction: tx }
@@ -105,9 +154,9 @@ export class RequestEndpointService implements RequestEndpointServiceI {
         }
 
         await notificationService.send({
-          recipientIds: [requestorUser.id],
-          title: `Request ${ucr.dataValues.requestNumber} Successfully Submitted`,
-          message: `You have successfully submitted your request ${ucr.dataValues.requestNumber}. It has been sent to a CSL for review. You will receive a notification when the status of your request has been updated.`,
+          recipientIds: [requestorId],
+          title: `Request ${createdRequestNumber} Successfully Submitted`,
+          message: `You have successfully submitted your request ${createdRequestNumber}. It has been sent to a CSL for review. You will receive a notification when the status of your request has been updated.`,
           priority: NotificationPriorityEnum.LOW,
           tx,
         });
@@ -140,7 +189,7 @@ export class RequestEndpointService implements RequestEndpointServiceI {
 
   /** Validates and retrieves user by email, throws if not found */
   private async validUserEmail(email: string): Promise<MarketplaceUser> {
-    const normalizedEmail = this.userService.normalizeEmail(email);
+    const normalizedEmail = email?.trim().toLowerCase();
     if (!normalizedEmail) {
       throw new Error('User email is required');
     }

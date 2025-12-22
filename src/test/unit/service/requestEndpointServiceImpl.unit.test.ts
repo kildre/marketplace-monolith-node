@@ -52,7 +52,7 @@ jest.mock('../../../main/rdbms/dao/CartItemDAO', () => {
 });
 
 // ---- Mock the userEndpointService module the service imports
-jest.mock('../../../main/service/userEndpointService', () => ({
+jest.mock('../../../main/service/userService', () => ({
   __esModule: true,
   default: mockUserSvc,
 }));

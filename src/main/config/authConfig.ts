@@ -489,6 +489,9 @@ export function keycloakIntrospectMiddleware(required = true) {
 
         req.auth = cached as IntrospectionResult & { roles?: string[] };
         logRoles(req.auth);
+        let currentUser = await marketplaceUserDao.findByEmail(cached.email);
+        req.currentUser = currentUser;
+
         return next();
       }
 
@@ -574,6 +577,7 @@ export function keycloakIntrospectMiddleware(required = true) {
           req.path
         }, method=${req.method}`
       );
+      console.log("Forwarding to router");
       return forwardToRouter(payload, req, next);
     } catch (err: any) {
       const latency = Date.now() - startTime;
@@ -608,6 +612,7 @@ export function keycloakIntrospectMiddleware(required = true) {
 async function forwardToRouter(token: IntrospectionResult, req: Request, next: NextFunction): Promise<void> {
   let currentUser = await marketplaceUserDao.findByEmail(token.email);
   // User should be authorized at this point. So if we're encountering them for the first time, create a MarketplaceUser record.
+  console.log("Looking for current user with email", currentUser);
   if (!currentUser) {
     currentUser = await marketplaceUserDao.create({ email: token.email });
   }

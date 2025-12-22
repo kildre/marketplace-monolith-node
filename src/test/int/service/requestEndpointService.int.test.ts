@@ -102,19 +102,20 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   async function getServiceWithAuth(stub: Partial<{
     isAuthorizedRequestor: (dto: any) => Promise<{ hasRole: boolean }>;
     isAuthorizedAdjudicator: (dto: any) => Promise<{ hasRole: boolean }>;
-    findByEmail: (dto: any) => Promise<typeof MarketplaceUser | null>;
+    findByEmail: (email: string) => Promise<typeof MarketplaceUser | null>;
   }> = {}) {
+    // Don't reset modules - this breaks the connection to our test DB models
     const mod = await import(svcPath);
     const service = mod.default;
 
-    (service as any).userEndpointService = {
+    (service as any).userService = {
       isAuthorizedRequestor: async () => ({ hasRole: false }),
       isAuthorizedAdjudicator: async () => ({ hasRole: false }),
-      findByEmail: async (dto: any) => {
-        const email = normalizeEmail(dto.userEmail ?? dto.email ?? '');
-        let user = await MarketplaceUser.findOne({ where: { email } });
+      findByEmail: async (email: string) => {
+        const normalizedEmail = normalizeEmail(email);
+        let user = await MarketplaceUser.findOne({ where: { email: normalizedEmail } });
         if (!user) {
-          user = await MarketplaceUser.create({ email });
+          user = await MarketplaceUser.create({ email: normalizedEmail });
         }
         return user;
       },
@@ -151,6 +152,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const service = await getServiceWithAuth();
 
     const res = await service.submit({
+      requestorEmail: 'requestor@example.com',
       requestNumber: '  REQ-OK  ',
       requestedToolName: 'ToolA',
       description: 'desc',
@@ -195,6 +197,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const service = await getServiceWithAuth();
 
     await service.submit({
+      requestorEmail: 'user@example.com',
       requestNumber: 'REQ-DUP',
       requestedToolName: 'Tool',
       description: 'd',
@@ -202,6 +205,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     } as any);
 
     await expect(service.submit({
+      requestorEmail: 'user@example.com',
       requestNumber: 'REQ-DUP',
       requestedToolName: 'Tool',
       description: 'd',
@@ -213,6 +217,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const service = await getServiceWithAuth();
 
     const res = await service.submit({
+      requestorEmail: 'user@example.com',
       requestNumber: 'REQ-NO-CART',
       requestedToolName: 'Tool No Cart',
       description: 'no items'
@@ -229,6 +234,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     const service = await getServiceWithAuth();
 
     await expect(service.submit({
+      requestorEmail: 'test@example.com',
       requestNumber: 'REQ-BAD',
       description: 'desc'
     } as any)).rejects.toThrow(/Validation failed:/i);
