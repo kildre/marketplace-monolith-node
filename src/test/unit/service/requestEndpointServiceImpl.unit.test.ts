@@ -52,7 +52,7 @@ jest.mock('../../../main/rdbms/dao/CartItemDAO', () => {
 });
 
 // ---- Mock the userEndpointService module the service imports
-jest.mock('../../../main/service/userEndpointService', () => ({
+jest.mock('../../../main/service/userService', () => ({
   __esModule: true,
   default: mockUserSvc,
 }));
@@ -75,7 +75,6 @@ import { ProductNotFoundError } from '../../../main/domain/errors/ProductNotFoun
 // Small factory helpers
 const makeSubmitDto = (over: Partial<any> = {}) => ({
   requestNumber: '  REQ-001  ',
-  requestorEmail: '  USER@Example.com   ',
   requestedToolName: 'Tool X',
   description: 'desc',
   designation: 'A',
@@ -170,12 +169,6 @@ describe('RequestEndpointService (unit, mocked)', () => {
   });
 
   // ---------- submit ----------
-  it('submit → throws when requestorEmail missing/blank (normalization enforced)', async () => {
-    await expect(svc.submit(makeSubmitDto({ requestorEmail: '   ' }))).rejects.toThrow(
-      /User email is required/i
-    );
-  });
-
   it('submit → throws when findByEmail returns undefined/null', async () => {
     mockUserSvc.findByEmail.mockRejectedValueOnce(new Error('User not found'));
 
@@ -329,15 +322,15 @@ describe('RequestEndpointService (unit, mocked)', () => {
     );
   });
 
-  it('submit → rethrows unknown errors', async () => {
-    mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
+    it('submit → rethrows unknown errors', async () => {
+      mockUserSvc.findByEmail.mockResolvedValueOnce({ id: 55 });
 
-    transactionSpy.mockImplementationOnce(async () => {
-      throw new Error('kaboom');
+      transactionSpy.mockImplementationOnce(async () => {
+        throw new Error('kaboom');
+      });
+
+      await expect(svc.submit(makeSubmitDto())).rejects.toThrow(/kaboom/i);
     });
-
-    await expect(svc.submit(makeSubmitDto())).rejects.toThrow(/kaboom/i);
-  });
 
   // ---------- viewPendingRequests ----------
   it('viewPendingRequests → throws when email is invalid', async () => {

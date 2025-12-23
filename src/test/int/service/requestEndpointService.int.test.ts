@@ -1,9 +1,15 @@
 // src/test/int/service/requestEndpointService.int.test.ts
 import 'reflect-metadata';
+
 import { Sequelize } from 'sequelize';
 import { setupTestDb, teardownTestDb, TestDbContext } from '../../utils/testDbHelpers';
 import notificationRecipientDao from '../../../main/rdbms/dao/notificationRecipientDao';
 import { NotificationPriorityEnum } from '../../../main/domain/enumeration/NotificationPriorityEnum';
+
+// Mock authConfig BEFORE importing the service
+jest.mock('../../../main/config/authConfig', () => ({
+  ...jest.requireActual('../../../main/config/authConfig'),
+}));
 
 // Real models via entities
 const svcPath = '../../../main/service/requestEndpointService';
@@ -14,7 +20,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   let sequelize: Sequelize;
 
   // model refs
-  let MarketplaceUser: any; // not strictly needed when we stub userEndpointService
+  let MarketplaceUser: any;
   let Status: any;
   let Product: any;
   let UseCaseRequest: any;
@@ -23,7 +29,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   let NotificationRecipient: any;
 
   const normalizeEmail = (e: string) => String(e ?? '').trim().toLowerCase();
-
 
   async function seedNotificationPriorities() {
     const NotificationPriority = sequelize.models.NotificationPriority;
@@ -44,7 +49,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     db = await setupTestDb();
     sequelize = db.sequelize;
 
-    // bind model refs
     MarketplaceUser = sequelize.models.MarketplaceUser;
     Product = sequelize.models.Product;
     UseCaseRequest = sequelize.models.UseCaseRequest;
@@ -55,7 +59,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
 
     await seedNotificationPriorities();
     await seedStatuses();
-
   }, 120_000);
 
   afterAll(async () => {
@@ -63,7 +66,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   });
 
   beforeEach(async () => {
-    // Clean dynamic/test data; statuses remain
     await CartItem.destroy({ where: {} });
     await UseCaseRequest.destroy({ where: {} });
     await NotificationRecipient.destroy({ where: {} });
@@ -71,13 +73,14 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     await Product.destroy({ where: {} });
     await Notification.destroy({ where: {} });
 
-    // Ensure notification priorities exist after cleanup
     await seedNotificationPriorities();
 
-    // Ensure statuses exist
     if ((await Status.count()) === 0) {
       await seedStatuses();
     }
+
+    // Reset and set default mock implementation
+    jest.clearAllMocks();
   });
 
   async function seedStatuses() {
@@ -87,7 +90,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
       { id: StatusEnum.DENIED.id, code: 'DENIED' },
     ];
     for (const r of rows) {
-      // upsert-ish without relying on dialect upsert
       const found = await Status.findByPk(r.id);
       if (!found) await Status.create(r);
     }
@@ -97,24 +99,23 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     return Product.create({ name });
   }
 
-  /** Build a service instance and stub its userEndpointService for auth/lookup. */
   async function getServiceWithAuth(stub: Partial<{
     isAuthorizedRequestor: (dto: any) => Promise<{ hasRole: boolean }>;
     isAuthorizedAdjudicator: (dto: any) => Promise<{ hasRole: boolean }>;
-    findByEmail: (dto: any) => Promise<typeof MarketplaceUser | null>;
+    findByEmail: (email: string) => Promise<typeof MarketplaceUser | null>;
   }> = {}) {
+    // Don't reset modules - this breaks the connection to our test DB models
     const mod = await import(svcPath);
     const service = mod.default;
 
-    // Always stub userEndpointService to create users if not found
-    (service as any).userEndpointService = {
+    (service as any).userService = {
       isAuthorizedRequestor: async () => ({ hasRole: false }),
       isAuthorizedAdjudicator: async () => ({ hasRole: false }),
-      findByEmail: async (dto: any) => {
-        const email = normalizeEmail(dto.userEmail ?? dto.email ?? '');
-        let user = await MarketplaceUser.findOne({ where: { email } });
+      findByEmail: async (email: string) => {
+        const normalizedEmail = normalizeEmail(email);
+        let user = await MarketplaceUser.findOne({ where: { email: normalizedEmail } });
         if (!user) {
-          user = await MarketplaceUser.create({ email });
+          user = await MarketplaceUser.create({ email: normalizedEmail });
         }
         return user;
       },
@@ -129,47 +130,29 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
   it('submit → throws if UseCaseRequest.sequelize is missing (initDb not run)', async () => {
     const service = await getServiceWithAuth();
 
-    // Store original sequelize instance
     const originalSequelize = UseCaseRequest.sequelize;
     try {
-      // Unbind sequelize from UseCaseRequest
       (UseCaseRequest as any).sequelize = undefined;
 
       await expect(service.submit({
-        requestorEmail: 'auth@example.com',
         requestNumber: 'REQ-NODB',
         requestedToolName: 'Tool',
         description: 'desc',
         cartItems: [],
       } as any)).rejects.toThrow(/UseCaseRequest model is not bound to a Sequelize instance/i);
     } finally {
-      // Restore sequelize
       (UseCaseRequest as any).sequelize = originalSequelize;
     }
   });
 
-  it('submit → rejects when requestorEmail is missing/blank/undefined/null', async () => {
-    const service = await getServiceWithAuth();
-    for (const requestorEmail of ['   ' as any, undefined as any, null as any]) {
-      await expect(service.submit({
-        requestorEmail,
-        requestNumber: 'REQ-NOEMAIL',
-        requestedToolName: 'ToolX',
-        description: 'desc',
-        cartItems: []
-      } as any)).rejects.toThrow(/User email is required/i);
-    }
-  });
-
   it('submit → happy path returns trimmed requestNumber and persists data', async () => {
-    // Arrange
+    
     await createProduct('Prod A');
     await createProduct('Prod B');
     const service = await getServiceWithAuth();
 
-    // Act
     const res = await service.submit({
-      requestorEmail: '  USER@EXAMPLE.COM  ',
+      requestorEmail: 'requestor@example.com',
       requestNumber: '  REQ-OK  ',
       requestedToolName: 'ToolA',
       description: 'desc',
@@ -179,7 +162,6 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
       ],
     } as any);
 
-    // Assert
     expect(res.requestNumber).toBe('REQ-OK');
 
     const row = await UseCaseRequest.findOne({ where: { requestNumber: 'REQ-OK' } });
@@ -195,7 +177,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     expect(notificationRecipients[0].notification?.notificationPriorityId).toEqual(NotificationPriorityEnum.LOW.id);
   });
 
-  it('submit → ProductNotFoundError if any product missing', async () => {
+  it('submit → ProductNotFoundError if any product missing', async () => {    
     await createProduct('Prod OK');
     const service = await getServiceWithAuth();
 
@@ -211,21 +193,19 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     } as any)).rejects.toThrow(/Product not found:\s*Missing One/i);
   });
 
-  it('submit → maps unique constraint to a duplicate error message', async () => {
+  it('submit → maps unique constraint to a duplicate error message', async () => {    
     const service = await getServiceWithAuth();
 
-    // first submit OK
     await service.submit({
-      requestorEmail: 'req@example.com',
+      requestorEmail: 'user@example.com',
       requestNumber: 'REQ-DUP',
       requestedToolName: 'Tool',
       description: 'd',
       cartItems: [],
     } as any);
 
-    // second submit with same requestNumber should fail
     await expect(service.submit({
-      requestorEmail: 'req@example.com',
+      requestorEmail: 'user@example.com',
       requestNumber: 'REQ-DUP',
       requestedToolName: 'Tool',
       description: 'd',
@@ -233,15 +213,14 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     } as any)).rejects.toThrow(/Duplicate value/i);
   });
 
-  it('submit → succeeds when cartItems is omitted (undefined)', async () => {
+  it('submit → succeeds when cartItems is omitted (undefined)', async () => {    
     const service = await getServiceWithAuth();
 
     const res = await service.submit({
-      requestorEmail: ' user2@EXAMPLE.com ',
+      requestorEmail: 'user@example.com',
       requestNumber: 'REQ-NO-CART',
       requestedToolName: 'Tool No Cart',
       description: 'no items'
-      // cartItems omitted
     } as any);
 
     expect(res.requestNumber).toBe('REQ-NO-CART');
@@ -251,13 +230,12 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     expect(items.length).toBe(0);
   });
 
-  it('submit → maps ORM validation errors (e.g., requestedToolName missing)', async () => {
+  it('submit → maps ORM validation errors (e.g., requestedToolName missing)', async () => {    
     const service = await getServiceWithAuth();
 
     await expect(service.submit({
-      requestorEmail: 'user3@example.com',
+      requestorEmail: 'test@example.com',
       requestNumber: 'REQ-BAD',
-      // requestedToolName missing/undefined
       description: 'desc'
     } as any)).rejects.toThrow(/Validation failed:/i);
   });
@@ -292,8 +270,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
 
   // -------- view*() happy paths --------
 
-  it('viewPendingRequests → sees pending requests', async () => {
-    // Arrange: products + submit two pending requests
+  it('viewPendingRequests → sees pending requests', async () => {    
     await createProduct('P1');
     await createProduct('P2');
 
@@ -314,10 +291,8 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
       cartItems: [{ name: 'P2', quantity: 1 }],
     } as any);
 
-    // Act
     const out = await service.viewPendingRequests({ userEmail: 'judge@example.com' } as any);
 
-    // Assert
     expect(out.requests.length).toBeGreaterThanOrEqual(2);
     expect(out.requests[0]).toEqual(expect.objectContaining({
       requestNumber: expect.any(String),
@@ -338,7 +313,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     expect(out.requests).toEqual([]);
   });
 
-  it('viewAllRequests → gets mapped list', async () => {
+  it('viewAllRequests → gets mapped list', async () => {    
     await createProduct('X');
 
     const service = await getServiceWithAuth();
@@ -359,7 +334,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     }));
   });
 
-  it('viewRequestsForRequestor → sees own requests', async () => {
+  it('viewRequestsForRequestor → sees own requests', async () => {    
     await createProduct('R');
 
     const service = await getServiceWithAuth();
@@ -396,7 +371,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
       .rejects.toThrow(/Request with number REQ-404 not found/i);
   });
 
-  it('viewRequestForRequestNumber → found returns mapped dto', async () => {
+  it('viewRequestForRequestNumber → found returns mapped dto', async () => {    
     await createProduct('PX');
 
     const service = await getServiceWithAuth();
@@ -419,7 +394,7 @@ describe('requestEndpointService (integration, real DB/DAOs) — no Role model',
     }));
   });
 
-  it('viewPendingRequests → email normalization works', async () => {
+  it('viewPendingRequests → email normalization works', async () => {    
     await createProduct('NP');
 
     const service = await getServiceWithAuth();

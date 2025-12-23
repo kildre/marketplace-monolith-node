@@ -1,7 +1,7 @@
 // src/test/int/rdbms/dao/base.dao.int.test.ts
 import { Sequelize, DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional, Transaction } from 'sequelize';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { BaseDAO } from '../../../../main/rdbms/dao/BaseDAO';
+import { BaseDao } from '../../../../main/rdbms/dao/BaseDao';
 
 class Thing extends Model<InferAttributes<Thing>, InferCreationAttributes<Thing>> {
   declare id: CreationOptional<number>;
@@ -31,7 +31,7 @@ class Thing extends Model<InferAttributes<Thing>, InferCreationAttributes<Thing>
 }
 
 /** Expose protected helpers for testing */
-class ThingDAO extends BaseDAO<Thing> {
+class ThingDAO extends BaseDao<Thing> {
   constructor() { super(Thing); }
   // expose withManagedTx for testing the managed-transaction helper
   public runWithManagedTx<T>(fn: (tx: Transaction) => Promise<T>, tx?: Transaction) {
@@ -148,7 +148,7 @@ describe('BaseDAO (integration)', () => {
       declare id: CreationOptional<number>;
       declare name: string;
     }
-    class UnboundDAO extends BaseDAO<Unbound> {
+    class UnboundDAO extends BaseDao<Unbound> {
       public poke() {
         return this.sequelize; // should throw
       }

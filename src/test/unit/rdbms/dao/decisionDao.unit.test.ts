@@ -29,11 +29,10 @@ jest.mock('../../../../main/rdbms/entities/Status', () => ({
 import { Decision } from '../../../../main/rdbms/entities/Decision';
 import { MarketplaceUser } from '../../../../main/rdbms/entities/MarketplaceUser';
 import { Status } from '../../../../main/rdbms/entities/Status';
-import { DecisionDAO } from '../../../../main/rdbms/dao/DecisionDAO';
+import dao from '../../../../main/rdbms/dao/decisionDao';
 
 // ---- Tests ----
-describe('DecisionDAO', () => {
-  const dao = new DecisionDAO();
+describe('decisionDao', () => {
 
   beforeEach(() => {
     (Decision.create as any).mockReset?.();

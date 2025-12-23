@@ -1,46 +1,18 @@
-import { read } from "fs";
-import { NotificationRecipientDaoI } from "src/main/rdbms/dao/notificationRecipientDao";
-import { NotificationRecipient } from "src/main/rdbms/entities";
+import { MarketplaceUser } from "src/main/rdbms/entities/MarketplaceUser";
 import { NotificationRecipientEndpointServiceI } from "src/main/service/notificationRecipientEndpointService";
-import { UserEndpointServiceI } from "src/main/service/userEndpointService";
-import GetVisibleNotificationRecipientsRequestDto from "src/main/web/dtos/GetVisibleNotificationRecipientsRequestDto";
 import NotificationRecipientDto from "src/main/web/dtos/NotificationRecipientDto";
-import EmailCheckRequestDto from "src/main/web/dtos/RoleCheckRequestDto";
 
 
 // ---- Module under test (imported AFTER mocks are set)
 const SERVICE_PATH = '../../../main/service/notificationRecipientEndpointService';
 
-// ---- Mocks for collaborators
-// const mockUserSvc = {
-//     isAuthorizedRequestor: jest.fn(),
-//     isAuthorizedAdjudicator: jest.fn(),
-//     findByEmail: jest.fn(),
-//     findIdByEmail: jest.fn()
-// }
-
 const notificationRecipientDaoMock = {
     findVisibleByRecipient: jest.fn(),
-}
-
-const marketplaceUserDaoMock = {
-    findByEmail: jest.fn(),
 };
-
-// ---- Mock the userEndpointService module the service imports
-// jest.mock('../../../main/service/userEndpointService', () => ({
-//   __esModule: true,
-//   default: mockUserSvc,
-// }));
 
 jest.mock('../../../main/rdbms/dao/notificationRecipientDao', () => ({
   __esModule: true,
   default: notificationRecipientDaoMock,
-}));
-
-jest.mock('../../../main/rdbms/dao/marketplaceUserDao', () => ({
-    __esModule: true,
-    default: marketplaceUserDaoMock,
 }));
 
 describe('NotificationRecipientEndpointService', () => {
@@ -55,7 +27,6 @@ describe('NotificationRecipientEndpointService', () => {
   });
 
   it('should return a list of notification recipients', async () => {
-    marketplaceUserDaoMock.findByEmail.mockResolvedValueOnce({ id: 1, email: 'judge@example.com' });
     const now = new Date();
     const nowIsoString = now.toISOString();
 
@@ -118,8 +89,8 @@ describe('NotificationRecipientEndpointService', () => {
     notificationRecipientDaoMock.findVisibleByRecipient.mockResolvedValueOnce([firstNotificationRecipient, secondNotificationRecipient]);
 
 
-    const request = new GetVisibleNotificationRecipientsRequestDto({ currentUserEmail: 'user@example.com' });
-    const result = await svc.getVisible(request);
+    const currentUser = { id: 1, email: 'judge@example.com' }
+    const result = await svc.getVisible(currentUser as MarketplaceUser);
 
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual(firstExpectedNotificationRecipientDto);
@@ -127,8 +98,6 @@ describe('NotificationRecipientEndpointService', () => {
   });
 
   it('should throw a missing association error if the Notification of a NotificaitonRecipient lacks a priority association', async () => {
-
-    marketplaceUserDaoMock.findByEmail.mockResolvedValueOnce({ id: 1, email: 'judge@example.com' });
     const now = new Date();
     const nowIsoString = now.toISOString();
 
@@ -159,12 +128,10 @@ describe('NotificationRecipientEndpointService', () => {
         },
     };
     notificationRecipientDaoMock.findVisibleByRecipient.mockResolvedValueOnce([notificationRecipient]);
-    const request = new GetVisibleNotificationRecipientsRequestDto({ currentUserEmail: 'user@example.com' });
-    await expect(svc.getVisible(request)).rejects.toThrow("Missing required association 'priority' on entity 'Notification'.");
+    const currentUser = { id: 1, email: 'judge@example.com' }
+    await expect(svc.getVisible(currentUser as MarketplaceUser)).rejects.toThrow("Missing required association 'priority' on entity 'Notification'.");
   });
   it('should throw a missing association error if a NotificaitonRecipient lacks a notification association', async () => {
-
-    marketplaceUserDaoMock.findByEmail.mockResolvedValueOnce({ id: 1, email: 'judge@example.com' });
     const now = new Date();
     const nowIsoString = now.toISOString();
 
@@ -188,8 +155,8 @@ describe('NotificationRecipientEndpointService', () => {
         updatedAt: now,
     };
     notificationRecipientDaoMock.findVisibleByRecipient.mockResolvedValueOnce([notificationRecipient]);
-    const request = new GetVisibleNotificationRecipientsRequestDto({ currentUserEmail: 'user@example.com' });
-    await expect(svc.getVisible(request)).rejects.toThrow("Missing required association 'notification' on entity 'NotificationRecipient'.");
+    const currentUser = { id: 1, email: 'judge@example.com' }
+    await expect(svc.getVisible(currentUser as MarketplaceUser)).rejects.toThrow("Missing required association 'notification' on entity 'NotificationRecipient'.");
   });
   
 });

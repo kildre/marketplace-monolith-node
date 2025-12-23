@@ -5,7 +5,6 @@ import SubmitRequestRequestDto from "src/main/web/dtos/SubmitRequestRequestDto";
 describe("SubmitRequestRequestDto", () => {
   const validData = {
     requestNumber: "REQ-1",
-    requestorEmail: "user@example.com",
     designation: "Manager",
     agency: "AgencyA",
     organization: "OrgA",
@@ -22,7 +21,6 @@ describe("SubmitRequestRequestDto", () => {
   test("should create a valid SubmitRequestRequestDto", () => {
     const dto = new SubmitRequestRequestDto(validData);
     expect(dto.requestNumber).toBe(validData.requestNumber);
-    expect(dto.requestorEmail).toBe(validData.requestorEmail);
     expect(dto.cartItems).toEqual([]);
   });
 

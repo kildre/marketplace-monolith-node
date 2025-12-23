@@ -25,8 +25,8 @@ services:
       KEYCLOAK_CLIENT_SECRET: "fillme"
       MARKETPLACE_ADJUDICATOR_ROLE: "marketplace-approver"
       MARKETPLACE_REQUESTOR_ROLE: "marketplace-requestor"
-      KEYCLOAK_BYPASS_AUTH: true
-      USE_CLIENT_SESSION_STORAGE: true
+      KEYCLOAK_BYPASS_AUTH: false
+      USE_CLIENT_SESSION_STORAGE: false
       INTROSPECT_AUTH: basic
       INTROSPECT_RETRY: true
       INTROSPECT_TIMEOUT_MS: 5000

@@ -1,4 +1,4 @@
-import { BaseDAO } from '../../../../main/rdbms/dao/BaseDAO';
+import { BaseDao } from '../../../../main/rdbms/dao/BaseDao';
 import { Model } from 'sequelize';
 
 // Minimal mock model with the static methods BaseDAO uses
@@ -8,7 +8,7 @@ class DummyModel extends Model {
   static findAll = jest.fn();
 }
 
-class DummyDAO extends BaseDAO<any> {
+class DummyDAO extends BaseDao<any> {
   constructor() {
     super(DummyModel as any);
   }

@@ -18,6 +18,9 @@ import { DecisionEndpointService } from '../../../main/service/decisionEndpointS
 import SubmitDecisionRequestDto from '../../../main/web/dtos/SubmitDecisionRequestDto';
 import { UseCaseRequestNotFoundError } from '../../../main/domain/errors/UseCaseRequestNotFoundError';
 import { NotificationServiceI } from '../../../main/service/notificationService';
+import decisionDao from '../../../main/rdbms/dao/decisionDao';
+import { UserServiceI } from 'src/main/service/userService';
+import { MarketplaceUser } from 'src/main/rdbms/entities';
 
 describe('DecisionEndpointService (integration, expanded)', () => {
   let db: TestDbContext;
@@ -40,34 +43,32 @@ describe('DecisionEndpointService (integration, expanded)', () => {
     await teardownTestDb(sequelize, db.container);
   });
 
-  let userEndpointService: any;
+  let userService: UserServiceI;
   let usecaseDao: any;
-  let decisionDAO: any;
   let notificationServiceMock: NotificationServiceI;
 
   beforeEach(async () => {
     service = new DecisionEndpointService();
 
     // Import real DAOs
-    const { UseCaseRequestDAO, DecisionDAO } = await import('../../../main/rdbms/dao');
+    const { UseCaseRequestDAO } = await import('../../../main/rdbms/dao');
     usecaseDao = new UseCaseRequestDAO();
-    decisionDAO = new DecisionDAO();
 
     // Default wiring: deny authorization unless a test overrides it explicitly
-    userEndpointService = {
+    userService = {
       // Simulate "no adjudicator role" by default
-      isAuthorizedAdjudicator: async () => ({ hasRole: false }),
+      normalizeEmail: (email: string) => email,
       // Default lookup returns a user object; tests can override to null if needed
-      findByEmail: async (dto: any) => ({ id: 101, email: dto.userEmail ?? 'judge@example.com' }),
+      findByEmail: async (email: string) => ({ id: 101, email: email ?? 'judge@example.com' } as MarketplaceUser),
     };
 
     notificationServiceMock = {
       send: async (props: any) => ({ id: 1, title: props.title, message: props.message, notificationPriorityId: props.priority.id } as any),
     };
 
-    (service as any).userEndpointService = userEndpointService;
+    (service as any).userService = userService;
     (service as any).usecaseDao = usecaseDao;
-    (service as any).decisionDAO = decisionDAO;
+    (service as any).decisionDao = decisionDao;
     (service as any).notificationService = notificationServiceMock;
   });
 
@@ -84,8 +85,9 @@ describe('DecisionEndpointService (integration, expanded)', () => {
   });
 
   it('submit rejects when user lookup returns null (user missing)', async () => {
-    (service as any).userEndpointService = {
+    (service as any).userService = {
       findByEmail: async () => null,
+      normalizeEmail: (email: string) => email,
     };
 
     const email = 'missing@example.com';
@@ -100,10 +102,10 @@ describe('DecisionEndpointService (integration, expanded)', () => {
   });
 
   it('submit rejects when requestNumber is missing', async () => {
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async () => ({ hasRole: true }),
-      findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
-    };
+    // (service as any).userEndpointService = {
+    //   isAuthorizedAdjudicator: async () => ({ hasRole: true }),
+    //   findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
+    // };
 
     const payload = new SubmitDecisionRequestDto({
       adjudicatorEmail: 'judge@example.com',
@@ -116,10 +118,10 @@ describe('DecisionEndpointService (integration, expanded)', () => {
   });
 
   it('submit rejects when statusId is invalid', async () => {
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async () => ({ hasRole: true }),
-      findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
-    };
+    // (service as any).userEndpointService = {
+    //   isAuthorizedAdjudicator: async () => ({ hasRole: true }),
+    //   findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
+    // };
 
     const payload = new SubmitDecisionRequestDto({
       adjudicatorEmail: 'judge@example.com',
@@ -132,10 +134,10 @@ describe('DecisionEndpointService (integration, expanded)', () => {
   });
 
   it('submit throws UseCaseRequestNotFoundError when requestNumber does not exist', async () => {
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async () => ({ hasRole: true }),
-      findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
-    };
+    // (service as any).userEndpointService = {
+    //   isAuthorizedAdjudicator: async () => ({ hasRole: true }),
+    //   findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
+    // };
 
     // stub usecaseDao to simulate not found
     (service as any).usecaseDao = {
@@ -155,13 +157,14 @@ describe('DecisionEndpointService (integration, expanded)', () => {
   // ───────────── branch: normalization + response trim (happy path with stubs) ─────────────
 
   it('submit normalizes adjudicatorEmail and trims decisionNumber; returns response', async () => {
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async (dto: any) => {
-        expect(String(dto.userEmail)).toBe('judge@example.com');
-        return { hasRole: true };
-      },
-      findByEmail: async (dto: any) => {
-        expect(dto.userEmail).toBe('judge@example.com');
+    (service as any).userService = {
+      // isAuthorizedAdjudicator: async (dto: any) => {
+      //   expect(String(dto.userEmail)).toBe('judge@example.com');
+      //   return { hasRole: true };
+      // },
+      normalizeEmail: (email: string) => email.trim().toLowerCase(),
+      findByEmail: async (email: string) => {
+        expect(email).toBe('judge@example.com');
         return { id: 777, email: 'judge@example.com' };
       },
     };
@@ -175,7 +178,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
     // decisionDAO.create should be called within a transaction
     const createSpy = jest.fn().mockResolvedValue({ id: 999 });
-    (service as any).decisionDAO = { create: createSpy };
+    (service as any).decisionDao = { create: createSpy };
 
     const payload = new SubmitDecisionRequestDto({
       adjudicatorEmail: '  JUDGE@EXAMPLE.COM  ', // should normalize to judge@example.com
@@ -198,12 +201,12 @@ describe('DecisionEndpointService (integration, expanded)', () => {
   // ───────────── error mapping branches (thrown from DAO.create) ─────────────
 
   it('maps UniqueConstraintError to "Duplicate value: ..."', async () => {
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async () => ({ hasRole: true }),
-      findByEmail: async () => ({ id: 111, email: 'judge@example.com' }),
-    };
+    // (service as any).userService = {
+    // //   isAuthorizedAdjudicator: async () => ({ hasRole: true }),
+    //   findByEmail: async () => ({ id: 111, email: 'judge@example.com' }),
+    // };
     (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 222, requestor: { id: 888 } }) };
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         throw new UniqueConstraintError({
           errors: [{ message: 'decisionNumber must be unique' }],
@@ -223,16 +226,16 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
   // Deterministically trigger ForeignKeyConstraintError after passing auth & lookups
   it('maps ForeignKeyConstraintError to "Invalid reference on <table>(fields)"', async () => {
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async () => ({ hasRole: true }),
-      findByEmail: async () => ({ id: 42, email: 'judge@example.com' }),
-    };
+    // (service as any).userService = {
+    //   // isAuthorizedAdjudicator: async () => ({ hasRole: true }),
+    //   findByEmail: async () => ({ id: 42, email: 'judge@example.com' }),
+    // };
 
     (service as any).usecaseDao = {
       findByRequestNumber: async (rn: string) => ({ id: 123, requestNumber: rn, requestor: { id: 888 } }),
     };
 
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         throw new ForeignKeyConstraintError({
           table: 'decisions',
@@ -255,10 +258,10 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
   it('maps ValidationError to "Validation failed: ..." with item messages', async () => {
     // 1) Force auth + user lookup to pass
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async () => ({ hasRole: true }),
-      findByEmail: async () => ({ id: 777, email: 'judge@example.com' }),
-    };
+    // (service as any).userService = {
+    //   // isAuthorizedAdjudicator: async () => ({ hasRole: true }),
+    //   findByEmail: async () => ({ id: 777, email: 'judge@example.com' }),
+    // };
 
     // 2) Ensure request lookup succeeds so we reach decisionDAO.create
     (service as any).usecaseDao = {
@@ -271,7 +274,7 @@ describe('DecisionEndpointService (integration, expanded)', () => {
     }
 
     // 4) Force DAO to throw a Sequelize ValidationError with properly-typed items
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         const items = [
           new ValidationErrorItem(
@@ -312,15 +315,15 @@ describe('DecisionEndpointService (integration, expanded)', () => {
 
   // Rethrows unknown errors from DAO.create (passthrough)
   it('rethrows unknown errors from DAO.create (passthrough)', async () => {
-    (service as any).userEndpointService = {
-      isAuthorizedAdjudicator: async () => ({ hasRole: true }),
-      findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
-    };
+    // (service as any).userService = {
+    //   // isAuthorizedAdjudicator: async () => ({ hasRole: true }),
+    //   findByEmail: async () => ({ id: 101, email: 'judge@example.com' }),
+    // };
 
     (service as any).usecaseDao = { findByRequestNumber: async () => ({ id: 202, requestor: { id: 888 }  }) };
 
     const boom = new Error('kaboom');
-    (service as any).decisionDAO = {
+    (service as any).decisionDao = {
       create: async () => {
         throw boom;
       },
