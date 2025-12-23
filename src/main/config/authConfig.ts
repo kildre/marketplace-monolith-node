@@ -269,9 +269,7 @@ export async function getAuthToken(req: Request): Promise<string | undefined> {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) return undefined;
   const token = auth.substring("Bearer ".length).trim();
-  console.log("Extracted auth token from request");
   if (USE_CLIENT_SESSION_STORAGE && !req.path.includes("/session/register")) {
-    console.log("Using session storage to retrieve token");
     const sessionService = new SessionTokenService();
     const storedToken = await sessionService.getActiveOrAnyBySessionId(token);
     if (!storedToken) {
@@ -305,7 +303,6 @@ export async function getAuthToken(req: Request): Promise<string | undefined> {
       .substring(0, 16);
     log.debug(`[AUTH] Opaque token hash=${tokenHash}`);
   }
-  console.log("Returning auth token", token);
   return token;
 }
 
@@ -566,7 +563,6 @@ export function keycloakIntrospectMiddleware(required = true) {
         }
         throw error; // Re-throw if not AuthenticationError
       }
-      console.log(payload);
       putCache(token, payload);
       req.auth = payload as IntrospectionResult & { roles?: string[] };
       logRoles(req.auth);
@@ -577,7 +573,6 @@ export function keycloakIntrospectMiddleware(required = true) {
           req.path
         }, method=${req.method}`
       );
-      console.log("Forwarding to router");
       return forwardToRouter(payload, req, next);
     } catch (err: any) {
       const latency = Date.now() - startTime;
@@ -612,7 +607,6 @@ export function keycloakIntrospectMiddleware(required = true) {
 async function forwardToRouter(token: IntrospectionResult, req: Request, next: NextFunction): Promise<void> {
   let currentUser = await marketplaceUserDao.findByEmail(token.email);
   // User should be authorized at this point. So if we're encountering them for the first time, create a MarketplaceUser record.
-  console.log("Looking for current user with email", currentUser);
   if (!currentUser) {
     currentUser = await marketplaceUserDao.create({ email: token.email });
   }

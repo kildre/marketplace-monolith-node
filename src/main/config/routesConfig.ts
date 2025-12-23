@@ -29,7 +29,6 @@ export function requestsWhitelistGuard() {
   const guard = Router();
 
   guard.use((req, res, next) => {
-    console.log("Requests whitelist guard activated", req.method, req.path);
     const user = (req as any).auth?.username || (req as any).kc?.username || "unknown";
     const userEmail = (req as any).auth?.sub || user;
     const npath = norm(req.path);
