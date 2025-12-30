@@ -608,7 +608,20 @@ async function forwardToRouter(token: IntrospectionResult, req: Request, next: N
   let currentUser = await marketplaceUserDao.findByEmail(token.email);
   // User should be authorized at this point. So if we're encountering them for the first time, create a MarketplaceUser record.
   if (!currentUser) {
-    currentUser = await marketplaceUserDao.create({ email: token.email });
+    try {
+      currentUser = await marketplaceUserDao.create({ email: token.email });
+    } catch (error: any) {
+      // Handle race condition where another request created the user
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        log.info(`[AUTH] User ${token.email} already exists (race condition), fetching...`);
+        currentUser = await marketplaceUserDao.findByEmail(token.email);
+        if (!currentUser) {
+          throw new Error(`Failed to find user ${token.email} after unique constraint error`);
+        }
+      } else {
+        throw error;
+      }
+    }
   }
   req.currentUser = currentUser;
 
