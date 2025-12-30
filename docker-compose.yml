@@ -21,7 +21,7 @@ services:
       CORS_ORIGIN: "http://localhost:8080"
       KEYCLOAK_BASE_URL: "https://keycloak.cdao.us/auth"
       KEYCLOAK_REALM: "baby-yoda"
-      KEYCLOAK_CLIENT_ID: "marketplace-be"
+      KEYCLOAK_CLIENT_ID: "marketplace-backend"
       KEYCLOAK_CLIENT_SECRET: "W7b74RcRSjMkpxLj7erjwBXKHv6he7T8"
       MARKETPLACE_ADJUDICATOR_ROLE: "marketplace-approver"
       MARKETPLACE_REQUESTOR_ROLE: "marketplace-requestor"
