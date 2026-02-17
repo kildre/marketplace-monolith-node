@@ -22,7 +22,8 @@ function getRealmRoles(req: Request): string[] {
 
 function hasRole(roles: string[], needed: string): boolean {
   if (!needed) return false; // strict: role must be configured
-  return roles.includes(needed);
+  // Check for exact match OR prefixed format (e.g., "marketplace:marketplace-approver")
+  return roles.includes(needed) || roles.some(r => r.endsWith(`:${needed}`));
 }
 
 export function requestsWhitelistGuard() {

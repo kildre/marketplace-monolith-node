@@ -30,7 +30,9 @@ export function makeMigrator(sequelize: Sequelize) {
   const isProd = process.env.NODE_ENV === 'production';
 
   // NOTE: point to dist in prod, src in dev. Adjust to your layout.
-  const rel = 'src/main/rdbms/migrations/**/*.js';
+  const rel = isProd 
+    ? 'dist/main/rdbms/migrations/**/*.js'
+    : 'src/main/rdbms/migrations/**/*.ts';
 
   const glob = makeGlob(rel);
 

@@ -26,6 +26,55 @@ function isTrue(v?: string): boolean {
 }
 const BYPASS_AUTH = isTrue(process.env.KEYCLOAK_BYPASS_AUTH);
 
+// ───────────────────────── Mock Token Handling ─────────────────────────
+/**
+ * Detect if a token is a mock token from the frontend
+ * Mock tokens have the format: mock.base64payload.signature
+ */
+function isMockToken(token: string): boolean {
+  return token.startsWith('mock.');
+}
+
+/**
+ * Parse mock token and create introspection result
+ * This allows the frontend's mock Keycloak provider to send realistic tokens
+ * with different users, roles, and attributes for testing
+ */
+function parseMockToken(token: string): IntrospectionResult {
+  try {
+    // Token format: mock.base64payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3 || parts[0] !== 'mock') {
+      throw new Error('Invalid mock token format - expected mock.payload.signature');
+    }
+
+    // Decode the base64 payload
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+
+    log.debug(`[AUTH] Parsing mock token: sub=${payload.sub}, email=${payload.email}`);
+
+    // Create introspection result from mock payload
+    const result: IntrospectionResult = {
+      active: true,
+      sub: payload.sub || 'mock-user',
+      email: payload.email || 'mock@local.dev',
+      exp: payload.exp,
+      iat: payload.iat,
+      iss: payload.iss,
+      aud: payload.aud,
+      azp: payload.azp || 'mock-client',
+      realm_access: payload.realm_access,
+      resource_access: payload.resource_access,
+      username: payload.preferred_username,
+    };
+
+    return result;
+  } catch (error) {
+    log.error(`[AUTH] Failed to parse mock token: ${error instanceof Error ? error.message : String(error)}`);
+    throw AuthenticationError.invalidFormat('Invalid mock token format');
+  }
+}
+
 // Log bypass configuration at startup for audit trail
 if (BYPASS_AUTH) {
   log.warn(
@@ -393,33 +442,76 @@ export function keycloakIntrospectMiddleware(required = true) {
   return async function (req: Request, res: Response, next: NextFunction) {
     const startTime = Date.now();
 
+    // In bypass mode, check if there's a token first to determine behavior
     if (BYPASS_AUTH) {
-      const fakeIssuer =
-        KEYCLOAK_BASE_URL && KEYCLOAK_REALM
-          ? `${KEYCLOAK_BASE_URL.replace(/\/+$/, "")}/realms/${KEYCLOAK_REALM}`
-          : `https://bypass.local/realms/example`;
-      // Include both adjudicator and requestor roles in bypass mode
-      const roles: string[] = [];
-      if (ADJ_ROLE) roles.push(ADJ_ROLE);
-      if (REQ_ROLE) roles.push(REQ_ROLE);
-      const fake: IntrospectionResult & { roles?: string[] } = {
-        active: true,
-        sub: "bypass-user",
-        azp: "bypass-client",
-        iss: fakeIssuer,
-        aud: EXPECTED_AUDIENCE || undefined,
-        realm_access: roles.length ? { roles } : undefined,
-        resource_access: {},
-        email: "bypass-user@metrostar.com",
-      };
-      fake.roles = roles;
-      req.auth = fake;
-      log.warn(
-        `[AUTH_BYPASS] Request authenticated via bypass mode: sub=bypass-user, roles=${JSON.stringify(
-          roles
-        )}, path=${req.path}, method=${req.method}`
-      );
-      return forwardToRouter(fake, req, next);
+      try {
+        const token = await getAuthToken(req);
+
+        // If token exists and is a mock token, parse it for user-specific info
+        if (token && isMockToken(token)) {
+          log.info(`[AUTH_BYPASS] Mock token detected, parsing payload`);
+          const mockPayload = parseMockToken(token);
+          const roles = rolesFromPayload(mockPayload);
+          (mockPayload as IntrospectionResult & { roles?: string[] }).roles = roles;
+          req.auth = mockPayload as IntrospectionResult & { roles?: string[] };
+
+          log.warn(
+            `[AUTH_BYPASS] Mock token authenticated: email=${mockPayload.email}, sub=${mockPayload.sub}, roles=${JSON.stringify(roles)}, path=${req.path}, method=${req.method}`
+          );
+
+          return forwardToRouter(mockPayload, req, next);
+        }
+
+        // Otherwise, use the default bypass user (fallback for backward compatibility)
+        const fakeIssuer =
+          KEYCLOAK_BASE_URL && KEYCLOAK_REALM
+            ? `${KEYCLOAK_BASE_URL.replace(/\/+$/, "")}/realms/${KEYCLOAK_REALM}`
+            : `https://bypass.local/realms/example`;
+        const roles: string[] = [];
+        if (ADJ_ROLE) roles.push(ADJ_ROLE);
+        if (REQ_ROLE) roles.push(REQ_ROLE);
+        const fake: IntrospectionResult & { roles?: string[] } = {
+          active: true,
+          sub: "bypass-user",
+          azp: "bypass-client",
+          iss: fakeIssuer,
+          aud: EXPECTED_AUDIENCE || undefined,
+          realm_access: roles.length ? { roles } : undefined,
+          resource_access: {},
+          email: "bypass-user@metrostar.com",
+        };
+        fake.roles = roles;
+        req.auth = fake;
+        log.warn(
+          `[AUTH_BYPASS] Request authenticated via global bypass mode: sub=bypass-user, roles=${JSON.stringify(
+            roles
+          )}, path=${req.path}, method=${req.method}`
+        );
+        return forwardToRouter(fake, req, next);
+      } catch (error) {
+        log.error(`[AUTH_BYPASS] Error in bypass mode: ${error instanceof Error ? error.message : String(error)}`);
+        // If there's an error parsing, fall back to default bypass user
+        const fakeIssuer =
+          KEYCLOAK_BASE_URL && KEYCLOAK_REALM
+            ? `${KEYCLOAK_BASE_URL.replace(/\/+$/, "")}/realms/${KEYCLOAK_REALM}`
+            : `https://bypass.local/realms/example`;
+        const roles: string[] = [];
+        if (ADJ_ROLE) roles.push(ADJ_ROLE);
+        if (REQ_ROLE) roles.push(REQ_ROLE);
+        const fake: IntrospectionResult & { roles?: string[] } = {
+          active: true,
+          sub: "bypass-user",
+          azp: "bypass-client",
+          iss: fakeIssuer,
+          aud: EXPECTED_AUDIENCE || undefined,
+          realm_access: roles.length ? { roles } : undefined,
+          resource_access: {},
+          email: "bypass-user@metrostar.com",
+        };
+        fake.roles = roles;
+        req.auth = fake;
+        return forwardToRouter(fake, req, next);
+      }
     }
 
     try {
