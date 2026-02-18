@@ -1,6 +1,9 @@
 import { Sequelize } from 'sequelize';
 import { sequelize } from '../config/sequelizeCLIConfig.cjs';
 
+// Re-export sequelize instance for use in controllers
+export { sequelize };
+
 export async function assertDatabaseConnectionOk() {
   try {
     await sequelize.authenticate();

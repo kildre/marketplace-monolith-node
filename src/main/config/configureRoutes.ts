@@ -7,6 +7,7 @@ import requestRoutes from "../web/routes/requestRoutes";
 // sessionRouter contains register / status / expire; we now split handling so only register stays protected.
 import reportRoutes from "../web/routes/reportRoutes";
 import decisionRoutes from "../web/routes/decisionRoutes";
+import demoRoutes from "../web/routes/demoRoutes";
 // Session controllers (public + protected)
 import {
   getSessionStatusController,
@@ -70,6 +71,9 @@ const configureRoutes = (app: Application) => {
   // (9) POST /api/session/register → protected (requires auth) for creating session tokens
   // Previously mis-mounted with app.use('/api/session/register', router) causing /register/register path.
   app.post("/api/session/register", registerSessionController);
+
+  // (10) /api/demo → demo/dev operations (only works in dev mode)
+  app.use("/api/demo", demoRoutes);
 
   printRoutes(app as any);
 };
