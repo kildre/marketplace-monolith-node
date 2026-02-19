@@ -105,9 +105,12 @@ export class RequestEndpointService implements RequestEndpointServiceI {
 
       //Transaction: create request + cart items
       const useCaseReq = await s.transaction(async (tx: Transaction) => {
+        // Insert with a temporary placeholder so the NOT NULL + UNIQUE constraint is satisfied
+        // before we know the auto-increment id.
+        const tempNumber = `TEMP-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
         const ucr = await this.useCaseRequestDAO.create(
           {
-            requestNumber: String(request.requestNumber ?? '').trim(),
+            requestNumber: tempNumber,
             requestedToolName: request.requestedToolName,
             description: request.description,
             designation: request.designation,
@@ -124,13 +127,21 @@ export class RequestEndpointService implements RequestEndpointServiceI {
           { transaction: tx }
         );
 
-        // Extract the created request ID and number safely
+        // Extract the auto-incremented id
         const requestId = (ucr as any).dataValues?.id ?? (ucr as any).id;
-        const createdRequestNumber = (ucr as any).dataValues?.requestNumber ?? (ucr as any).requestNumber;
-        
+
         if (!requestId) {
           throw new Error('Failed to create request: missing ID');
         }
+
+        // Format the sequential request number using the DB-assigned id (zero-padded to 5 digits)
+        const createdRequestNumber = String(requestId).padStart(5, '0');
+
+        // Update the record to replace the temp placeholder with the real sequential number
+        await UseCaseRequest.update(
+          { requestNumber: createdRequestNumber },
+          { where: { id: requestId }, transaction: tx }
+        );
 
         // Resolve products & create CartItems
         for (const item of request.cartItems ?? []) {
@@ -165,8 +176,9 @@ export class RequestEndpointService implements RequestEndpointServiceI {
       });
 
       //Build response
+      const generatedRequestNumber = String((useCaseReq as any).dataValues?.id ?? (useCaseReq as any).id).padStart(5, '0');
       const response = new SubmitRequestResponseDto({
-        requestNumber: String(request.requestNumber ?? '').trim(),
+        requestNumber: generatedRequestNumber,
       });
       return response;
     } catch (err: any) {
